@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<?include $(sys.CURRENTDIR)\config.wxi?>
+  <Product Id="f45f8f40-ecd2-4762-8e15-db98a813d6b2" Name="Simulator" Language="1033" Version="1.0.0.0"
+           Manufacturer="Adam Bruss" UpgradeCode="0f685285-974a-47ce-a020-e8fda4f434a8">
+    <Package InstallerVersion="200" Compressed="yes"/>
+    <!-- PROPERTIES -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
+
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes"/>
+
+    <Icon Id="appicon" SourceFile="icon.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="appicon"/>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLLOCATION" Name="Simulator">
+          <!-- SOURCE FILES -->
+          <Component Id="simulator.exe" Guid="2aa73938-e879-45eb-aaad-65a27b4ad3ea">
+            <File Id='simulator.exe' Name='simulator.exe' DiskId='1' Source='$(var.releasedir)\simulator.exe'/>
+          </Component>
+          <Component Id="engine.dll" Guid="4FD51C6D-285B-4b03-9B33-F83A40C6649F">
+            <File Id='engine.dll' Name='engine.dll' DiskId='1' Source='$(var.releasedir)\engine.dll'/>
+          </Component>
+          <Component Id="freeglut.dll" Guid="877D650E-40C9-4587-B583-64A15E455055">
+            <File Id='freeglut.dll' Name='freeglut.dll' DiskId='1' Source='$(var.releasedir)\freeglut.dll'/>
+          </Component>
+          <Component Id="gl_font.dll" Guid="A96F09ED-BC4D-4667-BA53-AD73014E1B23">
+            <File Id='gl_font.dll' Name='gl_font.dll' DiskId='1' Source='$(var.releasedir)\gl_font.dll'/>
+          </Component>
+          <Component Id="ICSharpCode.SharpZipLib.dll" Guid="C233E7C4-93E3-46a6-825E-F14E0699BB7A">
+            <File Id='ICSharpCode.SharpZipLib.dll' Name='ICSharpCode.SharpZipLib.dll' DiskId='1' Source='$(var.releasedir)\ICSharpCode.SharpZipLib.dll'/>
+          </Component>
+          <Component Id="observer.dll" Guid="1FBD05CD-2807-438e-A4E7-8106C6BBE5E2">
+            <File Id='observer.dll' Name='observer.dll' DiskId='1' Source='$(var.releasedir)\observer.dll'/>
+          </Component>
+          <Component Id="OpenGLControlModded.dll" Guid="1FD240F3-9051-4e91-A98C-50F47CF7A18A">
+            <File Id='OpenGLControlModded.dll' Name='OpenGLControlModded.dll' DiskId='1' Source='$(var.releasedir)\OpenGLControlModded.dll'/>
+          </Component>
+          <Component Id="Tao.FreeGlut.dll" Guid="1892D85D-B90F-44fe-AFF1-CEB958C9B9A2">
+            <File Id='Tao.FreeGlut.dll' Name='Tao.FreeGlut.dll' DiskId='1' Source='$(var.releasedir)\Tao.FreeGlut.dll'/>
+          </Component>
+          <Component Id="Tao.OpenGL.dll" Guid="FA11E154-923E-496f-B13A-8465E5AF1142">
+            <File Id='Tao.OpenGl.dll' Name='Tao.OpenGl.dll' DiskId='1' Source='$(var.releasedir)\Tao.OpenGl.dll'/>
+          </Component>
+          <Component Id="Tao.Platform.Windows.dll" Guid="9B87E9E1-0460-443f-9F5D-E976D6DF9E00">
+            <File Id='Tao.Platform.Windows.dll' Name='Tao.Platform.Windows.dll' DiskId='1' Source='$(var.releasedir)\Tao.Platform.Windows.dll'/>
+          </Component>
+          <Component Id="utilities.dll" Guid="8D14974D-039A-4419-8E03-E721656F39B6">
+            <File Id='utilities.dll' Name='utilities.dll' DiskId='1' Source='$(var.releasedir)\utilities.dll'/>
+          </Component>
+          <Component Id="maps.zip" Guid="82BF90FF-C06E-41d8-A38B-0441DBF24B59">
+            <File Id='maps.zip' Name='maps.zip' DiskId='1' Source='$(var.releasedir)\maps.zip'/>
+          </Component>
+          <Component Id="sounds_textures_other.zip" Guid="{664E803C-799B-4f4c-BB01-D2C10221A3B9}">
+            <File Id='sounds_textures_other.zip' Name='sounds_textures_other.zip' DiskId='1' Source='$(var.releasedir)\sounds_textures_other.zip'/>
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id='ProgramMenuFolder'>
+        <Directory Id="ApplicationProgramsFolder" Name="Simulator"/>
+      </Directory>
+      <Directory Id='CommonAppDataFolder' Name='CommonFiles'>
+        <Directory Id='company' Name='Bruss Enterprises'>
+          <Directory Id='prodname' Name='Simulator'>
+            <Directory Id='version' Name='1.0.0.0'>
+              <Component Id='removemaps' Guid="24710090-E172-4b54-8A0E-D64EA0DDBD09">
+                <RemoveFile Id='deletemaps' Name='maps.zip' On='uninstall' />
+              </Component>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="DF80B606-0E44-4b92-82C0-EA2295B60CC6">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="Simulator"
+                  Description="Quake 3 Simulator"
+                  Target="[INSTALLLOCATION]simulator.exe"
+                  WorkingDirectory="INSTALLLOCATION"/>
+        <RemoveFolder Id="ApplicationsProgramFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\Simulator" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="ProductFeature" Title="Simulator" Level="1" Description="Quake 3 Simulator"
+             Display='hidden' ConfigurableDirectory='INSTALLLOCATION'>
+      <ComponentRef Id="ApplicationShortcut"/>
+      <ComponentRef Id="simulator.exe"/>
+      <ComponentRef Id="engine.dll"/>
+      <ComponentRef Id="freeglut.dll"/>
+      <ComponentRef Id="gl_font.dll"/>
+      <ComponentRef Id="ICSharpCode.SharpZipLib.dll"/>
+      <ComponentRef Id="observer.dll"/>
+      <ComponentRef Id="OpenGLControlModded.dll"/>
+      <ComponentRef Id="Tao.FreeGlut.dll"/>
+      <ComponentRef Id="Tao.OpenGL.dll"/>
+      <ComponentRef Id="Tao.Platform.Windows.dll"/>
+      <ComponentRef Id="utilities.dll"/>
+      <ComponentRef Id="maps.zip"/>
+      <ComponentRef Id="sounds_textures_other.zip"/>
+
+      <ComponentRef Id='removemaps'/>
+    </Feature>
+    <!-- GUI SETTINGS -->
+    <UIRef Id="WixUI_InstallDir"/>
+  </Product>
+</Wix>

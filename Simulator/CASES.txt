@@ -1,0 +1,75 @@
+﻿//*===================================================================================
+//* ----||||Simulator||||----
+//*
+//* By Adam Bruss and Scott Nykl
+//*
+//* Scott participated in Fall of 2005. Adam has participated from fall 2005 
+//* until the present.
+//*
+//* Loads in quake 3 maps. Three modes of interaction are Player, Ghost and Spectator.
+//*===================================================================================
+
+This is a record of the cases that have been completed or require completion in the future
+
+1. Transfer simulator to tao framework - DONE
+
+2. Reformat code style - DONE, fix upside down textures - DONE
+ 
+3. Remove all casting and replace with templatized lists using the List collection class. Also use members when possible
+instead of allocating memory. - DONE, smooth and speed up texturing. using mipmaps things look pretty good. Game moves very slow still
+Will try to alter structural aspects of game to speed things up. -DONE
+
+4. Remove all texture flickering. This is most noticable when turning orientation with mouse turns. -DONE 
+
+CollisionDetection-1 : reinstate collision detection - DONE, Tune up collision detection for faster performance, remove all unnecessary allocation of memory
+Do it once at load time - DONE but still slow. will try better keyboard movement techniques - DONE
+
+5. Re-import all Quake 3 stock textures and effects from raw pak data. Don't need to convert any images this time because I think C# can read in pngs
+
+6. Implement crude effects for projectiles. Basic idea is to do something cool looking that sticks with projectile as it moves
+
+7. Implement sound emanating from projectile - DONE
+
+8. Handle long map name when it doesn't exist. Remove "aka" before the available map name - DONE
+
+9. Holding shift key flies faster - DONE
+
+10. Wait cursor for map load. And a loading screen that at a minimum displays the status of the bounding box creation and map reading - DONE
+
+11. Collision Detection-2 : Improve collision detection coverage and speed. - DONE
+
+12. Implement a help screen to display what all the keys and mouse commands do. Either do a windows style dialog or something fancier with the stencil buffer. - DONE
+
+13. Implement reaction to colliding with a face. Some kind of sliding will do. - DONE
+
+14. Implement framerate display and consistent movement independent of framerate using Paul Nettles advice. Also look at altering timer increment to do shift and control key speed changes
+
+15. Turn off all comment pragma warning ignores and update all my commenting manually : intellisense does a good job of helping - DONE
+
+16. Implement angle sumation technique for collision detection as alternative to classification of intersection point with edge planes
+
+17. Write some unittests for D3Vect in the utilities project
+
+18. Use Engine namespace in Engine project - DONE
+
+19. Fix bounding boxes not drawing - DONE
+
+20. Implement bounding box caching in vrml files - DONE
+
+21. Extend loading screen to have a scrollbar for the actual map read. Can accomplish this by getting a file length and comparing it to the current line we just read. Shouldn't be too bad
+to add this. It will be the first progress bar before the potential boundingbox progress bar. - DONE
+
+22. Address progress dialog going into not responding mode at seemingly random times although it mainly happens on large maps. Maybe adjust the priority of the background worker
+and main thread. - DONE
+
+23. Replace List<T> usage with HashSets where sorting isn't done - ABANDONED BECAUSE HASHSET DOESN'T HAVE AN INDEXER
+
+24. Move Simulator designer code code to a newly minted Simulator.Designer.cs - DONE
+
+25. Implement easy up and down movement. Spacebar goes down and midmouse goes up - DONE
+
+26. Create zip file for all textures and maps and extract from it at read time to load maps
+
+27. Implement wix installer
+
+

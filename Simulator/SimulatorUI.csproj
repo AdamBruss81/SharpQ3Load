@@ -196,6 +196,7 @@
     <Content Include="CASES.txt" />
     <Content Include="icon.ico" />
     <Content Include="Resources\movement1.bmp" />
+    <Content Include="worksheet.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

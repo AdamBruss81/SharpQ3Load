@@ -238,6 +238,8 @@ namespace engine
 			else if (m_TextureType == Shape.ETextureType.SINGLE)
 			{
 				GenSingleTextureDisplayLists(0);
+
+                //DrawFaceTest();
 			}
 			if (m_TextureType != Shape.ETextureType.NONE)
 			{
@@ -313,6 +315,19 @@ namespace engine
 			Gl.glEndList();
 		}
 
+        private void DrawFaceTest()
+        {
+            Gl.glBegin(Gl.GL_POLYGON);
+            {
+                for (int i = 0; i < m_lVertices.Count; i++)
+                {
+                    Gl.glTexCoord2dv(m_lTextureCoordinates[0][i].Vect);
+                    Gl.glVertex3dv(m_lVertices[i].Vect);
+                }
+            }
+            Gl.glEnd();
+        }
+
 		private void GenSingleTextureDisplayLists(int TexCoordSetIndex)
 		{
 			m_nOneTextureFaceDrawList = Gl.glGenLists(1);
@@ -331,15 +346,15 @@ namespace engine
 
 			m_nOneTextureFaceDrawListWhite = Gl.glGenLists(1);
 			Gl.glNewList(m_nOneTextureFaceDrawListWhite, Gl.GL_COMPILE);
-			Gl.glBegin(Gl.GL_POLYGON);
-			{
-				for (int i = 0; i < m_lVertices.Count; i++)
-				{
-					Gl.glTexCoord2dv(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
-					Gl.glVertex3dv(m_lVertices[i].Vect);
-				}
-			}
-			Gl.glEnd();
+            Gl.glBegin(Gl.GL_POLYGON);
+            {
+                for (int i = 0; i < m_lVertices.Count; i++)
+                {
+                    Gl.glTexCoord2dv(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
+                    Gl.glVertex3dv(m_lVertices[i].Vect);
+                }
+            }
+            Gl.glEnd();
 			Gl.glEndList();
 		}
 
@@ -361,8 +376,12 @@ namespace engine
 			}
 			else if (mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR)
 				Gl.glCallList(m_nOneTextureFaceDrawList);
-			else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
-				Gl.glCallList(m_nOneTextureFaceDrawListWhite);
+            else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
+            {
+                //Gl.glCallList(m_nOneTextureFaceDrawListWhite);
+
+                DrawFaceTest();
+            }
 
 			if (STATE.DebuggingMode && STATE.DrawFaceNormals)
 			{

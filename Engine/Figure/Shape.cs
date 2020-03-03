@@ -226,7 +226,8 @@ namespace engine
 
 				foreach (Face f in m_lFaces)
 				{
-					if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.SINGLE_WHITE, ref nNumFacesRendered);
+					if(!f.RenderedThisPass) 
+                        f.Draw(Engine.EGraphicsMode.SINGLE_WHITE, ref nNumFacesRendered);
 				}
 			}
 			else if (mode == Engine.EGraphicsMode.WIREFRAME)

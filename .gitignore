@@ -101,3 +101,5 @@ Engine/obj/x86/Debug/Engine.pdb
 Engine/obj/x86/Debug/Engine.dll
 Engine/obj/x86/Debug/Engine.csprojResolveAssemblyReference.cache
 Engine/obj/x86/Debug/Engine.csproj.FileListAbsolute.txt
+Simulator/obj/x86/Release/TempPE/Properties.Resources.Designer.cs.dll
+Simulator/obj/x86/Release/DesignTimeResolveAssemblyReferencesInput.cache

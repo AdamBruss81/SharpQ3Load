@@ -113,6 +113,9 @@ namespace simulator
 
 			Gl.glShadeModel(Gl.GL_SMOOTH);
 
+            Gl.glEnable(Gl.GL_CULL_FACE);
+            Gl.glCullFace(Gl.GL_FRONT);
+
 			Gl.glClearColor(0.0f, 0.0f, 0.0f, .5f);
 			Gl.glClearDepth(1.0f);
 

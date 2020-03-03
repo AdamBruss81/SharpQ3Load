@@ -238,8 +238,6 @@ namespace engine
 			else if (m_TextureType == Shape.ETextureType.SINGLE)
 			{
 				GenSingleTextureDisplayLists(0);
-
-                //DrawFaceTest();
 			}
 			if (m_TextureType != Shape.ETextureType.NONE)
 			{
@@ -315,19 +313,6 @@ namespace engine
 			Gl.glEndList();
 		}
 
-        private void DrawFaceTest()
-        {
-            Gl.glBegin(Gl.GL_POLYGON);
-            {
-                for (int i = 0; i < m_lVertices.Count; i++)
-                {
-                    Gl.glTexCoord2dv(m_lTextureCoordinates[0][i].Vect);
-                    Gl.glVertex3dv(m_lVertices[i].Vect);
-                }
-            }
-            Gl.glEnd();
-        }
-
 		private void GenSingleTextureDisplayLists(int TexCoordSetIndex)
 		{
 			m_nOneTextureFaceDrawList = Gl.glGenLists(1);
@@ -378,9 +363,7 @@ namespace engine
 				Gl.glCallList(m_nOneTextureFaceDrawList);
             else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
             {
-                //Gl.glCallList(m_nOneTextureFaceDrawListWhite);
-
-                DrawFaceTest();
+                Gl.glCallList(m_nOneTextureFaceDrawListWhite);
             }
 
 			if (STATE.DebuggingMode && STATE.DrawFaceNormals)

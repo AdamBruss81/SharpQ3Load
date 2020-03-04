@@ -1,0 +1,6 @@
+﻿The bigbox map has 12 faces. This means the vrml maps besides "simple_face" have two faces per spatial face. 
+So a box has 12 faces. I need to determine the ordering of the faces. The ones facing you should be counterclockwise in the indices.
+
+----
+
+Display framerate on HUD. Compare cull vs no cull framerates.

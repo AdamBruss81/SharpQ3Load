@@ -40,6 +40,9 @@ namespace simulator
 		private bool m_bClosed = false;
 		private IntPtr m_mainDC = IntPtr.Zero;
 		private IntPtr m_mainRC = IntPtr.Zero;
+        private Stopwatch m_swFramerate = new Stopwatch();
+        private int m_nFrameCounter = 0;
+        private double m_dElapsedSecondsShowScene = 0.0;
 
 		string m_sMapLoadSoundPath = "";
 
@@ -666,7 +669,25 @@ namespace simulator
 		private void timerRedrawer_Tick(object sender, EventArgs e)
 		{
 			resetMouseCursor();
-			m_Engine.showScene(GetRecentKey);
+
+            m_nFrameCounter++;
+
+            m_swFramerate.Start();
+
+            m_Engine.showScene(GetRecentKey);
+
+            m_swFramerate.Stop();
+
+            if (m_nFrameCounter % 10 == 0)
+            {
+                m_dElapsedSecondsShowScene = Math.Round(1.0 / m_swFramerate.Elapsed.TotalSeconds);
+                m_nFrameCounter = 0;
+            }
+
+            m_fonter.PrintLowerRight(m_dElapsedSecondsShowScene.ToString(), m_openGLControl.Width, 1);
+
+            m_swFramerate.Reset();
+
 			m_fonter.PrintLowerRight(GetRecentKey.ToString(), m_openGLControl.Width, 0);
 		}
 

@@ -103,3 +103,15 @@ Engine/obj/x86/Debug/Engine.csprojResolveAssemblyReference.cache
 Engine/obj/x86/Debug/Engine.csproj.FileListAbsolute.txt
 Simulator/obj/x86/Release/TempPE/Properties.Resources.Designer.cs.dll
 Simulator/obj/x86/Release/DesignTimeResolveAssemblyReferencesInput.cache
+UpgradeLog2.htm
+Simulator/obj/x86/Release/SimulatorUI.csprojAssemblyReference.cache
+Simulator/obj/x86/Release/SimulatorUI.csproj.CopyComplete
+Observer/obj/x86/Release/Observer.csprojAssemblyReference.cache
+Observer/obj/x86/Release/Observer.csproj.CopyComplete
+Engine/obj/x86/Release/Engine.csprojAssemblyReference.cache
+Engine/obj/x86/Release/Engine.csproj.CopyComplete
+.vs/simulator/v16/Server/sqlite3/storage.ide-wal
+.vs/simulator/v16/Server/sqlite3/storage.ide-shm
+.vs/simulator/v16/Server/sqlite3/storage.ide
+.vs/simulator/v16/Server/sqlite3/db.lock
+.vs/simulator/v16/.suo

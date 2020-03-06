@@ -107,7 +107,7 @@ namespace engine
 				m_cam.THETA_RAD = vp.Orientation[3];
 
 				for (int i = 0; i < 5; i++ )
-					m_cam.MoveForward(); // get away from wall a bit
+					m_cam.MoveForward(1.0); // get away from wall a bit
 			}
 			else
 			{
@@ -193,23 +193,6 @@ namespace engine
 				sgl.POPMAT();
 			}
 
-			/*List<IntersectionInfo> lLastIntersections = m_lStaticFigList[0].GetLastIntersections;
-			foreach (IntersectionInfo ii in lLastIntersections)
-			{
-				sgl.PUSHMAT();
-				Gl.glTranslated(ii.Intersection.x, ii.Intersection.y, ii.Intersection.z);
-				Gl.glColor3ub(255, 140, 0);
-				Glut.glutSolidSphere(0.1, 20, 20);
-				sgl.POPMAT();
-			}*/
-
-			/*D3Vect lookat = m_cam.GetLookAtNew;
-			sgl.PUSHMAT();
-			Gl.glTranslated(lookat.x, lookat.y, lookat.z);
-			Gl.glColor3ub(255, 0, 0);
-			Glut.glutSolidSphere(0.001, 20, 20);
-			sgl.POPMAT();*/
-
 			sgl.POPATT();
 		}
 
@@ -219,11 +202,14 @@ namespace engine
 
 			switch (e.KeyData)
 			{
-				case Keys.E:
+				case Keys.L:
 					m_dynamicFigList.Clear(false);
 					m_lRayIntersectionInfos.Clear();
 					m_ray.Clear();
 					break;
+                case Keys.E:
+                    WarpForward();
+                    break;
 				case Keys.D1:
 					m_ProjectileMode = EProjectiles.AXE;
 					break;
@@ -245,9 +231,9 @@ namespace engine
 					STATE.DrawFaceNormals = !STATE.DrawFaceNormals;
 					break;
 			}
-		}
+		}      
 
-		override public void LeftMouseDown()
+        override public void LeftMouseDown()
 		{
 			switch (m_ProjectileMode)
 			{
@@ -351,7 +337,13 @@ namespace engine
 			}
 		}
 
-		override public bool MoveForward()
+        private void WarpForward()
+        {
+            // to get through doors...
+            m_cam.MoveForward(30.0);
+        }
+
+        override public bool MoveForward()
 		{
 			int nMoveAttemptCount = 0;
 			return TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
@@ -360,7 +352,8 @@ namespace engine
 		override public void MoveBackward()
 		{
 			m_cam.TurnBack();
-			m_cam.MoveForward();
+            int nMoveAttemptCount = 0;
+            TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
 			m_cam.RestoreOrientation();
 		}
 

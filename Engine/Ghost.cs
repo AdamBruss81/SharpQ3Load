@@ -72,42 +72,42 @@ namespace engine
 
 		override public bool MoveForward()
 		{
-			m_cam.MoveForward();
+			m_cam.MoveForward(1.0);
 			return true;
 		}
 
 		override public void MoveBackward()
 		{
 			m_cam.TurnBack();
-			m_cam.MoveForward();
+			m_cam.MoveForward(1.0);
 			m_cam.RestoreOrientation();
 		}
 
 		override public void MoveLeft()
 		{
 			m_cam.TurnLeft();
-			m_cam.MoveForward();
+			m_cam.MoveForward(1.0);
 			m_cam.RestoreOrientation();
 		}
 
 		override public void MoveRight()
 		{
 			m_cam.TurnRight();
-			m_cam.MoveForward();
+			m_cam.MoveForward(1.0);
 			m_cam.RestoreOrientation();
 		}
 
 		public override void MoveUp()
 		{
 			m_cam.TurnUp();
-			m_cam.MoveForward();
+			m_cam.MoveForward(1.0);
 			m_cam.RestoreOrientation();
 		}
 
 		public override void MoveDown()
 		{
 			m_cam.TurnDown();
-			m_cam.MoveForward();
+			m_cam.MoveForward(1.0);
 			m_cam.RestoreOrientation();
 		}
 

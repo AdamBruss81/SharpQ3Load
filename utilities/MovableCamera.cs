@@ -148,7 +148,7 @@ namespace utilities
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;
 
-			// if shift key down move at half speed
+			// if ctrl key down move at half speed
 			if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
 			{
 				d3Vector.Scale(5.0);
@@ -162,12 +162,16 @@ namespace utilities
 		}
 
 		// Move the camera to its look at point
-		public void MoveForward()
+		public void MoveForward(double dMultiplier)
 		{
 			double dTempRHO = m_rho;
 
-			// if shift key down move at half speed
-			if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+            if(dMultiplier != 1.0)
+            {
+                m_rho *= dMultiplier;
+            }
+			// if ctrl key down move at half speed
+			else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
 			{
 				m_rho *= 5.0;
 			}

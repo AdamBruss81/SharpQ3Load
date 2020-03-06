@@ -106,6 +106,12 @@
     <Compile Include="MapLoadControl.Designer.cs">
       <DependentUpon>MapLoadControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="MoreInfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MoreInfoForm.Designer.cs">
+      <DependentUpon>MoreInfoForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="ExceptionForm.resx">
       <DependentUpon>ExceptionForm.cs</DependentUpon>
@@ -118,6 +124,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MapLoadControl.resx">
       <DependentUpon>MapLoadControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MoreInfoForm.resx">
+      <DependentUpon>MoreInfoForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

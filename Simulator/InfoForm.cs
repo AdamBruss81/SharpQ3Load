@@ -29,5 +29,10 @@ namespace simulator
 				Close();
 			}
 		}
+
+		private void btnMoreInfo_Click(object sender, EventArgs e)
+		{
+			new MoreInfoForm().ShowDialog(this);
+		}
 	}
 }

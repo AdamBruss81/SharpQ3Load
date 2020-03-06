@@ -35,10 +35,6 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="gl_font, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\basicfont\gl_font.dll</HintPath>
-    </Reference>
     <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\ziplib\ICSharpCode.SharpZipLib.dll</HintPath>
@@ -47,11 +43,6 @@
     <Reference Include="nunit.framework, Version=2.5.3.9345, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\nunit\dist\framework\nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="Observer, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86" />
-    <Reference Include="OpenGLControlModded, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\utilities\OpenGLControlModded.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -76,10 +67,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\Tao\Tao.Platform.Windows.dll</HintPath>
     </Reference>
-    <Reference Include="utilities, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\utilities\utilities.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Engine.cs" />
@@ -102,8 +89,28 @@
     <Compile Include="Figure\Shape.cs" />
     <Compile Include="Figure\Texture\Texture.cs" />
     <Compile Include="Spectator.cs" />
-    <Compile Include="Test\EngineTest.cs" />
     <Compile Include="Viewpoint.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\basicfont\gl_font.csproj">
+      <Project>{75afee27-e96e-422c-92b9-f743b1aabc7a}</Project>
+      <Name>gl_font</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Observer\Observer.csproj">
+      <Project>{db83a30c-071e-410e-b693-0ff47cee4ba8}</Project>
+      <Name>Observer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\utilities\OpenGLControlModded\OpenGLControlModded.csproj">
+      <Project>{c51323fb-26ce-4bdf-a1b9-b9ec9e7fccdb}</Project>
+      <Name>OpenGLControlModded</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\utilities\utilities.csproj">
+      <Project>{f024422f-19a4-4987-9672-12849566b5e3}</Project>
+      <Name>utilities</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Test\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

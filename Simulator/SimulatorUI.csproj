@@ -59,10 +59,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\Engine.dll</HintPath>
     </Reference>
-    <Reference Include="gl_font, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\basicfont\gl_font.dll</HintPath>
-    </Reference>
     <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\ziplib\ICSharpCode.SharpZipLib.dll</HintPath>
@@ -70,10 +66,6 @@
     <Reference Include="Observer, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\Observer.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenGLControlModded, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\utilities\OpenGLControlModded.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -94,10 +86,6 @@
     <Reference Include="Tao.Platform.Windows, Version=1.0.0.5, Culture=neutral, PublicKeyToken=701104b2da67a104, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\Tao\Tao.Platform.Windows.dll</HintPath>
-    </Reference>
-    <Reference Include="utilities, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\References\utilities\utilities.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -197,6 +185,20 @@
     <Content Include="icon.ico" />
     <Content Include="Resources\movement1.bmp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\basicfont\gl_font.csproj">
+      <Project>{75afee27-e96e-422c-92b9-f743b1aabc7a}</Project>
+      <Name>gl_font</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\utilities\OpenGLControlModded\OpenGLControlModded.csproj">
+      <Project>{c51323fb-26ce-4bdf-a1b9-b9ec9e7fccdb}</Project>
+      <Name>OpenGLControlModded</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\utilities\utilities.csproj">
+      <Project>{f024422f-19a4-4987-9672-12849566b5e3}</Project>
+      <Name>utilities</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -208,7 +210,7 @@
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(SolutionDir)Resources\sounds_textures_other.zip" "$(TargetDir)" /Y
 xcopy "$(SolutionDir)Resources\maps.zip" "$(TargetDir)" /Y
-xcopy "$(SolutionDir)References\freeglut.dll" "$(TargetDir)" /Y</PostBuildEvent>
+xcopy "$(SolutionDir)References\tao\freeglut.dll" "$(TargetDir)" /Y</PostBuildEvent>
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>

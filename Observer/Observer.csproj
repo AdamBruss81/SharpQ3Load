@@ -52,7 +52,6 @@
     <Compile Include="Observer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Subject.cs" />
-    <Compile Include="Test\ObserverTest.cs" />
     <Compile Include="Test\Signaler.cs" />
     <Compile Include="Test\Watcher.cs" />
   </ItemGroup>

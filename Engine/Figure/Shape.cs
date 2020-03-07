@@ -126,6 +126,7 @@ namespace engine
 				}
 				LOGGER.Debug("Allocating map face");
 				pFace = new Face(faceVerts, faceTexCoords, faceVertColors, new Color(240, 0, 0), new Color(100, 0, 0), lFaceReferences.Count);
+                pFace.SetParentShape(this);
 				m_lFaces.Add(pFace);
 				lFaceReferences.Add(pFace);
 				LOGGER.Debug("Added a face to the figure's map face references. Count = " + lFaceReferences.Count.ToString());
@@ -138,6 +139,8 @@ namespace engine
 				faceVertColors.Clear();
 			}
 		}
+
+        public List<Texture> GetTextures() { return m_lTextures; }
 
 		/// <summary>
 		/// Shows this shape. Loop over texture objects and set same number

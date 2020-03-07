@@ -15,5 +15,10 @@ namespace simulator
         {
             InitializeComponent();
         }
+
+        public void AddText(string s)
+        {
+            rtbMoreInfo.AppendText(s);
+        }
     }
 }

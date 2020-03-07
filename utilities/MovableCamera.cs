@@ -131,19 +131,6 @@ namespace utilities
 			}
 		}
 
-		/// <summary>
-		/// Move along given vector
-		/// </summary>
-		/// <param name="normal">the direction to move along</param>
-		public void MoveAlongVector(D3Vect d3MoveVec)
-		{
-			m_vCamPos[0] += d3MoveVec[0];
-			m_vCamPos[1] += d3MoveVec[1];
-			m_vCamPos[2] += d3MoveVec[2];
-
-			RestoreOrientation();
-		}
-
 		public void MoveToPosition(D3Vect d3Position)
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;

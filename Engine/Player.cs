@@ -164,7 +164,13 @@ namespace engine
 						m_fonter.PrintTopLeft("Ray Intersections " + m_lRayIntersectionInfos.Count.ToString(), m_GControl.Width, m_GControl.Height, nLineCounter++);
 					}
 				}
-				sRayIntersectedFaces += "Index " + i.Face.Index.ToString() + ", Normal " + i.Face.GetNewNormal.ToString();
+                string sTextureInfo = "";
+                if(i.Face.GetParentShape().GetTextures().Count > 0)
+                {
+                    sTextureInfo = i.Face.GetParentShape().GetTextures()[0].GetPath();
+                }
+                sRayIntersectedFaces += "Index " + i.Face.Index.ToString() + ", Normal " + i.Face.GetNewNormal.ToString();
+                if (!string.IsNullOrEmpty(sTextureInfo)) sRayIntersectedFaces += ", Path " + sTextureInfo; 
 				nCounter++;
 				if (nCounter < m_lRayIntersectionInfos.Count) 
 					sRayIntersectedFaces += "\n";
@@ -202,7 +208,7 @@ namespace engine
 
 			switch (e.KeyData)
 			{
-				case Keys.L:
+				case Keys.K:
 					m_dynamicFigList.Clear(false);
 					m_lRayIntersectionInfos.Clear();
 					m_ray.Clear();
@@ -256,14 +262,14 @@ namespace engine
 			m_lRayIntersectionInfos.Clear();
 
 			double prevphi = Cam.PHI_RAD;
-			Cam.PHI_RAD = prevphi + 90 / GLB.RadToDeg;
+			Cam.PHI_RAD = prevphi + 90.0 / GLB.RadToDeg;
 			m_ray.Vertice1 = m_cam.GetLookAtNew;
 			Cam.PHI_RAD = prevphi;
 			m_ray.Vertice2 = m_ray.Vertice1 + ((m_cam.GetLookAtNew - m_cam.Position) * 1000);
 			m_lStaticFigList[0].IntersectionTest(m_ray, m_lRayIntersectionInfos);
 			
-			foreach(IntersectionInfo i in m_lRayIntersectionInfos) {
-				i.DistanceFromCam = (m_cam.Position - i.Intersection).Length;
+			foreach(IntersectionInfo intersectionInfo in m_lRayIntersectionInfos) {
+				intersectionInfo.DistanceFromCam = (m_cam.Position - intersectionInfo.Intersection).Length;
 			}
 			m_lRayIntersectionInfos.Sort(CompareIntersectionInfos);
 		}

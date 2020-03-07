@@ -41,11 +41,33 @@ namespace engine
 			m_map = map;
         }
 
+        public string GetPath() { return m_sInternalZipPath; }
+
 		public void Delete()
 		{
 			Gl.glDeleteTextures(1, m_pnTextures);
 			Gl.glDeleteLists(m_nBindTexture, 1);
 		}
+
+        private bool FindMissingTexture(ref string sFullPath, string sURL, string sSearchString, string sReplacer)
+        {
+            if (sFullPath.Contains(sSearchString))
+            {
+                if (sReplacer.Contains("/"))
+                {
+                    sURL = Path.GetDirectoryName(sURL);
+                    sURL = Path.GetDirectoryName(sURL) + "\\" + sReplacer;
+                }
+                else
+                {
+                    sURL = Path.GetDirectoryName(sURL) + "\\" + sReplacer;
+                }
+                sURL = sURL.Replace("\\", "/");
+                sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
+                return true;
+            }
+            return false;
+        }
 
         public void SetTexture(string sURL)
         {
@@ -72,8 +94,27 @@ namespace engine
 				}
 				else
 				{
-					LOGGER.Warning("Missing texture " + sURL + ". Looked here " + sFullPath);
-					sFullPath = m_zipper.ExtractSoundTextureOther(g_sDefaultTexture);
+                    // try looking somewhere else
+
+                    // original map that needed these fixes : 
+                    // Fatal Instinct
+                    bool b = FindMissingTexture(ref sFullPath, sURL, "toxicsky", "toxicsky.jpg");
+                    if(!b) b = FindMissingTexture(ref sFullPath, sURL, "blacksky", "blacksky.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "killblock_i4", "killblock_i4.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "flame1side", "flame1side.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "ironcrosslt2", "ironcrosslt2.jpg");
+
+                    // Introduction
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "sphere", "spherex.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "patch10shiny", "patch10.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "mirror2", "mirror1.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "border11c", "base_trim/border11c.jpg");
+
+                    if (!File.Exists(sFullPath))
+                    {
+                        LOGGER.Warning("Missing texture " + sURL + ". Looked here " + sFullPath);
+                        sFullPath = m_zipper.ExtractSoundTextureOther(g_sDefaultTexture);
+                    }
 				}
 			}
 
@@ -106,7 +147,7 @@ namespace engine
 
         public void bindMe()
         {
-			Gl.glCallList(m_nBindTexture);
+		    Gl.glCallList(m_nBindTexture);
         }
 
 		public void InitializeLists()

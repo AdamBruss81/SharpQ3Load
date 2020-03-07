@@ -28,6 +28,7 @@ namespace engine
 		List<D3Vect> m_lVertices;
 		List<D3Vect> m_lVertColors;
 		FaceEdges m_edges = new FaceEdges();
+        Shape m_pParentShape = null;
 
 		D3Vect m_d3IntersectRay = new D3Vect(); // memory placeholder
 		D3Vect m_d3Intersection = new D3Vect(); // memory placeholder
@@ -119,6 +120,16 @@ namespace engine
 					RenderedThisPass = true;
 			}
 		}
+
+        public void SetParentShape(Shape s)
+        {
+            m_pParentShape = s;
+        }
+
+        public Shape GetParentShape()
+        {
+            return m_pParentShape;
+        }
 
 		public bool DrawSolidColor
 		{
@@ -348,30 +359,39 @@ namespace engine
 		/// </summary>
 		public void Draw(Engine.EGraphicsMode mode, ref int nRendered)
 		{
-			if (DrawSolidColor)
-				Gl.glCallList(m_nSolidColorDrawList);
-			else if (mode == Engine.EGraphicsMode.WIREFRAME)
-				Gl.glCallList(m_nWireframeDrawList);
-			else if (mode == Engine.EGraphicsMode.MULTI_TEXTURE_WHITE)
-			{
-				if (m_TextureType == Shape.ETextureType.MULTI)
-					Gl.glCallList(m_TwoTextureFaceDrawList);
-				else if (m_TextureType == Shape.ETextureType.SINGLE)
-					Gl.glCallList(m_nOneTextureFaceDrawList);
-			}
-			else if (mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR)
-				Gl.glCallList(m_nOneTextureFaceDrawList);
-			else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
-				Gl.glCallList(m_nOneTextureFaceDrawListWhite);
+            bool bDraw = true;
+            if(m_pParentShape.GetTextures().Count > 0 && m_pParentShape.GetTextures()[0].GetPath().Contains("fog")) // don't render fog for now.
+            {
+                bDraw = false;
+            }
 
-			if (STATE.DebuggingMode && STATE.DrawFaceNormals)
-			{
-				Gl.glCallList(m_nDrawNormalList);
-			}
+            if (bDraw)
+            {
+                if (DrawSolidColor)
+                    Gl.glCallList(m_nSolidColorDrawList);
+                else if (mode == Engine.EGraphicsMode.WIREFRAME)
+                    Gl.glCallList(m_nWireframeDrawList);
+                else if (mode == Engine.EGraphicsMode.MULTI_TEXTURE_WHITE)
+                {
+                    if (m_TextureType == Shape.ETextureType.MULTI)
+                        Gl.glCallList(m_TwoTextureFaceDrawList);
+                    else if (m_TextureType == Shape.ETextureType.SINGLE)
+                        Gl.glCallList(m_nOneTextureFaceDrawList);
+                }
+                else if (mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR)
+                    Gl.glCallList(m_nOneTextureFaceDrawList);
+                else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
+                    Gl.glCallList(m_nOneTextureFaceDrawListWhite);
 
-			nRendered++;
+                if (STATE.DebuggingMode && STATE.DrawFaceNormals)
+                {
+                    Gl.glCallList(m_nDrawNormalList);
+                }
 
-			RenderedThisPass = true;
+                nRendered++;
+            }
+
+            RenderedThisPass = true;            
 		}
 
 		/// <summary>

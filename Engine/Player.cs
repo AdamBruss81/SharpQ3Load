@@ -167,7 +167,10 @@ namespace engine
                 string sTextureInfo = "";
                 if(i.Face.GetParentShape().GetTextures().Count > 0)
                 {
-                    sTextureInfo = i.Face.GetParentShape().GetTextures()[0].GetPath();
+                    if(i.Face.GetParentShape().GetTextures().Count > 1)
+                        sTextureInfo = i.Face.GetParentShape().GetTextures()[1].GetPath();
+                    else
+                        sTextureInfo = i.Face.GetParentShape().GetTextures()[0].GetPath();
                 }
                 sRayIntersectedFaces += "Index " + i.Face.Index.ToString() + ", Normal " + i.Face.GetNewNormal.ToString();
                 if (!string.IsNullOrEmpty(sTextureInfo)) sRayIntersectedFaces += ", Path " + sTextureInfo; 

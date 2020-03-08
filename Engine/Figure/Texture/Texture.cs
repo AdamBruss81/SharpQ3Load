@@ -103,12 +103,24 @@ namespace engine
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "killblock_i4", "killblock_i4.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "flame1side", "flame1side.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "ironcrosslt2", "ironcrosslt2.jpg");
-
+                     
                     // Introduction
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "sphere", "spherex.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "patch10shiny", "patch10.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "mirror2", "mirror1.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "border11c", "base_trim/border11c.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "q3tourneyscreen", "q3tourney1.jpg"); // there are five of these q3tourney. they are supposed to cycle on this texture I believe
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "glass01", "glass_frame.jpg"); // not sure about this one. see how it looks.
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "proto_lightred2", "proto_lightred.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "teslacoil3", "tesla1.jpg"); // shot in the dark. wel'll see how it looks 
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "teslacoil", "tesla1b.jpg"); // shot in the dark. wel'll see how it looks. this line needs to be before previous for search purposes
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "gothic_light3_2K", "gothic_light3.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "comp3b_dark", "comp3b.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "bluemetal2_shiny_trans", "bluemetal2_shiny.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "proto_light_2k", "proto_light2.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
+
 
                     if (!File.Exists(sFullPath))
                     {

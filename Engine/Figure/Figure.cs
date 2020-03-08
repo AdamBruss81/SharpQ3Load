@@ -263,7 +263,7 @@ namespace engine
 		/// <param name="sr">stream to map file</param>
 		/// <returns>true if successfully read texture data for a shape
 		/// false means there are no more valid shapes to read</returns>
-		bool Read(List<Texture> lTextureObjects)
+		bool Read(List<Texture> lTextureObjects, List<Texture> lSFXTextures)
 		{
 			string sKey, sURL, sDEForUSE = "";
 			string[] textureTokens = null;
@@ -297,6 +297,18 @@ namespace engine
 						m_textureObjects.Add(sKey, new Texture(sURL, m_map));
 						LOGGER.Debug("Add texture " + sKey);
 						lTextureObjects.Add(m_textureObjects[sKey]);
+
+                        // special case for flame texture. make this more modular later
+                        if(sURL.Contains("flame1side"))
+                        {
+                            for(int i = 1; i < 9; i++)
+                            {
+                                string sNewUrl = System.IO.Path.GetDirectoryName(sURL);
+                                sNewUrl += "/flame" + System.Convert.ToString(i) + ".jpg";
+                                sNewUrl = sNewUrl.Replace("\\", "/");
+                                lSFXTextures.Add(new Texture(sNewUrl, m_map));
+                            }
+                        }
 					}
 					m_srMapReader.ReadLine(); // eat close bracket line
 					m_nMapFileLineCounter++;
@@ -369,15 +381,17 @@ namespace engine
 			m_lMapFaceReferences = new List<Face>();
 
 			List<Texture> lShapeTextureObjects = new List<Texture>();
-			m_srMapReader = new StreamReader(m_map.GetMapPathOnDisk);
-			while (Read(lShapeTextureObjects))
+            List<Texture> lShapeSFXTextures = new List<Texture>();
+            m_srMapReader = new StreamReader(m_map.GetMapPathOnDisk);
+			while (Read(lShapeTextureObjects, lShapeSFXTextures))
 			{
 				Shape s = new Shape();
 				LOGGER.Debug("Create shape");
 				Subscribe(s);
-				s.ReadMain(lShapeTextureObjects, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
+				s.ReadMain(lShapeTextureObjects, lShapeSFXTextures, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
 				Notify((int)ESignals.SHAPE_READ);
 				m_lShapes.Add(s);
+                lShapeSFXTextures.Clear();
 				lShapeTextureObjects.Clear();
 			}
 

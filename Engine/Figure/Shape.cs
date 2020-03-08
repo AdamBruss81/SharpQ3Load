@@ -12,6 +12,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics;
 using utilities;
 using Tao.OpenGl;
 using obsvr;
@@ -27,17 +28,22 @@ namespace engine
 		public enum ETextureType { NONE, SINGLE, MULTI };
 
 		List<Texture> m_lTextures;
+        List<Texture> m_lSFXTextures; // for example for flames 
         List<Face> m_lFaces = new List<Face>();
 		List<List<int>> m_lCoordinateIndexes = new List<List<int>>();
         List<D3Vect> m_lMeshCoordinates = new List<D3Vect>();
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
 
+        Stopwatch m_swRenderHelper = new Stopwatch();
+
 		const string m_sVerticeColorHeader = "color Color { color [";
 		const string m_sTextureCoordinatesHeader = "TextureCoordinate { point [";
 		const string m_sChannelOneTextureCoordinatesHeader = "texCoord  TextureCoordinate { point [";
 		const string m_sMeshCoordinatesHeader = "coord Coordinate { point [";
 		const string m_sCoordinateIndexHeader = "coordIndex [";
+
+        int m_nFlameCounter = -1;
 
 		ETextureType m_TextureType;
 
@@ -59,15 +65,20 @@ namespace engine
 			{
 				t.InitializeLists();
 			}
-			foreach (Face f in m_lFaces)
+            foreach (Texture t in m_lSFXTextures)
+            {
+                t.InitializeLists();
+            }
+            foreach (Face f in m_lFaces)
 			{
 				f.InitializeLists();
 			}
 		}
 
-		public void ReadMain(List<Texture> lTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
+		public void ReadMain(List<Texture> lTextures, List<Texture> lSFXTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
 		{
 			m_lTextures = new List<Texture>(lTextures);
+            m_lSFXTextures = new List<Texture>(lSFXTextures);
 			m_TextureType = lTextures.Count == 2 ? Shape.ETextureType.MULTI : Shape.ETextureType.SINGLE;
 
 			if (Read(sr, ref nCounter))
@@ -93,9 +104,9 @@ namespace engine
 		{
 			if (m_TextureType == ETextureType.MULTI)
 			{
-				Gl.glActiveTexture(Gl.GL_TEXTURE0);
-				Gl.glEnable(Gl.GL_TEXTURE_2D);
-				m_lTextures[1].bindMe();
+                Gl.glActiveTexture(Gl.GL_TEXTURE0);
+                Gl.glEnable(Gl.GL_TEXTURE_2D);
+                m_lTextures[1].bindMe();
 			}
 			else if (m_TextureType == ETextureType.SINGLE) 
 			{
@@ -218,7 +229,26 @@ namespace engine
 				Gl.glActiveTexture(Gl.GL_TEXTURE0);
 				Gl.glEnable(Gl.GL_TEXTURE_2D);
 
-				if (m_TextureType == ETextureType.MULTI)
+                if(m_lSFXTextures.Count > 0)
+                {
+                    if (m_nFlameCounter == -1)
+                    {
+                        m_nFlameCounter = 0;
+                        m_swRenderHelper.Start();
+                    }
+                    else
+                    {
+                        if(m_swRenderHelper.ElapsedMilliseconds >= 100)
+                        {
+                            m_nFlameCounter++;
+                            if (m_nFlameCounter == 8) m_nFlameCounter = 0;
+                            m_swRenderHelper.Restart();
+                        }
+                    }
+
+                    m_lSFXTextures[m_nFlameCounter].bindMe();                                                         
+                }
+				else if (m_TextureType == ETextureType.MULTI)
 				{					
 					m_lTextures[1].bindMe();
 				}

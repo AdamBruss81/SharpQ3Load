@@ -41,13 +41,12 @@ namespace simulator
 		private IntPtr m_mainDC = IntPtr.Zero;
 		private IntPtr m_mainRC = IntPtr.Zero;
         private Stopwatch m_swFramerate = new Stopwatch();
+        private Stopwatch m_swDelayMusicStart = new Stopwatch();
+        private SoundManager m_SoundManager = new SoundManager();
         private int m_nFrameCounter = 0;
         private double m_dElapsedSecondsShowScene = 0.0;
 
-		string m_sMapLoadSoundPath = "";
-
-		private OpenGLControlModded.simpleOpenGlControlEx m_openGLControl;
-		System.Media.SoundPlayer m_soundplayer = null;
+		private OpenGLControlModded.simpleOpenGlControlEx m_openGLControl;		
 		private MapChooserForm m_menu;
 
 		Point m_CursorPoint = new Point();
@@ -87,9 +86,6 @@ namespace simulator
 			InitializeComponent();
 
 			m_menu = new MapChooserForm();
-
-			m_sMapLoadSoundPath = m_zipper.ExtractSoundTextureOther("Sounds/telein.wav");
-			m_soundplayer = new System.Media.SoundPlayer(m_sMapLoadSoundPath);
 
 			m_openGLControl.ProcessKey += new KeyEventHandler(m_openGLControl_ProcessKey);
 
@@ -242,9 +238,7 @@ namespace simulator
 
 					if (m_Engine != null) m_Engine.Delete();
 					if (m_fonter != null) m_fonter.Delete();
-
-					if (m_sMapLoadSoundPath != "") File.Delete(m_sMapLoadSoundPath);
-
+ 
 					Close();
 				}
 				else if (e.KeyData == Keys.H)
@@ -421,7 +415,9 @@ namespace simulator
 			m_bRunning = true;
 			timerRedrawer.Start();
 
-			m_soundplayer.Play();
+            m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
+            m_swDelayMusicStart.Reset(); // it could be going if you open a map right after opening a different one
+            m_swDelayMusicStart.Start();
 		}
 
 		/// <summary>
@@ -471,7 +467,10 @@ namespace simulator
 
 			SetCursor(true, false);
 
+            m_SoundManager.Stop();
+
 			m_menu.ShowDialog();
+
 			MapInfo map = m_menu.GetChosenMap;
 			if (map != null && map.ExtractedFromZip)
 				map.GetMapPathOnDisk = m_zipper.ExtractMap(map.GetPath);
@@ -550,6 +549,7 @@ namespace simulator
 				// start timer for opengl refreshing
 				m_bRunning = true;
 				timerRedrawer.Start();
+                m_swDelayMusicStart.Start();
 			}
 			// no map currently chosen
 			else
@@ -689,6 +689,12 @@ namespace simulator
             m_swFramerate.Reset();
 
 			m_fonter.PrintLowerRight(GetRecentKey.ToString(), m_openGLControl.Width, 0);
+
+            if(m_swDelayMusicStart.IsRunning && m_swDelayMusicStart.ElapsedMilliseconds >= 5000)
+            {
+                m_swDelayMusicStart.Reset();
+                m_SoundManager.PlayRandomSong();
+            }
 		}
 
 		private void StopAllTimers()

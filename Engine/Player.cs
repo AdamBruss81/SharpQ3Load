@@ -35,6 +35,7 @@ namespace engine
 		private List<IntersectionInfo> m_lRayIntersectionInfos = new List<IntersectionInfo>();
 		IntersectionInfo m_Intersection = new IntersectionInfo();
 		double[] m_pvUtilMatrix = new double[16];
+        SoundManager m_SoundManager = new SoundManager();
 
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 
@@ -248,10 +249,12 @@ namespace engine
 			{
 				case EProjectiles.AXE:
 					m_dynamicFigList.Add(new Axe(m_dynamicFigList.Count(), m_cam, m_figInitialAxe));
+                    m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
 					break;
 				case EProjectiles.NINJASTAR:
 					m_dynamicFigList.Add(new NinjaStar(m_dynamicFigList.Count(), m_cam, m_figInitialStar));
-					break;
+                    m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
+                    break;
 			}
 		}
 

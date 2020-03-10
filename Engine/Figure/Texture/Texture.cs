@@ -121,7 +121,6 @@ namespace engine
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
 
-
                     if (!File.Exists(sFullPath))
                     {
                         LOGGER.Warning("Missing texture " + sURL + ". Looked here " + sFullPath);

@@ -238,6 +238,8 @@ namespace simulator
 
 					if (m_Engine != null) m_Engine.Delete();
 					if (m_fonter != null) m_fonter.Delete();
+
+                    m_SoundManager.Dispose();
  
 					Close();
 				}
@@ -415,6 +417,7 @@ namespace simulator
 			m_bRunning = true;
 			timerRedrawer.Start();
 
+            //m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
             m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
             m_swDelayMusicStart.Reset(); // it could be going if you open a map right after opening a different one
             m_swDelayMusicStart.Start();
@@ -517,7 +520,7 @@ namespace simulator
 
 				m_Engine = null;
 
-				m_Engine = new Player(m_openGLControl);
+				m_Engine = new Player(m_openGLControl, m_SoundManager);
 
 				BackgroundWorker bw = new BackgroundWorker();
 				bw.DoWork += bw_LoadMap;

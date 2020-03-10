@@ -23,10 +23,13 @@ namespace engine
             return sPath;
 		}
 
-		public string ExtractSoundTextureOther(string sInternalPath)
-		{
-			zipper.ExtractZip(PATHS.GetSoundsTexturesOtherZipFile, PATHS.GetTempDir, sInternalPath);
-			string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
+        public string ExtractSoundTextureOther(string sInternalPath)
+        {
+            string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
+            if (!File.Exists(sFullPathToExtractedFile))
+            {
+                zipper.ExtractZip(PATHS.GetSoundsTexturesOtherZipFile, PATHS.GetTempDir, sInternalPath);
+            }
 			return sFullPathToExtractedFile;
 		}
 

@@ -35,13 +35,13 @@ namespace engine
 		private List<IntersectionInfo> m_lRayIntersectionInfos = new List<IntersectionInfo>();
 		IntersectionInfo m_Intersection = new IntersectionInfo();
 		double[] m_pvUtilMatrix = new double[16];
-        SoundManager m_SoundManager = new SoundManager();
+        SoundManager m_SoundManager = null;
 
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 
 		public enum EProjectiles { AXE, NINJASTAR };
 
-		public Player(OpenGLControlModded.simpleOpenGlControlEx win) : base(win) { }
+		public Player(OpenGLControlModded.simpleOpenGlControlEx win, SoundManager sm) : base(win) { m_SoundManager = sm; }
 
 		/// <summary>
 		/// Copy driver to this
@@ -249,10 +249,12 @@ namespace engine
 			{
 				case EProjectiles.AXE:
 					m_dynamicFigList.Add(new Axe(m_dynamicFigList.Count(), m_cam, m_figInitialAxe));
+                    //m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
                     m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
-					break;
+                    break;
 				case EProjectiles.NINJASTAR:
 					m_dynamicFigList.Add(new NinjaStar(m_dynamicFigList.Count(), m_cam, m_figInitialStar));
+                    //m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
                     m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
                     break;
 			}

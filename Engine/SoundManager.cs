@@ -22,7 +22,7 @@ namespace engine
         public SoundManager()
         {
             outputDevice = new WaveOutEvent();
-            //outputDevice.PlaybackStopped += OutputDevice_PlaybackStopped;
+            outputDevice.PlaybackStopped += OutputDevice_PlaybackStopped;
 
             mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(22050, 2));
 
@@ -44,23 +44,19 @@ namespace engine
             m_dictSongs[ESongs.FLA22K_03] = "Sounds/music/fla22k_03.wav";
             m_dictSongs[ESongs.FLA22K_06] = "Sounds/music/fla22k_06.wav";
             m_dictSongs[ESongs.FLA22K_05] = "Sounds/music/fla22k_05.wav";
-            m_dictSongs[ESongs.FLA22K_04] = "Sounds/music/fla22k_04.wav";
+            m_dictSongs[ESongs.FLA22K_04] = "Sounds/music/fla22k_04_loop.wav";
             m_dictSongs[ESongs.FLA22K_02] = "Sounds/music/fla22k_02.wav";
         }
 
         private void OutputDevice_PlaybackStopped(object sender, StoppedEventArgs e)
         {
-            int stop = 0;
         }
 
         private void PlaySound(string sPath)
         {
-            var input = new AudioFileReader(sPath);
-            AddMixerInput(new AutoDisposeFileReader(input));
-        }
+            outputDevice.Play();
 
-        private void AddMixerInput(ISampleProvider input)
-        {
+            var input = new AudioFileReader(sPath);
             mixer.AddMixerInput(ConvertToRightChannelCount(input));
         }
 
@@ -92,12 +88,12 @@ namespace engine
             Array values = Enum.GetValues(typeof(ESongs));
             Random random = new Random();
             ESongs randomSong = (ESongs)values.GetValue(random.Next(values.Length));
-            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[randomSong]));
+            PlaySong(randomSong);
         }
 
         public void Stop()
         {
-            outputDevice.Stop();
+            mixer.RemoveAllMixerInputs();          
         }
 
         public void Dispose()

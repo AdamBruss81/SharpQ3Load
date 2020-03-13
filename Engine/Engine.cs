@@ -81,6 +81,8 @@ namespace engine
 
 		abstract public string GetGameMode();
 
+		virtual public void Fall() { }
+
 		public BasicFont Fonter
 		{
 			get { return m_fonter; }

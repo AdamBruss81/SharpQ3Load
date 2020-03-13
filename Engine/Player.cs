@@ -50,7 +50,7 @@ namespace engine
 		public Player(Engine driver):base(driver) 
 		{
 			InitializeProjectiles();
-		}
+		}		
 
 		override public string GetGameMode()
 		{
@@ -299,7 +299,7 @@ namespace engine
 		/// </summary>
 		/// <param name="d3MoveTo">target location to move to</param>
 		/// <param name="d3Position">current location of the MovableCamera</param>
-		private bool TryToMoveForward(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount)
+		private bool TryToMoveForward(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWall = true)
 		{
 			nMoveAttemptCount++;
 
@@ -315,7 +315,7 @@ namespace engine
 				else 
 					return true;
 			}
-			else
+			else if(bMoveAlongWall)
 			{
 				D3Vect normal = m_Intersection.Face.GetNewNormal;
 				D3Vect dcamfor = d3MoveTo - d3Position;
@@ -348,6 +348,10 @@ namespace engine
 				D3Vect d3NewMoveTo = new D3Vect(m_cam.Position + d3SlideVector);
 
 				return TryToMoveForward(d3NewMoveTo, d3Position, ref nMoveAttemptCount);
+			}
+			else
+			{
+				return false;
 			}
 		}
 
@@ -406,7 +410,15 @@ namespace engine
 			m_cam.RestoreOrientation();
 		}
 
-		public override void MouseMove(MouseEventArgs e, ref bool bPostOpen)
+        override public void Fall()
+        {
+            m_cam.TurnDown();
+            int nMoveAttemptCount = 0;
+            bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false);
+            m_cam.RestoreOrientation();
+        }
+
+        public override void MouseMove(MouseEventArgs e, ref bool bPostOpen)
 		{
 			MoveMovableCameraViaMouse(e, ref bPostOpen);
 		}

@@ -50,12 +50,11 @@ namespace engine
 
         private void OutputDevice_PlaybackStopped(object sender, StoppedEventArgs e)
         {
+            
         }
 
         private void PlaySound(string sPath)
         {
-            outputDevice.Play();
-
             var input = new AudioFileReader(sPath);
             mixer.AddMixerInput(ConvertToRightChannelCount(input));
         }
@@ -100,6 +99,8 @@ namespace engine
         {
             Stop();
             outputDevice.Dispose();
+
+            System.Threading.Thread.Sleep(1000);
         }
     }
 

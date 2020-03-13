@@ -358,9 +358,12 @@ namespace engine
         }
 
         override public bool MoveForward()
-		{
+		{			
+			m_cam.LookStraight();
 			int nMoveAttemptCount = 0;
-			return TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
+			bool bSuccess = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
+			m_cam.RestoreOrientation();
+			return bSuccess;
 		}
 
 		override public void MoveBackward()

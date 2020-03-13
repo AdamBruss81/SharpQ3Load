@@ -95,6 +95,7 @@ namespace simulator
 			timerStrafeRight.Interval = MOVEMENT_INTERVAL;
 			timerMoveUp.Interval = MOVEMENT_INTERVAL;
 			timerMoveDown.Interval = MOVEMENT_INTERVAL;
+			timerFallChecker.Interval = MOVEMENT_INTERVAL;
 			timerRedrawer.Interval = 8;
 
 			SetViewMode(true);
@@ -415,7 +416,7 @@ namespace simulator
 			resetMouseCursor();
 
 			m_bRunning = true;
-			timerRedrawer.Start();
+			StartStopRedrawer(true);
 
             //m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
             m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
@@ -551,7 +552,7 @@ namespace simulator
 
 				// start timer for opengl refreshing
 				m_bRunning = true;
-				timerRedrawer.Start();
+				StartStopRedrawer(true);
                 m_swDelayMusicStart.Start();
 			}
 			// no map currently chosen
@@ -632,84 +633,7 @@ namespace simulator
 					timerMoveUp.Start();
 				}
 			}
-		}
-
-		private void timerLeftMouse_Tick(object sender, EventArgs e)
-		{
-			m_Engine.LeftMouseDown();
-		}
-
-		private void timerMoveForward_Tick(object sender, EventArgs e)
-		{
-			m_Engine.MoveForward();
-		}
-
-		private void timerMoveBackward_Tick(object sender, EventArgs e)
-		{
-			m_Engine.MoveBackward();
-		}
-
-		private void timerStrafeLeft_Tick(object sender, EventArgs e)
-		{
-			m_Engine.MoveLeft();
-		}
-
-		private void timerStrafeRight_Tick(object sender, EventArgs e)
-		{
-			m_Engine.MoveRight();
-		}
-
-		private void timerMoveUp_Tick(object sender, EventArgs e)
-		{
-			m_Engine.MoveUp();
-		}
-
-		private void timerMoveDown_Tick(object sender, EventArgs e)
-		{
-			m_Engine.MoveDown();
-		}
-
-		private void timerRedrawer_Tick(object sender, EventArgs e)
-		{
-			resetMouseCursor();
-
-            m_nFrameCounter++;
-
-            m_swFramerate.Start();
-
-            m_Engine.showScene(GetRecentKey);
-
-            m_swFramerate.Stop();
-
-            if (m_nFrameCounter % 10 == 0)
-            {
-                m_dElapsedSecondsShowScene = Math.Round(1.0 / m_swFramerate.Elapsed.TotalSeconds);
-                m_nFrameCounter = 0;
-            }
-
-            m_fonter.PrintLowerRight(m_dElapsedSecondsShowScene.ToString(), m_openGLControl.Width, 1);
-
-            m_swFramerate.Reset();
-
-			m_fonter.PrintLowerRight(GetRecentKey.ToString(), m_openGLControl.Width, 0);
-
-            if(m_swDelayMusicStart.IsRunning && m_swDelayMusicStart.ElapsedMilliseconds >= 5000)
-            {
-                m_swDelayMusicStart.Reset();
-                m_SoundManager.PlayRandomSong();
-            }
-		}
-
-		private void StopAllTimers()
-		{
-			timerRedrawer.Stop();
-			timerMoveForward.Stop();
-			timerMoveBackward.Stop();
-			timerStrafeLeft.Stop();
-			timerStrafeRight.Stop();
-			timerMoveUp.Stop();
-			timerMoveDown.Stop();
-		}
+		}		
 
 		// Centers this cursor to middle of openGlControl
 		private void resetMouseCursor()
@@ -726,7 +650,7 @@ namespace simulator
 				m_bPaused = false;
 				m_bRunning = true;
 
-				timerRedrawer.Start();
+				StartStopRedrawer(true);
 			}
 			else if (m_Engine == null)
 			{
@@ -750,6 +674,6 @@ namespace simulator
 		public Keys GetRecentKey
 		{
 			get { return m_RecentKey; }
-		}
+		}		
 	}
 }

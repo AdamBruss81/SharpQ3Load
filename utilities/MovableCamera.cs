@@ -187,16 +187,22 @@ namespace utilities
 			m_UtilityStack.Push(m_dPhi);
 		}
 
-		// Move backwards:
-		// Store calculation angles m_dPhi and m_theta on a stack.
-		// Adjust m_dPhi and m_theta to point camera directly behind where it was just pointing
-		// Now move in that direction
-		// Put m_theta and m_dPhi to previous positions looking forward
-		public void TurnBack()
+        public void LookStraight()
+        {
+			PushOrientation();
+			m_dPhi = Math.PI / 2;
+		}
+
+        // Move backwards:
+        // Store calculation angles m_dPhi and m_theta on a stack.
+        // Adjust m_dPhi and m_theta to point camera directly behind where it was just pointing
+        // Now move in that direction
+        // Put m_theta and m_dPhi to previous positions looking forward
+        public void TurnBack()
 		{
 			PushOrientation();
 			m_dTheta = Math.PI + m_dTheta;
-			m_dPhi = Math.PI - m_dPhi;
+			m_dPhi = Math.PI / 2;
 		}
 
 		// Turn left along axis

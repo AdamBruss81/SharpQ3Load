@@ -93,7 +93,7 @@
     <Compile Include="InfoForm.Designer.cs">
       <DependentUpon>InfoForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="SimulatorForm\KeyFunctions.cs">
+    <Compile Include="SimulatorForm\KeyMouseFunctions.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main.cs" />

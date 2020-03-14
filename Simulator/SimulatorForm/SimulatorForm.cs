@@ -8,21 +8,16 @@
 //*
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
-
 using System;
 using System.Drawing;
-using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
-using System.Data;
-using System.IO;
 using System.Diagnostics;
 using Tao.OpenGl;
 using Tao.Platform.Windows;
 using Tao.FreeGlut;
-using utilities;
 using engine;
-using System.Threading;
 
 namespace simulator
 {
@@ -45,14 +40,14 @@ namespace simulator
         private SoundManager m_SoundManager = new SoundManager();
         private int m_nFrameCounter = 0;
         private double m_dElapsedSecondsShowScene = 0.0;
+		Dictionary<Keys, bool> m_dictKeyStates = new Dictionary<Keys, bool>();
+		Dictionary<MouseButtons, bool> m_dictMouseButtonStates = new Dictionary<MouseButtons, bool>();
 
 		private OpenGLControlModded.simpleOpenGlControlEx m_openGLControl;		
 		private MapChooserForm m_menu;
 
 		Point m_CursorPoint = new Point();
 		private Zipper m_zipper = new Zipper();
-
-		private const int MOVEMENT_INTERVAL = 10;
 
 		Keys m_RecentKey;
 
@@ -89,14 +84,7 @@ namespace simulator
 
 			m_openGLControl.ProcessKey += new KeyEventHandler(m_openGLControl_ProcessKey);
 
-			timerMoveForward.Interval = MOVEMENT_INTERVAL;
-			timerMoveBackward.Interval = MOVEMENT_INTERVAL;
-			timerStrafeLeft.Interval = MOVEMENT_INTERVAL;
-			timerStrafeRight.Interval = MOVEMENT_INTERVAL;
-			timerMoveUp.Interval = MOVEMENT_INTERVAL;
-			timerMoveDown.Interval = MOVEMENT_INTERVAL;
-			timerFallChecker.Interval = MOVEMENT_INTERVAL;
-			timerRedrawer.Interval = 8;
+			timerRedrawer.Interval = 10;
 
 			SetViewMode(true);
 		}
@@ -417,18 +405,6 @@ namespace simulator
 			Refresh();
 		}
 
-		private void m_openGLControl_MouseUp(object sender, MouseEventArgs e)
-		{
-			if (e.Button == MouseButtons.Left)
-			{
-				timerLeftMouse.Stop();
-			}
-			else if (e.Button == MouseButtons.Middle)
-			{
-				timerMoveUp.Stop();
-			}
-		}
-
 		/// <summary>
 		/// Get pointer to current opengl control window
 		/// </summary>
@@ -454,30 +430,7 @@ namespace simulator
 			{
 				m_Engine.MouseMove(e, ref m_bPostOpen);
 			}
-		}
-
-		// Create a bullet
-		// Move created bullet along rho
-		private void openGLControl_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
-		{
-			if (m_bRunning)
-			{
-				if (m_Engine.GetClass() == Engine.EEngineType.PLAYER && e.Button == MouseButtons.Left)
-				{
-					m_Engine.LeftMouseDown();
-					timerLeftMouse.Start();
-				}
-				else if (e.Button == MouseButtons.Left)
-					m_Engine.LeftMouseDown();
-				else if (e.Button == MouseButtons.Right)
-					m_Engine.RightMouseDown();
-				else if (e.Button == MouseButtons.Middle)
-				{
-					timerMoveDown.Stop();
-					timerMoveUp.Start();
-				}
-			}
-		}		
+		}			
 
 		// Centers this cursor to middle of openGlControl
 		private void resetMouseCursor()

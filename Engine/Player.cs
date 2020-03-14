@@ -12,9 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using gl_font;
 using Tao.OpenGl;
-using Tao.Platform.Windows;
 using utilities;
 using Tao.FreeGlut;
 using System.Diagnostics;
@@ -384,7 +382,7 @@ namespace engine
 			double dScale = 1.0;
 
 			// slower than 9.8 to account for fast timer tick
-			dScale = 6.0 * m_swFallTimer.ElapsedMilliseconds / 1000;
+			dScale = 5.0 * m_swFallTimer.ElapsedMilliseconds / 1000;
 
             return dScale;
 		}

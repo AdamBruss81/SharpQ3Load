@@ -3,47 +3,7 @@
 namespace simulator
 {
     public partial class SimulatorForm
-    {
-        private void timerLeftMouse_Tick(object sender, EventArgs e)
-        {
-            m_Engine.LeftMouseDown();
-        }
-
-        private void timerMoveForward_Tick(object sender, EventArgs e)
-        {
-            m_Engine.MoveForward();
-        }
-
-        private void timerMoveBackward_Tick(object sender, EventArgs e)
-        {
-            m_Engine.MoveBackward();
-        }
-
-        private void timerStrafeLeft_Tick(object sender, EventArgs e)
-        {
-            m_Engine.MoveLeft();
-        }
-
-        private void timerStrafeRight_Tick(object sender, EventArgs e)
-        {
-            m_Engine.MoveRight();
-        }
-
-        private void timerMoveUp_Tick(object sender, EventArgs e)
-        {
-            m_Engine.MoveUp();
-        }
-
-        private void timerMoveDown_Tick(object sender, EventArgs e)
-        {
-            m_Engine.MoveDown();
-        }
-
-        private void timerFallChecker_Tick(object sender, EventArgs e)
-        {
-            m_Engine.Fall();
-        }
-
+    {  
         private void timerRedrawer_Tick(object sender, EventArgs e)
         {
             resetMouseCursor();
@@ -51,6 +11,9 @@ namespace simulator
             m_nFrameCounter++;
 
             m_swFramerate.Start();
+
+            ProcessMouseButtons();
+            ProcessKeyStates();            
 
             m_Engine.showScene(GetRecentKey);
 
@@ -80,25 +43,16 @@ namespace simulator
             if (b)
             {
                 timerRedrawer.Start();
-                timerFallChecker.Start();
             }
             else
             {
                 timerRedrawer.Stop();
-                timerFallChecker.Stop();
             }
         }   
 
         private void StopAllTimers()
         {
-            StartStopRedrawer(false);
-            timerMoveForward.Stop();
-            timerMoveBackward.Stop();
-            timerStrafeLeft.Stop();
-            timerStrafeRight.Stop();
-            timerMoveUp.Stop();
-            timerMoveDown.Stop();
-            timerFallChecker.Stop();
+            StartStopRedrawer(false);          
         }
     }
 }

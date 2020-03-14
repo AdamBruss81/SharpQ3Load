@@ -17,6 +17,7 @@ using Tao.OpenGl;
 using Tao.Platform.Windows;
 using utilities;
 using Tao.FreeGlut;
+using System.Diagnostics;
 
 namespace engine
 {
@@ -36,6 +37,8 @@ namespace engine
 		IntersectionInfo m_Intersection = new IntersectionInfo();
 		double[] m_pvUtilMatrix = new double[16];
         SoundManager m_SoundManager = null;
+		private bool m_bFalling = false;
+		Stopwatch m_swFallTimer = new Stopwatch();
 
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 
@@ -51,6 +54,11 @@ namespace engine
 		{
 			InitializeProjectiles();
 		}		
+
+		public void SetSoundManager(SoundManager sm)
+		{
+			m_SoundManager = sm;
+		}
 
 		override public string GetGameMode()
 		{
@@ -308,7 +316,14 @@ namespace engine
 
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
-				m_cam.MoveToPosition(d3MoveTo);
+				double dFallScale = 1.0;
+				if(m_bFalling)
+				{
+					Debug.Assert(m_swFallTimer.IsRunning);
+
+					dFallScale = GetFallScale();
+				}
+				m_cam.MoveToPosition(d3MoveTo, !m_bFalling, dFallScale);
 
 				if (nMoveAttemptCount > 1)
 					return false;
@@ -355,7 +370,39 @@ namespace engine
 			}
 		}
 
-        private void WarpForward()
+		private double GetFallScale()
+		{
+			double dScale = 1.0;
+
+			if(m_swFallTimer.ElapsedMilliseconds <= 500)
+			{
+				dScale = 1.0;
+			}
+			else if(m_swFallTimer.ElapsedMilliseconds <= 1000)
+			{
+				dScale = 2.0;
+			}
+            else if (m_swFallTimer.ElapsedMilliseconds <= 1500)
+            {
+                dScale = 3.0;
+            }
+            else if (m_swFallTimer.ElapsedMilliseconds <= 2000)
+            {
+                dScale = 4.0;
+            }
+            else if (m_swFallTimer.ElapsedMilliseconds <= 2500)
+            {
+                dScale = 5.0;
+            }
+			else
+			{
+				dScale = 5.0;
+			}
+
+            return dScale;
+		}
+
+		private void WarpForward()
         {
             // to get through doors...
             m_cam.MoveForward(30.0);
@@ -415,6 +462,24 @@ namespace engine
             m_cam.TurnDown();
             int nMoveAttemptCount = 0;
             bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false);
+			if (bCanMove)
+			{
+				if (!m_bFalling)
+				{
+					Debug.Assert(!m_swFallTimer.IsRunning);
+					m_bFalling = true;					
+					m_swFallTimer.Start();
+				}
+			}
+			else
+			{
+				if (m_bFalling)
+				{
+					Debug.Assert(m_swFallTimer.IsRunning);
+					m_bFalling = false;
+					m_swFallTimer.Reset();
+				}
+			}
             m_cam.RestoreOrientation();
         }
 

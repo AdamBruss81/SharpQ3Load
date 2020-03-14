@@ -19,6 +19,8 @@ namespace engine
         private readonly IWavePlayer outputDevice;
         private readonly MixingSampleProvider mixer;
 
+        private bool m_bPlaybackStopped = false;
+
         public SoundManager()
         {
             outputDevice = new WaveOutEvent();
@@ -50,7 +52,12 @@ namespace engine
 
         private void OutputDevice_PlaybackStopped(object sender, StoppedEventArgs e)
         {
-            
+            m_bPlaybackStopped = true;
+        }
+
+        public bool GetPlaybackStopped()
+        {
+            return m_bPlaybackStopped;
         }
 
         private void PlaySound(string sPath)
@@ -98,9 +105,8 @@ namespace engine
         public void Dispose()
         {
             Stop();
+            outputDevice.Stop();
             outputDevice.Dispose();
-
-            System.Threading.Thread.Sleep(1000);
         }
     }
 

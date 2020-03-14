@@ -131,18 +131,25 @@ namespace utilities
 			}
 		}
 
-		public void MoveToPosition(D3Vect d3Position)
+		public void MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dFallScale)
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;
 
 			// if ctrl key down move at half speed
-			if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+			if (bAllowKeyBasedScaling)
 			{
-				d3Vector.Scale(5.0);
+				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+				{
+					d3Vector.Scale(5.0);
+				}
+				else if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+				{
+					d3Vector.Scale(0.4);
+				}
 			}
-			else if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+			else
 			{
-				d3Vector.Scale(0.4);
+				d3Vector.Scale(dFallScale);
 			}
 
 			m_vCamPos += d3Vector;
@@ -224,13 +231,13 @@ namespace utilities
 		public void TurnUp()
 		{
 			PushOrientation();
-			m_dPhi = m_dPhi - Math.PI / 2;
+			m_dPhi = 0.0;
 		}
 
 		public void TurnDown()
 		{
 			PushOrientation();
-			m_dPhi = m_dPhi + Math.PI / 2;
+			m_dPhi = Math.PI;
 		}
 
 		// Adjust m_theta

@@ -29,7 +29,13 @@ namespace utilities
 
 		public MovableCamera(double XPos, double YPos, double ZPos, double phi, double theta, IGLControl window)
 		{
-			m_rho = .10;
+			m_rho = 0.1; // this is the global speed
+			// the problem with increasing this to increase speed is because it changes your collision detection.
+			// increasing it will effectively make you hit walls earlier appearing that you are farther away when
+			// hitting walls
+			// .1 feels like quake 3
+			// then I'm left with scaling the vector a little to adjust speed
+
 			m_vCamPos = new D3Vect(XPos, YPos, ZPos);
 			this.m_dPhi = phi;
 			this.m_dTheta = theta;
@@ -140,11 +146,11 @@ namespace utilities
 			{
 				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
 				{
-					d3Vector.Scale(5.0);
-				}
-				else if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
-				{
 					d3Vector.Scale(0.4);
+				}
+				else
+				{
+					d3Vector.Scale(1.5);
 				}
 			}
 			else

@@ -262,6 +262,11 @@ namespace simulator
 				Close();
 			}
 		}
+
+		private void MapChooserForm_FormClosing(object sender, FormClosingEventArgs e)
+		{
+
+		}
 	}
 
 	/// <summary>

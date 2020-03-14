@@ -249,23 +249,32 @@ namespace engine
 					STATE.DrawFaceNormals = !STATE.DrawFaceNormals;
 					break;
 			}
-		}      
 
-        override public void LeftMouseDown()
+			if((Control.ModifierKeys & Keys.Control) == Keys.Control) {
+				Fire();
+			}
+		}
+
+		private void Fire()
 		{
 			switch (m_ProjectileMode)
 			{
 				case EProjectiles.AXE:
 					m_dynamicFigList.Add(new Axe(m_dynamicFigList.Count(), m_cam, m_figInitialAxe));
-                    //m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
-                    m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
-                    break;
+					//m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
+					m_SoundManager.PlayEffect(SoundManager.EEffects.ROCKET_AWAY);
+					break;
 				case EProjectiles.NINJASTAR:
 					m_dynamicFigList.Add(new NinjaStar(m_dynamicFigList.Count(), m_cam, m_figInitialStar));
-                    //m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
-                    m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
-                    break;
+					//m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
+					m_SoundManager.PlayEffect(SoundManager.EEffects.PLASMA_AWAY);
+					break;
 			}
+		}
+
+		override public void LeftMouseDown()
+		{
+			Fire(); 
 		}
 
 		public List<IntersectionInfo> GetIntersectionInfos

@@ -383,30 +383,8 @@ namespace engine
 		{
 			double dScale = 1.0;
 
-			if(m_swFallTimer.ElapsedMilliseconds <= 500)
-			{
-				dScale = 1.0;
-			}
-			else if(m_swFallTimer.ElapsedMilliseconds <= 1000)
-			{
-				dScale = 2.0;
-			}
-            else if (m_swFallTimer.ElapsedMilliseconds <= 1500)
-            {
-                dScale = 3.0;
-            }
-            else if (m_swFallTimer.ElapsedMilliseconds <= 2000)
-            {
-                dScale = 4.0;
-            }
-            else if (m_swFallTimer.ElapsedMilliseconds <= 2500)
-            {
-                dScale = 5.0;
-            }
-			else
-			{
-				dScale = 5.0;
-			}
+			// slower than 9.8 to account for fast timer tick
+			dScale = 6.0 * m_swFallTimer.ElapsedMilliseconds / 1000;
 
             return dScale;
 		}

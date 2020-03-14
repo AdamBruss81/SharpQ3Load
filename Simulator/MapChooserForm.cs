@@ -31,6 +31,7 @@ namespace simulator
 		private MapInfo m_chosenMap = null;
 		private Zipper m_zipper = new Zipper();
 		Dictionary<string, string> m_LongMapNames = null;
+		bool m_bChoseMap = false;
 
 		/// <summary>
 		/// Initialize a MapChooser
@@ -69,6 +70,11 @@ namespace simulator
 			{
 				Registry.SetValue(keyName, "", "");
 			}
+		}
+
+		public void ClearChosenMap()
+		{
+			m_bChoseMap = false;
 		}
 
 		private void LoadArenasFile()
@@ -188,6 +194,7 @@ namespace simulator
 			if (list.SelectedItems.Count > 0)
 			{
 				m_chosenMap = (MapInfo)(list.SelectedItems[0].Tag);
+				m_bChoseMap = true;
 				Close();
 			}
 		}
@@ -265,7 +272,7 @@ namespace simulator
 
 		private void MapChooserForm_FormClosing(object sender, FormClosingEventArgs e)
 		{
-
+			if (!m_bChoseMap) m_chosenMap = null;
 		}
 	}
 

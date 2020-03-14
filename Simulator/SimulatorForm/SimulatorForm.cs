@@ -316,6 +316,7 @@ namespace simulator
 
             m_SoundManager.Stop();
 
+			m_menu.ClearChosenMap();
 			m_menu.ShowDialog();
 
 			MapInfo map = m_menu.GetChosenMap;

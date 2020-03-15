@@ -12,10 +12,12 @@ namespace simulator
 
             m_swFramerate.Start();
 
+            // key game functions
             ProcessMouseButtons();
-            ProcessKeyStates();            
-
+            ProcessKeyStates();
+            m_Engine.GameTick();
             m_Engine.showScene(GetRecentKey);
+            // ###
 
             m_swFramerate.Stop();
 

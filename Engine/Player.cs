@@ -37,6 +37,7 @@ namespace engine
         SoundManager m_SoundManager = null;
 		private bool m_bFalling = false;
 		Stopwatch m_swFallTimer = new Stopwatch();
+		Stopwatch m_swPostMoveDecelTimer = new Stopwatch();
 
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 
@@ -330,6 +331,10 @@ namespace engine
 
 					dFallScale = GetFallScale();
 				}
+
+				//m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1);
+				// need to learn how to know when a sound has stopped to do these footstep sounds correctly
+
 				m_cam.MoveToPosition(d3MoveTo, !m_bFalling, dFallScale);
 
 				if (nMoveAttemptCount > 1)
@@ -394,7 +399,9 @@ namespace engine
         }
 
         override public bool MoveForward()
-		{			
+		{
+			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return false;
+
 			m_cam.LookStraight();
 			int nMoveAttemptCount = 0;
 			bool bSuccess = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
@@ -404,6 +411,8 @@ namespace engine
 
 		override public void MoveBackward()
 		{
+			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return;
+
 			m_cam.TurnBack();
             int nMoveAttemptCount = 0;
             TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
@@ -412,6 +421,8 @@ namespace engine
 
 		override public void MoveLeft()
 		{
+			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return;
+
 			m_cam.TurnLeft();
 			int nMoveAttemptCount = 0;
 			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
@@ -420,29 +431,36 @@ namespace engine
 
 		override public void MoveRight()
 		{
+			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return;
+
 			m_cam.TurnRight();
 			int nMoveAttemptCount = 0;
 			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
 			m_cam.RestoreOrientation();
 		}
 
-		override public void MoveUp()
+		override public void StoppedMoving() 
 		{
-			m_cam.TurnUp();
-			int nMoveAttemptCount = 0;
-			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
-			m_cam.RestoreOrientation();
+			m_swPostMoveDecelTimer.Start();
 		}
 
-		override public void MoveDown()
+		override public void GameTick() 
 		{
-			m_cam.TurnDown();
-			int nMoveAttemptCount = 0;
-			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
-			m_cam.RestoreOrientation();
+			if(m_swPostMoveDecelTimer.IsRunning)
+			{
+				// played stopped moving and they are decelerating to a stop
+				if(m_swPostMoveDecelTimer.ElapsedMilliseconds >= 500)
+				{
+					m_swPostMoveDecelTimer.Reset();
+				}
+				else
+				{
+					MoveForward();
+				}
+			}
 		}
 
-        override public void Fall()
+		override public void Fall()
         {
             m_cam.TurnDown();
             int nMoveAttemptCount = 0;
@@ -462,6 +480,10 @@ namespace engine
 				{
 					Debug.Assert(m_swFallTimer.IsRunning);
 					m_bFalling = false;
+					if(m_swFallTimer.ElapsedMilliseconds >= 1000)
+					{
+						m_SoundManager.PlayEffect(SoundManager.EEffects.FALL);
+					}
 					m_swFallTimer.Reset();
 				}
 			}

@@ -222,6 +222,8 @@ namespace engine
 		virtual public void MoveRight() { }
 		virtual public void MoveUp() { }
 		virtual public void MoveDown() { }
+		virtual public void StoppedMoving() { }
+		virtual public void GameTick() { }
 
 		virtual protected void Draw(int nFaceCount)
 		{

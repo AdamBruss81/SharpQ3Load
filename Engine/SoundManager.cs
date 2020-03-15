@@ -9,7 +9,7 @@ namespace engine
 {    
     public class SoundManager : IDisposable
     {
-        public enum EEffects { SPAWN, ROCKET_AWAY, PLASMA_AWAY };
+        public enum EEffects { SPAWN, ROCKET_AWAY, PLASMA_AWAY, FALL, FOOTSTEP1 };
         public enum ESongs { SONIC4, SONIC3, SONIC6, SONIC5, SONIC1, SONIC2, FLA22K_03, FLA22K_06, FLA22K_05, FLA22K_04, FLA22K_02 };
 
         private Dictionary<EEffects, string> m_dictEffects = new Dictionary<EEffects, string>();
@@ -36,6 +36,8 @@ namespace engine
 
             m_dictEffects[EEffects.ROCKET_AWAY] = "Sounds/sound/weapons/rocket/rocklf1a.wav";
             m_dictEffects[EEffects.PLASMA_AWAY] = "Sounds/sound/weapons/plasma/hyprbf1a.wav";
+            m_dictEffects[EEffects.FALL] = "Sounds/sound/player/grunt/fall1.wav";
+            m_dictEffects[EEffects.FOOTSTEP1] = "Sounds/sound/player/footsteps/step1.wav";
 
             m_dictSongs[ESongs.SONIC4] = "Sounds/music/sonic4.wav";
             m_dictSongs[ESongs.SONIC3] = "Sounds/music/sonic3.wav";

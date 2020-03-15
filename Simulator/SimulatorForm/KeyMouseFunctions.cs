@@ -73,22 +73,34 @@ namespace simulator
             m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
             m_dictKeyStates.TryGetValue(Keys.D, out bRight);
 
+            bool bMovedThisTick = false;
             if (bForward && !bBackward)
             {
+                bMovedThisTick = true;
                 m_Engine.MoveForward();
             }
             if(bBackward && !bForward)
             {
+                bMovedThisTick = true;
                 m_Engine.MoveBackward();
             }
             if(bLeft && !bRight)
             {
+                bMovedThisTick = true;
                 m_Engine.MoveLeft();
             }
             if(bRight && !bLeft)
             {
+                bMovedThisTick = true;
                 m_Engine.MoveRight();
             }
+
+            if(m_bMovedLastTick && !bMovedThisTick)
+            {
+                m_Engine.StoppedMoving();
+            }
+
+            m_bMovedLastTick = bMovedThisTick;
 
             m_Engine.Fall();
         }

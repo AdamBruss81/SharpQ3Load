@@ -33,6 +33,7 @@ namespace simulator
 		private bool m_bOpeningMap = false;
 		private bool m_bPaused = false;
 		private bool m_bClosed = false;
+		bool m_bMovedLastTick = false;
 		private IntPtr m_mainDC = IntPtr.Zero;
 		private IntPtr m_mainRC = IntPtr.Zero;
         private Stopwatch m_swFramerate = new Stopwatch();

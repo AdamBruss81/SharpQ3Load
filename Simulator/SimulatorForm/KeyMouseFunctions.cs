@@ -8,6 +8,8 @@ namespace simulator
 {
     public partial class SimulatorForm
     {
+        private Engine.MOVES m_lastmoveFB = Engine.MOVES.NONE, m_lastmoveLR = Engine.MOVES.NONE;
+
         /// <summary>
         /// Get last key combination hit for display purposes
         /// </summary>
@@ -65,7 +67,25 @@ namespace simulator
             m_dictMouseButtonStates.Clear();
         }
 
-        private void ProcessKeyStates()
+        private void SetLastMoveStates()
+        {
+            bool bForward = false, bBackward = false, bLeft = false, bRight = false;
+            m_dictKeyStates.TryGetValue(Keys.W, out bForward);
+            m_dictKeyStates.TryGetValue(Keys.S, out bBackward);
+            m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
+            m_dictKeyStates.TryGetValue(Keys.D, out bRight);
+
+            if (!bForward && !bBackward || bForward && bBackward)
+            {
+                m_lastmoveFB = Engine.MOVES.NONE;
+            }
+            if(!bLeft && !bRight || bLeft && bRight)
+            {
+                m_lastmoveLR = Engine.MOVES.NONE;
+            }         
+        }
+
+        private void ProcessKeyStates(ref bool bStoppedMoving)
         {
             bool bForward = false, bBackward = false, bLeft = false, bRight = false;
             m_dictKeyStates.TryGetValue(Keys.W, out bForward);
@@ -78,26 +98,30 @@ namespace simulator
             {
                 bMovedThisTick = true;
                 m_Engine.MoveForward();
+                m_lastmoveFB = Engine.MOVES.FORWARD;
             }
             if(bBackward && !bForward)
             {
                 bMovedThisTick = true;
                 m_Engine.MoveBackward();
+                m_lastmoveFB = Engine.MOVES.BACK;
             }
             if(bLeft && !bRight)
             {
                 bMovedThisTick = true;
                 m_Engine.MoveLeft();
+                m_lastmoveLR = Engine.MOVES.LEFT;
             }
             if(bRight && !bLeft)
             {
                 bMovedThisTick = true;
                 m_Engine.MoveRight();
+                m_lastmoveLR = Engine.MOVES.RIGHT;
             }
 
             if(m_bMovedLastTick && !bMovedThisTick)
             {
-                m_Engine.StoppedMoving();
+                bStoppedMoving = true;
             }
 
             m_bMovedLastTick = bMovedThisTick;

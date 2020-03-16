@@ -136,25 +136,27 @@ namespace utilities
 			}
 		}
 
-		public void MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dFallScale)
+		public void MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dModifierScale)
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;
 
-			// if ctrl key down move at half speed
-			if (bAllowKeyBasedScaling)
+			if (bAllowKeyBasedScaling) // this block is currently for normal movement(non fall/non decel)
 			{
 				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
 				{
+					// walking
 					d3Vector.Scale(0.4);
 				}
 				else
 				{
+					// normal movement
 					d3Vector.Scale(1.5);
 				}
 			}
 			else
 			{
-				d3Vector.Scale(dFallScale);
+				// falling or decelerating
+				d3Vector.Scale(dModifierScale);
 			}
 
 			m_vCamPos += d3Vector;

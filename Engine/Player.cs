@@ -38,8 +38,11 @@ namespace engine
 		private bool m_bFalling = false;
 		Stopwatch m_swFallTimer = new Stopwatch();
 		Stopwatch m_swPostMoveDecelTimer = new Stopwatch();
-
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
+		Engine.MOVES m_lastmoveFBCache = MOVES.NONE;
+		Engine.MOVES m_lastmoveLRCache = MOVES.NONE;
+
+		const double m_dDecelTimeMS = 250.0;
 
 		public enum EProjectiles { AXE, NINJASTAR };
 
@@ -324,18 +327,23 @@ namespace engine
 
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
-				double dFallScale = 1.0;
+				double dAccelDecelScale = 1.0;
+				bool bModifiedMovement = m_bFalling || m_swPostMoveDecelTimer.IsRunning;
 				if(m_bFalling)
 				{
 					Debug.Assert(m_swFallTimer.IsRunning);
 
-					dFallScale = GetFallScale();
+					dAccelDecelScale = GetFallScale();
+				}
+				else if(m_swPostMoveDecelTimer.IsRunning && m_swPostMoveDecelTimer.ElapsedMilliseconds <= m_dDecelTimeMS)
+				{
+					dAccelDecelScale = GetSlowDownScale();
 				}
 
 				//m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1);
 				// need to learn how to know when a sound has stopped to do these footstep sounds correctly
 
-				m_cam.MoveToPosition(d3MoveTo, !m_bFalling, dFallScale);
+				m_cam.MoveToPosition(d3MoveTo, !bModifiedMovement, dAccelDecelScale);
 
 				if (nMoveAttemptCount > 1)
 					return false;
@@ -381,6 +389,18 @@ namespace engine
 				return false;
 			}
 		}
+
+		private double GetSlowDownScale()
+		{
+            double dScale = 1.0;
+
+			double dRatio = (double)m_swPostMoveDecelTimer.ElapsedMilliseconds / m_dDecelTimeMS; // 250ms comes from
+			dScale = (1.0 - dRatio) * 1.5; // took 1.5 from normal move speed scale. need to get it from last user movement speed somehow
+
+			LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + m_swPostMoveDecelTimer.ElapsedMilliseconds);
+
+            return dScale;
+        }
 
 		private double GetFallScale()
 		{
@@ -439,24 +459,35 @@ namespace engine
 			m_cam.RestoreOrientation();
 		}
 
-		override public void StoppedMoving() 
+		override public void GameTick(Engine.MOVES lastmoveFB, Engine.MOVES lastmoveLR, bool bStoppedMoving) 
 		{
-			m_swPostMoveDecelTimer.Start();
-		}
+			if (bStoppedMoving)
+			{
+				m_swPostMoveDecelTimer.Start();
+				m_lastmoveFBCache = lastmoveFB;
+				m_lastmoveLRCache = lastmoveLR;
+			}
 
-		override public void GameTick() 
-		{
 			if(m_swPostMoveDecelTimer.IsRunning)
 			{
 				// played stopped moving and they are decelerating to a stop
-				if(m_swPostMoveDecelTimer.ElapsedMilliseconds >= 500)
+				if (m_swPostMoveDecelTimer.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
 				{
 					m_swPostMoveDecelTimer.Reset();
+					m_lastmoveFBCache = MOVES.NONE;
+					m_lastmoveLRCache = MOVES.NONE;
 				}
 				else
 				{
-					MoveForward();
-				}
+					if (m_lastmoveFBCache == MOVES.FORWARD)
+						MoveForward();
+					else if (m_lastmoveFBCache == MOVES.BACK)
+						MoveBackward();
+					if (m_lastmoveLRCache == MOVES.LEFT)
+						MoveLeft();
+					else if (m_lastmoveLRCache == MOVES.RIGHT)
+						MoveRight();
+                }
 			}
 		}
 

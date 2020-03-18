@@ -37,7 +37,10 @@ namespace engine
         SoundManager m_SoundManager = null;
 		private bool m_bFalling = false;
 		Stopwatch m_swFallTimer = new Stopwatch();
-		Stopwatch m_swPostMoveDecelTimer = new Stopwatch();
+
+		Stopwatch m_swPostMoveDecelTimerForwardBackward = new Stopwatch();
+		Stopwatch m_swPostMoveDecelTimerRightLeft = new Stopwatch();
+
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 		Engine.MOVES m_lastmoveFBCache = MOVES.NONE;
 		Engine.MOVES m_lastmoveLRCache = MOVES.NONE;
@@ -318,7 +321,7 @@ namespace engine
 		/// </summary>
 		/// <param name="d3MoveTo">target location to move to</param>
 		/// <param name="d3Position">current location of the MovableCamera</param>
-		private bool TryToMoveForward(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWall = true)
+		private bool TryToMoveForward(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWall, Engine.MOVES eSourceMovement)
 		{
 			nMoveAttemptCount++;
 
@@ -328,22 +331,29 @@ namespace engine
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
 				double dAccelDecelScale = 1.0;
-				bool bModifiedMovement = m_bFalling || m_swPostMoveDecelTimer.IsRunning;
-				if(m_bFalling)
+				if (m_bFalling)
 				{
 					Debug.Assert(m_swFallTimer.IsRunning);
 
 					dAccelDecelScale = GetFallScale();
 				}
-				else if(m_swPostMoveDecelTimer.IsRunning && m_swPostMoveDecelTimer.ElapsedMilliseconds <= m_dDecelTimeMS)
-				{
-					dAccelDecelScale = GetSlowDownScale();
-				}
-
+				else {
+					if((eSourceMovement == MOVES.FORWARD || eSourceMovement == MOVES.BACK) && m_swPostMoveDecelTimerForwardBackward.IsRunning && 
+						m_swPostMoveDecelTimerForwardBackward.ElapsedMilliseconds <= m_dDecelTimeMS)
+					{
+						dAccelDecelScale = GetSlowDownScale(m_swPostMoveDecelTimerForwardBackward);
+					}
+                    if ((eSourceMovement == MOVES.LEFT || eSourceMovement == MOVES.RIGHT) && m_swPostMoveDecelTimerRightLeft.IsRunning &&
+						m_swPostMoveDecelTimerRightLeft.ElapsedMilliseconds <= m_dDecelTimeMS)
+                    {
+                        dAccelDecelScale = GetSlowDownScale(m_swPostMoveDecelTimerRightLeft);
+                    }
+                }
+				
 				//m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1);
 				// need to learn how to know when a sound has stopped to do these footstep sounds correctly
 
-				m_cam.MoveToPosition(d3MoveTo, !bModifiedMovement, dAccelDecelScale);
+				m_cam.MoveToPosition(d3MoveTo, !AcceleratingOrDecelerating(eSourceMovement) && !AreFalling(), dAccelDecelScale);
 
 				if (nMoveAttemptCount > 1)
 					return false;
@@ -382,7 +392,7 @@ namespace engine
 
 				D3Vect d3NewMoveTo = new D3Vect(m_cam.Position + d3SlideVector);
 
-				return TryToMoveForward(d3NewMoveTo, d3Position, ref nMoveAttemptCount);
+				return TryToMoveForward(d3NewMoveTo, d3Position, ref nMoveAttemptCount, true, eSourceMovement);
 			}
 			else
 			{
@@ -390,14 +400,14 @@ namespace engine
 			}
 		}
 
-		private double GetSlowDownScale()
+		private double GetSlowDownScale(Stopwatch sw)
 		{
             double dScale = 1.0;
 
-			double dRatio = (double)m_swPostMoveDecelTimer.ElapsedMilliseconds / m_dDecelTimeMS; // 250ms comes from
+			double dRatio = (double)sw.ElapsedMilliseconds / m_dDecelTimeMS; // 250ms comes from
 			dScale = (1.0 - dRatio) * 1.5; // took 1.5 from normal move speed scale. need to get it from last user movement speed somehow
 
-			LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + m_swPostMoveDecelTimer.ElapsedMilliseconds);
+			LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + sw.ElapsedMilliseconds);
 
             return dScale;
         }
@@ -420,82 +430,109 @@ namespace engine
 
         override public bool MoveForward()
 		{
-			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return false;
+			if (AreFalling()) return false;
 
 			m_cam.LookStraight();
 			int nMoveAttemptCount = 0;
-			bool bSuccess = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
+			bool bSuccess = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.FORWARD);
 			m_cam.RestoreOrientation();
 			return bSuccess;
 		}
 
 		override public void MoveBackward()
 		{
-			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return;
+			if (AreFalling()) return;
 
 			m_cam.TurnBack();
             int nMoveAttemptCount = 0;
-            TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
+            TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.FORWARD);
 			m_cam.RestoreOrientation();
 		}
 
 		override public void MoveLeft()
 		{
-			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return;
+			if (AreFalling()) return;
 
 			m_cam.TurnLeft();
 			int nMoveAttemptCount = 0;
-			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
+			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.LEFT);
 			m_cam.RestoreOrientation();
 		}
 
 		override public void MoveRight()
 		{
-			if (m_bFalling && !m_swPostMoveDecelTimer.IsRunning) return;
+			if (AreFalling()) return;
 
 			m_cam.TurnRight();
 			int nMoveAttemptCount = 0;
-			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount);
+			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.RIGHT);
 			m_cam.RestoreOrientation();
 		}
 
-		override public void GameTick(Engine.MOVES lastmoveFB, Engine.MOVES lastmoveLR, bool bStoppedMoving) 
-		{
-			if (bStoppedMoving)
-			{
-				m_swPostMoveDecelTimer.Start();
-				m_lastmoveFBCache = lastmoveFB;
-				m_lastmoveLRCache = lastmoveLR;
-			}
+		private bool AreFalling()
+		{ 
+			return m_bFalling;
+		}
 
-			if(m_swPostMoveDecelTimer.IsRunning)
+		private bool AcceleratingOrDecelerating(MOVES eSourceMovement)
+		{
+			return (m_swPostMoveDecelTimerRightLeft.IsRunning && (eSourceMovement == MOVES.LEFT || eSourceMovement == MOVES.RIGHT)) ||
+				(m_swPostMoveDecelTimerForwardBackward.IsRunning && (eSourceMovement == MOVES.FORWARD || eSourceMovement == MOVES.LEFT));
+		}
+
+		override public void GameTick(Engine.MOVES lastmoveFB, Engine.MOVES lastmoveLR, bool bStoppedMovingForwardBackward, bool bStoppedMovingLeftRight) 
+		{
+			if (bStoppedMovingForwardBackward)
 			{
-				// played stopped moving and they are decelerating to a stop
-				if (m_swPostMoveDecelTimer.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
+				m_swPostMoveDecelTimerForwardBackward.Start();
+				m_lastmoveFBCache = lastmoveFB;
+			}
+			if(bStoppedMovingLeftRight)
+			{
+                m_swPostMoveDecelTimerRightLeft.Start();
+				m_lastmoveLRCache = lastmoveLR;
+            }
+
+			if(m_swPostMoveDecelTimerForwardBackward.IsRunning)
+			{
+				// player stopped moving and they are decelerating to a stop
+				if (m_swPostMoveDecelTimerForwardBackward.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
 				{
-					m_swPostMoveDecelTimer.Reset();
+					m_swPostMoveDecelTimerForwardBackward.Reset();
 					m_lastmoveFBCache = MOVES.NONE;
-					m_lastmoveLRCache = MOVES.NONE;
 				}
 				else
 				{
 					if (m_lastmoveFBCache == MOVES.FORWARD)
 						MoveForward();
 					else if (m_lastmoveFBCache == MOVES.BACK)
-						MoveBackward();
-					if (m_lastmoveLRCache == MOVES.LEFT)
-						MoveLeft();
-					else if (m_lastmoveLRCache == MOVES.RIGHT)
-						MoveRight();
+						MoveBackward();					
                 }
 			}
-		}
+
+            if (m_swPostMoveDecelTimerRightLeft.IsRunning)
+            {
+                // player stopped moving and they are decelerating to a stop
+                if (m_swPostMoveDecelTimerRightLeft.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
+                {
+					m_swPostMoveDecelTimerRightLeft.Reset();
+                    m_lastmoveLRCache = MOVES.NONE;
+                }
+                else
+                {
+					if (m_lastmoveLRCache == MOVES.LEFT)
+                        MoveLeft();
+                    else if (m_lastmoveLRCache == MOVES.RIGHT)
+                        MoveRight();
+                }
+            }           
+        }
 
 		override public void Fall()
         {
             m_cam.TurnDown();
             int nMoveAttemptCount = 0;
-            bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false);
+            bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MOVES.DOWN);
 			if (bCanMove)
 			{
 				if (!m_bFalling)

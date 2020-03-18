@@ -28,7 +28,7 @@ namespace engine
 	public abstract class Engine : Subject
 	{
 		public enum ESignals { DONE_READING_MAP = SignalStarts.g_nEngineStart };
-		public enum MOVES { LEFT, RIGHT, BACK, FORWARD, NONE };
+		public enum MOVES { LEFT, RIGHT, BACK, FORWARD, DOWN, NONE };
 
 		bool m_bDrawAxis = false;
 
@@ -223,7 +223,7 @@ namespace engine
 		virtual public void MoveRight() { }
 		virtual public void MoveUp() { }
 		virtual public void MoveDown() { }
-		virtual public void GameTick(Engine.MOVES lastmoveFB, Engine.MOVES lastmoveLR, bool bStoppedMoving) { }
+		virtual public void GameTick(Engine.MOVES lastmoveFB, Engine.MOVES lastmoveLR, bool bStoppedMovingForwardBackward, bool bStoppedMovingLeftRight) { }
 
 		virtual protected void Draw(int nFaceCount)
 		{

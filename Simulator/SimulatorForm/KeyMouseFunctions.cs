@@ -85,7 +85,7 @@ namespace simulator
             }         
         }
 
-        private void ProcessKeyStates(ref bool bStoppedMoving)
+        private void ProcessKeyStates(ref bool bStoppedMovingForwardBackward, ref bool bStoppedMovingLeftRight)
         {
             bool bForward = false, bBackward = false, bLeft = false, bRight = false;
             m_dictKeyStates.TryGetValue(Keys.W, out bForward);
@@ -93,38 +93,45 @@ namespace simulator
             m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
             m_dictKeyStates.TryGetValue(Keys.D, out bRight);
 
-            bool bMovedThisTick = false;
+            bool bMovedForwardBackwardThisTick = false;
+            bool bMovedLeftRightThisTick = false;
+
             if (bForward && !bBackward)
             {
-                bMovedThisTick = true;
+                bMovedForwardBackwardThisTick = true;
                 m_Engine.MoveForward();
                 m_lastmoveFB = Engine.MOVES.FORWARD;
             }
             if(bBackward && !bForward)
             {
-                bMovedThisTick = true;
+                bMovedForwardBackwardThisTick = true;
                 m_Engine.MoveBackward();
                 m_lastmoveFB = Engine.MOVES.BACK;
             }
             if(bLeft && !bRight)
             {
-                bMovedThisTick = true;
+                bMovedLeftRightThisTick = true;
                 m_Engine.MoveLeft();
                 m_lastmoveLR = Engine.MOVES.LEFT;
             }
             if(bRight && !bLeft)
             {
-                bMovedThisTick = true;
+                bMovedLeftRightThisTick = true;
                 m_Engine.MoveRight();
                 m_lastmoveLR = Engine.MOVES.RIGHT;
             }
 
-            if(m_bMovedLastTick && !bMovedThisTick)
+            if(m_bMovedLastTickForwardBackward && !bMovedForwardBackwardThisTick)
             {
-                bStoppedMoving = true;
+                bStoppedMovingForwardBackward = true;
+            }
+            if (m_bMovedLastTickLeftRight && !bMovedLeftRightThisTick)
+            {
+                bStoppedMovingLeftRight = true;
             }
 
-            m_bMovedLastTick = bMovedThisTick;
+            m_bMovedLastTickForwardBackward = bMovedForwardBackwardThisTick;
+            m_bMovedLastTickLeftRight = bMovedLeftRightThisTick;
 
             m_Engine.Fall();
         }

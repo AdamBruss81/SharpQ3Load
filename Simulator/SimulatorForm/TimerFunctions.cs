@@ -14,9 +14,9 @@ namespace simulator
 
             // key game functions
             ProcessMouseButtons();
-            bool bStoppedMoving = false;
-            ProcessKeyStates(ref bStoppedMoving);
-            m_Engine.GameTick(m_lastmoveFB, m_lastmoveLR, bStoppedMoving);
+            bool bStoppedMovingForwardBackward = false, bStoppedMovingLeftRight = false;
+            ProcessKeyStates(ref bStoppedMovingForwardBackward, ref bStoppedMovingLeftRight);
+            m_Engine.GameTick(m_lastmoveFB, m_lastmoveLR, bStoppedMovingForwardBackward, bStoppedMovingLeftRight);
             SetLastMoveStates();
             m_Engine.showScene(GetRecentKey);
             // ###

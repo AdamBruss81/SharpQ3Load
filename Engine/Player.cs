@@ -35,7 +35,6 @@ namespace engine
 		IntersectionInfo m_Intersection = new IntersectionInfo();
 		double[] m_pvUtilMatrix = new double[16];
         SoundManager m_SoundManager = null;
-		private bool m_bFalling = false;
 		Stopwatch m_swFallTimer = new Stopwatch();
 
 		Stopwatch m_swPostMoveDecelTimerForward = new Stopwatch();
@@ -341,10 +340,8 @@ namespace engine
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
 				double dAccelDecelScale = 1.0;
-				if (m_bFalling)
+				if (m_swFallTimer.IsRunning)
 				{
-					Debug.Assert(m_swFallTimer.IsRunning);
-
 					dAccelDecelScale = GetFallScale();
 				}
 				else {
@@ -408,8 +405,8 @@ namespace engine
 		{
             double dScale = 1.0;
 
-			double dRatio = (double)sw.ElapsedMilliseconds / m_dDecelTimeMS; // 250ms comes from
-			dScale = (1.0 - dRatio) * 1.5; // took 1.5 from normal move speed scale. need to get it from last user movement speed somehow
+			double dRatio = (double)sw.ElapsedMilliseconds / m_dDecelTimeMS;
+			dScale = (1.0 - dRatio) * m_cam.GetStandardMovementScale(); 
 
 			LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + sw.ElapsedMilliseconds);
 
@@ -482,8 +479,8 @@ namespace engine
 		}
 
 		private bool AreFalling()
-		{ 
-			return m_bFalling;
+		{
+			return m_swFallTimer.IsRunning;
 		}
 
 		private bool AcceleratingOrDecelerating(MovableCamera.DIRECTION eSourceMovement)
@@ -563,26 +560,29 @@ namespace engine
             }           
         }
 
+		/// <summary>
+		/// Attempt to fall. This is called every game tick. It checks if there is ground below you. If there isn't, you move downward in an accelerating
+		/// fashion as if gravity is pulling you down.
+		/// </summary>
 		override public void Fall()
         {
             m_cam.TurnDown();
+
             int nMoveAttemptCount = 0;
             bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MovableCamera.DIRECTION.DOWN);
 			if (bCanMove)
 			{
-				if (!m_bFalling)
+				if (!m_swFallTimer.IsRunning)
 				{
-					Debug.Assert(!m_swFallTimer.IsRunning);
-					m_bFalling = true;					
+					// start falling				
 					m_swFallTimer.Start();
 				}
 			}
 			else
 			{
-				if (m_bFalling)
+				if (m_swFallTimer.IsRunning)
 				{
-					Debug.Assert(m_swFallTimer.IsRunning);
-					m_bFalling = false;
+					// stop falling
 					if(m_swFallTimer.ElapsedMilliseconds >= 1000)
 					{
 						m_SoundManager.PlayEffect(SoundManager.EEffects.FALL);

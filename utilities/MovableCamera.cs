@@ -91,6 +91,8 @@ namespace utilities
 			m_Window = window;
 		}
 
+		public double GetStandardMovementScale() { return 1.5; }
+
 		public D3Vect GetVector(DIRECTION dir)
 		{
 			switch (dir)
@@ -186,6 +188,12 @@ namespace utilities
 			}
 		}
 
+		/// <summary>
+		/// Supports moving normally and moving after the user stops sending move inputs(deceleration)
+		/// </summary>
+		/// <param name="d3Position"></param>
+		/// <param name="bAllowKeyBasedScaling"></param>
+		/// <param name="dModifierScale"></param>
 		public void MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dModifierScale)
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;
@@ -200,7 +208,7 @@ namespace utilities
 				else
 				{
 					// normal movement
-					d3Vector.Scale(1.5);
+					d3Vector.Scale(GetStandardMovementScale());
 				}
 			}
 			else
@@ -213,6 +221,8 @@ namespace utilities
 		}
 
 		// Move the camera to its look at point
+		// this is used by the ghost engine
+		// player uses movetoposition
 		public void MoveForward(double dMultiplier)
 		{
 			double dTempRHO = m_rho;
@@ -221,7 +231,6 @@ namespace utilities
             {
                 m_rho *= dMultiplier;
             }
-			// if ctrl key down move at half speed
 			else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
 			{
 				m_rho *= 5.0;

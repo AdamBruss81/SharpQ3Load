@@ -38,14 +38,14 @@ namespace engine
 		private bool m_bFalling = false;
 		Stopwatch m_swFallTimer = new Stopwatch();
 
-		Stopwatch m_swPostMoveDecelTimerForwardBackward = new Stopwatch();
-		Stopwatch m_swPostMoveDecelTimerRightLeft = new Stopwatch();
+		Stopwatch m_swPostMoveDecelTimerForward = new Stopwatch();
+		Stopwatch m_swPostMoveDecelTimerRight = new Stopwatch();
+		Stopwatch m_swPostMoveDecelTimerLeft = new Stopwatch();
+		Stopwatch m_swPostMoveDecelTimerBackward = new Stopwatch();
 
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
-		Engine.MOVES m_lastmoveFBCache = MOVES.NONE;
-		Engine.MOVES m_lastmoveLRCache = MOVES.NONE;
 
-		const double m_dDecelTimeMS = 250.0;
+		const double m_dDecelTimeMS = 200.0;
 
 		public enum EProjectiles { AXE, NINJASTAR };
 
@@ -315,13 +315,23 @@ namespace engine
 			else return 0;
 		}
 
+		private void ProcessDecelTimer(Stopwatch sw, MovableCamera.DIRECTION eSourceMovement, 
+			MovableCamera.DIRECTION comparisonMovement, ref double dAccelDecelScale)
+		{
+			if ((eSourceMovement == comparisonMovement) && sw.IsRunning &&
+				sw.ElapsedMilliseconds <= m_dDecelTimeMS)
+			{
+				dAccelDecelScale = GetSlowDownScale(sw);
+			}
+		}
+
 		/// <summary>
 		/// Attempt to move forward by determining if a face is in the way. If a collision is detected,
 		/// slide the MovableCamera along the wall.
 		/// </summary>
 		/// <param name="d3MoveTo">target location to move to</param>
 		/// <param name="d3Position">current location of the MovableCamera</param>
-		private bool TryToMoveForward(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWall, Engine.MOVES eSourceMovement)
+		private bool TryToMoveForward(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWall, MovableCamera.DIRECTION eSourceMovement)
 		{
 			nMoveAttemptCount++;
 
@@ -338,16 +348,10 @@ namespace engine
 					dAccelDecelScale = GetFallScale();
 				}
 				else {
-					if((eSourceMovement == MOVES.FORWARD || eSourceMovement == MOVES.BACK) && m_swPostMoveDecelTimerForwardBackward.IsRunning && 
-						m_swPostMoveDecelTimerForwardBackward.ElapsedMilliseconds <= m_dDecelTimeMS)
-					{
-						dAccelDecelScale = GetSlowDownScale(m_swPostMoveDecelTimerForwardBackward);
-					}
-                    if ((eSourceMovement == MOVES.LEFT || eSourceMovement == MOVES.RIGHT) && m_swPostMoveDecelTimerRightLeft.IsRunning &&
-						m_swPostMoveDecelTimerRightLeft.ElapsedMilliseconds <= m_dDecelTimeMS)
-                    {
-                        dAccelDecelScale = GetSlowDownScale(m_swPostMoveDecelTimerRightLeft);
-                    }
+					ProcessDecelTimer(m_swPostMoveDecelTimerForward, eSourceMovement, MovableCamera.DIRECTION.FORWARD, ref dAccelDecelScale);
+					ProcessDecelTimer(m_swPostMoveDecelTimerBackward, eSourceMovement, MovableCamera.DIRECTION.BACK, ref dAccelDecelScale);
+					ProcessDecelTimer(m_swPostMoveDecelTimerLeft, eSourceMovement, MovableCamera.DIRECTION.LEFT, ref dAccelDecelScale);
+					ProcessDecelTimer(m_swPostMoveDecelTimerRight, eSourceMovement, MovableCamera.DIRECTION.RIGHT, ref dAccelDecelScale);
                 }
 				
 				//m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1);
@@ -432,20 +436,24 @@ namespace engine
 		{
 			if (AreFalling()) return false;
 
+			if (m_swPostMoveDecelTimerBackward.IsRunning) m_swPostMoveDecelTimerBackward.Reset();
+
 			m_cam.LookStraight();
 			int nMoveAttemptCount = 0;
-			bool bSuccess = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.FORWARD);
+			bool bSuccess = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, MovableCamera.DIRECTION.FORWARD);
 			m_cam.RestoreOrientation();
 			return bSuccess;
 		}
 
-		override public void MoveBackward()
+		override public void MoveBackward() 
 		{
 			if (AreFalling()) return;
 
+			if (m_swPostMoveDecelTimerForward.IsRunning) m_swPostMoveDecelTimerForward.Reset();
+
 			m_cam.TurnBack();
             int nMoveAttemptCount = 0;
-            TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.FORWARD);
+            TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, MovableCamera.DIRECTION.BACK);
 			m_cam.RestoreOrientation();
 		}
 
@@ -453,9 +461,11 @@ namespace engine
 		{
 			if (AreFalling()) return;
 
+			if (m_swPostMoveDecelTimerRight.IsRunning) m_swPostMoveDecelTimerRight.Reset();
+
 			m_cam.TurnLeft();
 			int nMoveAttemptCount = 0;
-			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.LEFT);
+			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, MovableCamera.DIRECTION.LEFT);
 			m_cam.RestoreOrientation();
 		}
 
@@ -463,9 +473,11 @@ namespace engine
 		{
 			if (AreFalling()) return;
 
+			if (m_swPostMoveDecelTimerLeft.IsRunning) m_swPostMoveDecelTimerLeft.Reset();
+
 			m_cam.TurnRight();
 			int nMoveAttemptCount = 0;
-			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, Engine.MOVES.RIGHT);
+			TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, true, MovableCamera.DIRECTION.RIGHT);
 			m_cam.RestoreOrientation();
 		}
 
@@ -474,56 +486,79 @@ namespace engine
 			return m_bFalling;
 		}
 
-		private bool AcceleratingOrDecelerating(MOVES eSourceMovement)
+		private bool AcceleratingOrDecelerating(MovableCamera.DIRECTION eSourceMovement)
 		{
-			return (m_swPostMoveDecelTimerRightLeft.IsRunning && (eSourceMovement == MOVES.LEFT || eSourceMovement == MOVES.RIGHT)) ||
-				(m_swPostMoveDecelTimerForwardBackward.IsRunning && (eSourceMovement == MOVES.FORWARD || eSourceMovement == MOVES.LEFT));
+			return (m_swPostMoveDecelTimerRight.IsRunning && eSourceMovement == MovableCamera.DIRECTION.RIGHT) ||
+				(m_swPostMoveDecelTimerForward.IsRunning && eSourceMovement == MovableCamera.DIRECTION.FORWARD) ||
+				(m_swPostMoveDecelTimerBackward.IsRunning && eSourceMovement == MovableCamera.DIRECTION.BACK) ||
+				(m_swPostMoveDecelTimerLeft.IsRunning && eSourceMovement == MovableCamera.DIRECTION.LEFT);
 		}
 
-		override public void GameTick(Engine.MOVES lastmoveFB, Engine.MOVES lastmoveLR, bool bStoppedMovingForwardBackward, bool bStoppedMovingLeftRight) 
+		override public void GameTick(MoveStates stoppedMovingStates) 
 		{
-			if (bStoppedMovingForwardBackward)
+			if (stoppedMovingStates.GetState(MovableCamera.DIRECTION.FORWARD))
 			{
-				m_swPostMoveDecelTimerForwardBackward.Start();
-				m_lastmoveFBCache = lastmoveFB;
+				m_swPostMoveDecelTimerForward.Start();
 			}
-			if(bStoppedMovingLeftRight)
+			if (stoppedMovingStates.GetState(MovableCamera.DIRECTION.RIGHT))
 			{
-                m_swPostMoveDecelTimerRightLeft.Start();
-				m_lastmoveLRCache = lastmoveLR;
+                m_swPostMoveDecelTimerRight.Start();
+            }
+			if (stoppedMovingStates.GetState(MovableCamera.DIRECTION.LEFT))
+			{
+                m_swPostMoveDecelTimerLeft.Start();
+            }
+			if (stoppedMovingStates.GetState(MovableCamera.DIRECTION.BACK))
+			{
+                m_swPostMoveDecelTimerBackward.Start();
             }
 
-			if(m_swPostMoveDecelTimerForwardBackward.IsRunning)
+            if (m_swPostMoveDecelTimerForward.IsRunning)
 			{
 				// player stopped moving and they are decelerating to a stop
-				if (m_swPostMoveDecelTimerForwardBackward.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
+				if (m_swPostMoveDecelTimerForward.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
 				{
-					m_swPostMoveDecelTimerForwardBackward.Reset();
-					m_lastmoveFBCache = MOVES.NONE;
+					m_swPostMoveDecelTimerForward.Reset();
 				}
 				else
 				{
-					if (m_lastmoveFBCache == MOVES.FORWARD)
-						MoveForward();
-					else if (m_lastmoveFBCache == MOVES.BACK)
-						MoveBackward();					
+					MoveForward();				
                 }
 			}
 
-            if (m_swPostMoveDecelTimerRightLeft.IsRunning)
+            if (m_swPostMoveDecelTimerBackward.IsRunning)
             {
-                // player stopped moving and they are decelerating to a stop
-                if (m_swPostMoveDecelTimerRightLeft.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
+                if (m_swPostMoveDecelTimerBackward.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
                 {
-					m_swPostMoveDecelTimerRightLeft.Reset();
-                    m_lastmoveLRCache = MOVES.NONE;
+					m_swPostMoveDecelTimerBackward.Reset();
                 }
                 else
                 {
-					if (m_lastmoveLRCache == MOVES.LEFT)
-                        MoveLeft();
-                    else if (m_lastmoveLRCache == MOVES.RIGHT)
-                        MoveRight();
+                    MoveBackward();
+                }
+            }
+
+            if (m_swPostMoveDecelTimerLeft.IsRunning)
+            {
+                if (m_swPostMoveDecelTimerLeft.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
+                {
+					m_swPostMoveDecelTimerLeft.Reset();
+                }
+                else
+                {
+                    MoveLeft();
+                }
+            }
+
+            if (m_swPostMoveDecelTimerRight.IsRunning)
+            {
+                if (m_swPostMoveDecelTimerRight.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
+                {
+					m_swPostMoveDecelTimerRight.Reset();
+                }
+                else
+                {
+					MoveRight();
                 }
             }           
         }
@@ -532,7 +567,7 @@ namespace engine
         {
             m_cam.TurnDown();
             int nMoveAttemptCount = 0;
-            bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MOVES.DOWN);
+            bool bCanMove = TryToMoveForward(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MovableCamera.DIRECTION.DOWN);
 			if (bCanMove)
 			{
 				if (!m_bFalling)

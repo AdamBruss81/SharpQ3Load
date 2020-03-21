@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using utilities;
 
 namespace simulator
 {
@@ -14,9 +16,9 @@ namespace simulator
 
             // key game functions
             ProcessMouseButtons();
-            bool bStoppedMovingForwardBackward = false, bStoppedMovingLeftRight = false;
-            ProcessKeyStates(ref bStoppedMovingForwardBackward, ref bStoppedMovingLeftRight);
-            m_Engine.GameTick(m_lastmoveFB, m_lastmoveLR, bStoppedMovingForwardBackward, bStoppedMovingLeftRight);
+            MoveStates stoppedMovingStates = new MoveStates();
+            ProcessKeyStates(stoppedMovingStates);
+            m_Engine.GameTick(stoppedMovingStates);
             SetLastMoveStates();
             m_Engine.showScene(GetRecentKey);
             // ###

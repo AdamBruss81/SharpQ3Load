@@ -4,6 +4,56 @@ using System.Windows.Forms;
 
 namespace utilities
 {
+	public class MoveStates
+	{
+		List<bool> m_lStates = new List<bool> { false, false, false, false };
+
+		public List<bool> GetStates() { return m_lStates; }
+
+		public void SetState(MovableCamera.DIRECTION e, bool b)
+		{
+			switch(e)
+			{
+				case MovableCamera.DIRECTION.FORWARD:
+					m_lStates[0] = b;
+					break;
+                case MovableCamera.DIRECTION.BACK:
+                    m_lStates[1] = b;
+                    break;
+                case MovableCamera.DIRECTION.LEFT:
+                    m_lStates[2] = b;
+                    break;
+                case MovableCamera.DIRECTION.RIGHT:
+                    m_lStates[3] = b;
+                    break;
+				default:
+					throw new Exception("invalid direction");
+            }
+		}
+
+		public bool GetState(MovableCamera.DIRECTION e)
+		{
+			switch(e)
+			{
+                case MovableCamera.DIRECTION.FORWARD:
+					return m_lStates[0];
+                case MovableCamera.DIRECTION.BACK:
+					return m_lStates[1];
+                case MovableCamera.DIRECTION.LEFT:
+					return m_lStates[2];
+                case MovableCamera.DIRECTION.RIGHT:
+					return m_lStates[3];
+            }
+
+			throw new Exception("invalid direction");
+		}
+
+		public void Clear()
+		{
+			m_lStates.ForEach(b => b = false);
+		}
+	}
+
 	public class MovableCamera
 	{
 		public enum DIRECTION { FORWARD, RIGHT, LEFT, BACK, UP, DOWN };

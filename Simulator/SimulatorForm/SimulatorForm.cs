@@ -18,6 +18,7 @@ using Tao.OpenGl;
 using Tao.Platform.Windows;
 using Tao.FreeGlut;
 using engine;
+using utilities;
 
 namespace simulator
 {
@@ -33,8 +34,9 @@ namespace simulator
 		private bool m_bOpeningMap = false;
 		private bool m_bPaused = false;
 		private bool m_bClosed = false;
-		bool m_bMovedLastTickForwardBackward = false;
-		bool m_bMovedLastTickLeftRight = false;
+
+		MoveStates m_lastTickMovestates = new MoveStates();
+
 		private IntPtr m_mainDC = IntPtr.Zero;
 		private IntPtr m_mainRC = IntPtr.Zero;
         private Stopwatch m_swFramerate = new Stopwatch();

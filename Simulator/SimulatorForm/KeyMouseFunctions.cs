@@ -1,5 +1,6 @@
 ﻿using engine;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using utilities;
@@ -8,7 +9,7 @@ namespace simulator
 {
     public partial class SimulatorForm
     {
-        private Engine.MOVES m_lastmoveFB = Engine.MOVES.NONE, m_lastmoveLR = Engine.MOVES.NONE;
+        MoveStates m_PreviousTickMoveStates = new MoveStates();
 
         /// <summary>
         /// Get last key combination hit for display purposes
@@ -75,17 +76,13 @@ namespace simulator
             m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
             m_dictKeyStates.TryGetValue(Keys.D, out bRight);
 
-            if (!bForward && !bBackward || bForward && bBackward)
-            {
-                m_lastmoveFB = Engine.MOVES.NONE;
-            }
-            if(!bLeft && !bRight || bLeft && bRight)
-            {
-                m_lastmoveLR = Engine.MOVES.NONE;
-            }         
+            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD, bForward);
+            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK, bBackward);
+            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.LEFT, bLeft);
+            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.RIGHT, bRight);       
         }
 
-        private void ProcessKeyStates(ref bool bStoppedMovingForwardBackward, ref bool bStoppedMovingLeftRight)
+        private void ProcessKeyStates(MoveStates stoppedMovingStates)
         {
             bool bForward = false, bBackward = false, bLeft = false, bRight = false;
             m_dictKeyStates.TryGetValue(Keys.W, out bForward);
@@ -93,45 +90,34 @@ namespace simulator
             m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
             m_dictKeyStates.TryGetValue(Keys.D, out bRight);
 
-            bool bMovedForwardBackwardThisTick = false;
-            bool bMovedLeftRightThisTick = false;
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD) && !bForward ? true : false);
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.BACK, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK) && !bBackward ? true : false);
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.LEFT, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.LEFT) && !bLeft ? true : false);
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.RIGHT, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.RIGHT) && !bRight ? true : false);
 
+            m_lastTickMovestates.Clear();
+
+            // determine which way to move 
             if (bForward && !bBackward)
             {
-                bMovedForwardBackwardThisTick = true;
                 m_Engine.MoveForward();
-                m_lastmoveFB = Engine.MOVES.FORWARD;
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD, true);
             }
             if(bBackward && !bForward)
             {
-                bMovedForwardBackwardThisTick = true;
                 m_Engine.MoveBackward();
-                m_lastmoveFB = Engine.MOVES.BACK;
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK, true);
             }
             if(bLeft && !bRight)
             {
-                bMovedLeftRightThisTick = true;
                 m_Engine.MoveLeft();
-                m_lastmoveLR = Engine.MOVES.LEFT;
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.LEFT, true);
             }
             if(bRight && !bLeft)
             {
-                bMovedLeftRightThisTick = true;
                 m_Engine.MoveRight();
-                m_lastmoveLR = Engine.MOVES.RIGHT;
-            }
-
-            if(m_bMovedLastTickForwardBackward && !bMovedForwardBackwardThisTick)
-            {
-                bStoppedMovingForwardBackward = true;
-            }
-            if (m_bMovedLastTickLeftRight && !bMovedLeftRightThisTick)
-            {
-                bStoppedMovingLeftRight = true;
-            }
-
-            m_bMovedLastTickForwardBackward = bMovedForwardBackwardThisTick;
-            m_bMovedLastTickLeftRight = bMovedLeftRightThisTick;
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.RIGHT, true);
+            }        
 
             m_Engine.Fall();
         }

@@ -6,57 +6,122 @@ namespace utilities
 {
 	public class MoveStates
 	{
-		List<bool> m_lStates = new List<bool> { false, false, false, false };
+		List<bool> m_lStates = new List<bool> { false, false, false, false, false, false, false, false };
 
 		public List<bool> GetStates() { return m_lStates; }
 
+		public bool AnyTrue()
+		{
+			for(int i = 0; i < m_lStates.Count; i++)
+			{
+				if (m_lStates[i]) return true;
+			}
+			return false;
+		}
+
+		public bool OnlyState(MovableCamera.DIRECTION dir)
+		{
+			bool bReturn = false;
+			bool b = GetState(dir);
+			if (b)
+			{
+				bReturn = true;
+				for(int i = 0; i < m_lStates.Count; i++)
+				{
+					if (i == GetStateIndex(dir)) continue;
+
+					if(m_lStates[i])
+					{
+						bReturn = false;
+						break;
+					}
+				}
+			}
+			return bReturn;
+		}
+
+		public MovableCamera.DIRECTION GetRelevant()
+		{
+			if(GetState(MovableCamera.DIRECTION.BACK_LEFT)) return MovableCamera.DIRECTION.BACK_LEFT;
+			if (GetState(MovableCamera.DIRECTION.BACK_RIGHT)) return MovableCamera.DIRECTION.BACK_RIGHT;
+			if (GetState(MovableCamera.DIRECTION.FORWARD_LEFT)) return MovableCamera.DIRECTION.FORWARD_LEFT;
+			if (GetState(MovableCamera.DIRECTION.FORWARD_RIGHT)) return MovableCamera.DIRECTION.FORWARD_RIGHT;
+			if (GetState(MovableCamera.DIRECTION.LEFT)) return MovableCamera.DIRECTION.LEFT;
+			if (GetState(MovableCamera.DIRECTION.RIGHT)) return MovableCamera.DIRECTION.RIGHT;
+			if (GetState(MovableCamera.DIRECTION.FORWARD)) return MovableCamera.DIRECTION.FORWARD;
+			if (GetState(MovableCamera.DIRECTION.BACK)) return MovableCamera.DIRECTION.BACK;
+
+			return MovableCamera.DIRECTION.NONE;
+		}
+
+        private MovableCamera.DIRECTION GetDirFromIndex(int nIndex)
+        {
+            switch (nIndex)
+            {
+				case 0: return MovableCamera.DIRECTION.FORWARD;
+				case 1: return MovableCamera.DIRECTION.BACK;
+				case 2: return MovableCamera.DIRECTION.LEFT;
+				case 3: return MovableCamera.DIRECTION.RIGHT;
+				case 4: return MovableCamera.DIRECTION.FORWARD_LEFT;
+				case 5: return MovableCamera.DIRECTION.FORWARD_RIGHT;
+				case 6: return MovableCamera.DIRECTION.BACK_LEFT;
+				case 7: return MovableCamera.DIRECTION.BACK_RIGHT;
+			}
+
+            throw new Exception("Invalid direction");
+        }
+
+        private int GetStateIndex(MovableCamera.DIRECTION dir)
+		{
+			switch(dir)
+			{
+				case MovableCamera.DIRECTION.FORWARD: return 0;
+                case MovableCamera.DIRECTION.BACK: return 1;
+				case MovableCamera.DIRECTION.LEFT: return 2;
+				case MovableCamera.DIRECTION.RIGHT: return 3;
+                case MovableCamera.DIRECTION.FORWARD_LEFT: return 4;
+                case MovableCamera.DIRECTION.FORWARD_RIGHT: return 5;
+                case MovableCamera.DIRECTION.BACK_LEFT: return 6;
+                case MovableCamera.DIRECTION.BACK_RIGHT: return 7;
+            }
+
+			throw new Exception("Invalid direction");
+		}
+
 		public void SetState(MovableCamera.DIRECTION e, bool b)
 		{
-			switch(e)
-			{
-				case MovableCamera.DIRECTION.FORWARD:
-					m_lStates[0] = b;
-					break;
-                case MovableCamera.DIRECTION.BACK:
-                    m_lStates[1] = b;
-                    break;
-                case MovableCamera.DIRECTION.LEFT:
-                    m_lStates[2] = b;
-                    break;
-                case MovableCamera.DIRECTION.RIGHT:
-                    m_lStates[3] = b;
-                    break;
-				default:
-					throw new Exception("invalid direction");
-            }
+			m_lStates[GetStateIndex(e)] = b;
 		}
 
 		public bool GetState(MovableCamera.DIRECTION e)
 		{
-			switch(e)
-			{
-                case MovableCamera.DIRECTION.FORWARD:
-					return m_lStates[0];
-                case MovableCamera.DIRECTION.BACK:
-					return m_lStates[1];
-                case MovableCamera.DIRECTION.LEFT:
-					return m_lStates[2];
-                case MovableCamera.DIRECTION.RIGHT:
-					return m_lStates[3];
-            }
+			return m_lStates[GetStateIndex(e)];
+		}
 
-			throw new Exception("invalid direction");
+		public MovableCamera.DIRECTION GetFirstTrue()
+		{ 
+			for(int i = 0; i < m_lStates.Count; i++)
+			{
+				if(m_lStates[i])
+				{
+					return GetDirFromIndex(i);
+				}
+			}
+			return MovableCamera.DIRECTION.NONE;
 		}
 
 		public void Clear()
 		{
-			m_lStates.ForEach(b => b = false);
+			for(int i = 0; i < m_lStates.Count; i++)
+			{
+				m_lStates[i] = false;
+			}
 		}
 	}
 
 	public class MovableCamera
 	{
-		public enum DIRECTION { FORWARD, RIGHT, LEFT, BACK, UP, DOWN };
+		public enum DIRECTION { FORWARD, RIGHT, LEFT, BACK, FORWARD_RIGHT, FORWARD_LEFT, BACK_LEFT, BACK_RIGHT, UP, DOWN, NONE };
 
 		private double m_dPhi;   
 		private double m_dTheta;
@@ -221,7 +286,7 @@ namespace utilities
 		}
 
 		// Move the camera to its look at point
-		// this is used by the ghost engine
+		// this is used by the ghost engine.
 		// player uses movetoposition
 		public void MoveForward(double dMultiplier)
 		{
@@ -278,23 +343,51 @@ namespace utilities
 			m_dPhi = Math.PI / 2;
 		}
 
-		// Turn left along axis
-		public void TurnLeft()
+        public void TurnBackRight()
+        {
+            PushOrientation();
+            m_dTheta = Math.PI + m_dTheta + Math.PI / 4;
+            m_dPhi = Math.PI / 2;
+        }
+
+        public void TurnBackLeft()
+        {
+            PushOrientation();
+			m_dTheta = Math.PI + m_dTheta - Math.PI / 4;
+            m_dPhi = Math.PI / 2;
+        }
+
+        // Turn left along axis
+        public void TurnLeft()
 		{
 			PushOrientation();
 			m_dTheta = m_dTheta + Math.PI / 2;
 			m_dPhi = Math.PI / 2;
 		}
 
-		// Turn right along axis
-		public void TurnRight()
+        public void TurnLeftHalf()
+        {
+            PushOrientation();
+            m_dTheta = m_dTheta + Math.PI / 4;
+            m_dPhi = Math.PI / 2;
+        }
+
+        // Turn right along axis
+        public void TurnRight()
 		{
 			PushOrientation();
 			m_dTheta = m_dTheta - Math.PI / 2;
 			m_dPhi = Math.PI / 2;
 		}
 
-		public void TurnUp()
+        public void TurnRightHalf()
+        {
+            PushOrientation();
+            m_dTheta = m_dTheta - Math.PI / 4;
+            m_dPhi = Math.PI / 2;
+        }
+
+        public void TurnUp()
 		{
 			PushOrientation();
 			m_dPhi = 0.0;

@@ -223,6 +223,7 @@ namespace engine
 		virtual public void MoveUp() { }
 		virtual public void MoveDown() { }
 		virtual public void GameTick(MoveStates stoppedMovingStates) { }
+		virtual public void CacheMove(MovableCamera.DIRECTION direction) { }
 
 		virtual protected void Draw(int nFaceCount)
 		{

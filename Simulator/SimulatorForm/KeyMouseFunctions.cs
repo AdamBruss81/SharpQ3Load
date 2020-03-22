@@ -95,29 +95,54 @@ namespace simulator
             stoppedMovingStates.SetState(MovableCamera.DIRECTION.LEFT, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.LEFT) && !bLeft ? true : false);
             stoppedMovingStates.SetState(MovableCamera.DIRECTION.RIGHT, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.RIGHT) && !bRight ? true : false);
 
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD_LEFT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD_LEFT) && !bForward && !bLeft) ? true : false);
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD_RIGHT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD_RIGHT) && !bForward && !bRight) ? true : false);
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.BACK_LEFT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK_LEFT) && !bBackward && !bLeft) ? true : false);
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.BACK_RIGHT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK_RIGHT) && !bBackward && !bRight) ? true : false);
+
             m_lastTickMovestates.Clear();
 
             // determine which way to move 
             if (bForward && !bBackward)
             {
+                m_Engine.CacheMove(MovableCamera.DIRECTION.FORWARD);
                 m_Engine.MoveForward();
                 m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD, true);
             }
             if(bBackward && !bForward)
             {
+                m_Engine.CacheMove(MovableCamera.DIRECTION.BACK);
                 m_Engine.MoveBackward();
                 m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK, true);
             }
             if(bLeft && !bRight)
             {
+                m_Engine.CacheMove(MovableCamera.DIRECTION.LEFT);
                 m_Engine.MoveLeft();
                 m_lastTickMovestates.SetState(MovableCamera.DIRECTION.LEFT, true);
             }
             if(bRight && !bLeft)
             {
+                m_Engine.CacheMove(MovableCamera.DIRECTION.RIGHT);
                 m_Engine.MoveRight();
                 m_lastTickMovestates.SetState(MovableCamera.DIRECTION.RIGHT, true);
-            }        
+            }    
+            if(bForward && bLeft)
+            {
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD_LEFT, true);
+            }
+            if (bForward && bRight)
+            {
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD_RIGHT, true);
+            }
+            if (bBackward && bLeft)
+            {
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK_LEFT, true);
+            }
+            if (bBackward && bRight)
+            {
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK_RIGHT, true);
+            }
 
             m_Engine.Fall();
         }

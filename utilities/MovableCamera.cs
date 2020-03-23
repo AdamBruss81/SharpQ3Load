@@ -255,11 +255,12 @@ namespace utilities
 
 		/// <summary>
 		/// Supports moving normally and moving after the user stops sending move inputs(deceleration)
+		/// returns velocity of this move
 		/// </summary>
 		/// <param name="d3Position"></param>
 		/// <param name="bAllowKeyBasedScaling"></param>
 		/// <param name="dModifierScale"></param>
-		public void MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dModifierScale)
+		public double MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dModifierScale)
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;
 
@@ -283,6 +284,7 @@ namespace utilities
 			}
 
 			m_vCamPos += d3Vector;
+			return d3Vector.Length;
 		}
 
 		// Move the camera to its look at point

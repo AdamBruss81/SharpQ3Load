@@ -224,6 +224,7 @@ namespace engine
 		virtual public void MoveDown() { }
 		virtual public void GameTick(MoveStates stoppedMovingStates) { }
 		virtual public void CacheMove(MovableCamera.DIRECTION direction) { }
+		virtual public double GetVelocity() { return 0.0; }
 
 		virtual protected void Draw(int nFaceCount)
 		{

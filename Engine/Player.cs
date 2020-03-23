@@ -41,6 +41,7 @@ namespace engine
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 		MovableCamera.DIRECTION m_eDecelingDirection = MovableCamera.DIRECTION.NONE;
 		const double m_dDecelTimeMS = 200.0;
+		double m_dLastMoveLength = 0.0;
 
 		public enum EProjectiles { AXE, NINJASTAR };
 
@@ -332,12 +333,9 @@ namespace engine
 				}
 				else {
 					if (m_swPostMoveDecelTimer.IsRunning) dAccelDecelScale = GetSlowDownScale();
-                }
-				
-				//m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1);
-				// need to learn how to know when a sound has stopped to do these footstep sounds correctly
+                }			
 
-				m_cam.MoveToPosition(d3MoveTo, !AcceleratingOrDecelerating() && !AreFalling(), dAccelDecelScale);
+				m_dLastMoveLength = m_cam.MoveToPosition(d3MoveTo, !AcceleratingOrDecelerating() && !AreFalling(), dAccelDecelScale);
 
 				if (nMoveAttemptCount > 1)
 					return false;
@@ -384,6 +382,11 @@ namespace engine
 			}
 		}
 
+		public override double GetVelocity()
+		{
+			return m_dLastMoveLength;
+		}
+
 		private double GetSlowDownScale()
 		{
             double dScale = 1.0;
@@ -391,7 +394,7 @@ namespace engine
 			double dRatio = (double)m_swPostMoveDecelTimer.ElapsedMilliseconds / m_dDecelTimeMS;
 			dScale = (1.0 - dRatio) * m_cam.GetStandardMovementScale(); 
 
-			LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + m_swPostMoveDecelTimer.ElapsedMilliseconds);
+			//LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + m_swPostMoveDecelTimer.ElapsedMilliseconds);
 
             return dScale;
         }
@@ -416,7 +419,10 @@ namespace engine
 		{
 			if (AreFalling()) return;
 
-			if (bUserMove && m_swPostMoveDecelTimer.IsRunning) m_swPostMoveDecelTimer.Reset(); // stop deceleration because user inputted new move command
+			if (bUserMove && m_swPostMoveDecelTimer.IsRunning)
+			{
+				m_swPostMoveDecelTimer.Reset(); // stop deceleration because user inputted new move command
+			}
 
 			switch(dir)
 			{
@@ -472,6 +478,8 @@ namespace engine
 			// Handle cached moves here. The cached moves represent the movement keys the user pressed since the last game tick
 			// If they pressed left and forward we will move diagnoally once instead of left and then forward. This reduces
 			// the number of collision detection tests and should provide smoother movement especially along walls
+
+			m_dLastMoveLength = 0.0;
 
 			// standard moves
 			if(m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.FORWARD))

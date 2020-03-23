@@ -65,7 +65,7 @@ namespace engine
 		{
 			if (m_writer == null) m_writer = new StreamWriter(PATHS.GetLogFile);
 
-			m_writer.Write(DateTime.Now.ToString() + " : " + sType + " : ");
+			m_writer.Write(DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss:ffff") + " : " + sType + " : ");
 			m_writer.WriteLine(sMessage);
 			m_writer.Flush();
 		}

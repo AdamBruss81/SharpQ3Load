@@ -42,6 +42,7 @@ namespace simulator
         private void openGLControl_KeyUp(object sender, KeyEventArgs e)
         {            
             m_dictKeyStates[e.KeyCode] = false;
+            LOGGER.Debug("key up: " + e.KeyCode);
         }
 
         private void ProcessMouseButtons()

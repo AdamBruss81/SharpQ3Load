@@ -41,7 +41,8 @@ namespace engine
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
 		MovableCamera.DIRECTION m_eDecelingDirection = MovableCamera.DIRECTION.NONE;
 		const double m_dDecelTimeMS = 200.0;
-		double m_dLastMoveLength = 0.0;
+		double m_dLastPreStoppingScale = 0.0;
+		double m_dDecelStartMoveScale = 0.0;
 
 		public enum EProjectiles { AXE, NINJASTAR };
 
@@ -327,15 +328,22 @@ namespace engine
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
 				double dAccelDecelScale = 1.0;
+				bool bAltered = false;
 				if (m_swFallTimer.IsRunning)
 				{
+					bAltered = true;
 					dAccelDecelScale = GetFallScale();
 				}
 				else {
-					if (m_swPostMoveDecelTimer.IsRunning) dAccelDecelScale = GetSlowDownScale();
+					if (m_swPostMoveDecelTimer.IsRunning)
+					{
+						dAccelDecelScale = GetSlowDownScale();
+						bAltered = true;
+					}
                 }			
 
-				m_dLastMoveLength = m_cam.MoveToPosition(d3MoveTo, !AcceleratingOrDecelerating() && !AreFalling(), dAccelDecelScale);
+				double d = m_cam.MoveToPosition(d3MoveTo, !AcceleratingOrDecelerating() && !AreFalling(), dAccelDecelScale);
+				if (!bAltered) m_dLastPreStoppingScale = d;
 
 				if (nMoveAttemptCount > 1)
 					return false;
@@ -384,7 +392,7 @@ namespace engine
 
 		public override double GetVelocity()
 		{
-			return m_dLastMoveLength;
+			return m_dLastPreStoppingScale;
 		}
 
 		private double GetSlowDownScale()
@@ -392,9 +400,7 @@ namespace engine
             double dScale = 1.0;
 
 			double dRatio = (double)m_swPostMoveDecelTimer.ElapsedMilliseconds / m_dDecelTimeMS;
-			dScale = (1.0 - dRatio) * m_cam.GetStandardMovementScale(); 
-
-			//LOGGER.Debug("Slowdown scale is : " + dScale + " with elapsed milli being " + m_swPostMoveDecelTimer.ElapsedMilliseconds);
+			dScale = (1.0 - dRatio) * m_dDecelStartMoveScale; 
 
             return dScale;
         }
@@ -479,8 +485,6 @@ namespace engine
 			// If they pressed left and forward we will move diagnoally once instead of left and then forward. This reduces
 			// the number of collision detection tests and should provide smoother movement especially along walls
 
-			m_dLastMoveLength = 0.0;
-
 			// standard moves
 			if(m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.FORWARD))
 			{
@@ -521,12 +525,15 @@ namespace engine
 
 			if(stoppedMovingStates.AnyTrue())
 			{
+				LOGGER.Debug("Stopped moving");
 				m_eDecelingDirection = stoppedMovingStates.GetRelevant();
+				m_dDecelStartMoveScale = m_dLastPreStoppingScale;
+				m_dLastPreStoppingScale = 0.0;
 				m_swPostMoveDecelTimer.Start();
-			}
+			}			
 
 			// do deceleration movement if needed
-            if (m_swPostMoveDecelTimer.IsRunning)
+			if (m_swPostMoveDecelTimer.IsRunning)
 			{
 				// player stopped moving and they are decelerating to a stop
 				if (m_swPostMoveDecelTimer.ElapsedMilliseconds >= (long)m_dDecelTimeMS)

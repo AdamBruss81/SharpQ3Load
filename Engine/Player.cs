@@ -24,6 +24,8 @@ namespace engine
 	/// </summary>
 	public class Player:Engine
 	{
+		// ### MEMBER VARIABLES
+
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
 		// These are the base projectiles for which additional projectiles are born. New projectiles
@@ -38,13 +40,21 @@ namespace engine
 		Stopwatch m_swFallTimer = new Stopwatch();
 		MoveStates m_MovesForThisTick = new MoveStates();
 		Stopwatch m_swPostMoveDecelTimer = new Stopwatch();
+		Stopwatch m_swStartMoveAccelTimer = new Stopwatch();
 		EProjectiles m_ProjectileMode = EProjectiles.AXE;
+
 		MovableCamera.DIRECTION m_eDecelingDirection = MovableCamera.DIRECTION.NONE;
-		const double m_dDecelTimeMS = 200.0;
-		double m_dLastPreStoppingScale = 0.0;
+		MovableCamera.DIRECTION m_eAccelingDirection = MovableCamera.DIRECTION.NONE;
+
+		const double m_dDecelAccelTimeMS = 200.0;
+		double m_dLastGameTickMoveScale = 0.0;
 		double m_dDecelStartMoveScale = 0.0;
 
-		public enum EProjectiles { AXE, NINJASTAR };
+        double m_dAccelStartMoveScale = 0.0;
+
+        // ###
+
+        public enum EProjectiles { AXE, NINJASTAR };
 
 		public Player(OpenGLControlModded.simpleOpenGlControlEx win, SoundManager sm) : base(win) { m_SoundManager = sm; }
 
@@ -328,22 +338,23 @@ namespace engine
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
 				double dAccelDecelScale = 1.0;
-				bool bAltered = false;
 				if (m_swFallTimer.IsRunning)
 				{
-					bAltered = true;
 					dAccelDecelScale = GetFallScale();
 				}
 				else {
 					if (m_swPostMoveDecelTimer.IsRunning)
 					{
 						dAccelDecelScale = GetSlowDownScale();
-						bAltered = true;
 					}
-                }			
+					if(m_swStartMoveAccelTimer.IsRunning)
+					{
+						dAccelDecelScale = GetSpeedUpScale();
+                    }
+                 }
 
 				double d = m_cam.MoveToPosition(d3MoveTo, !AcceleratingOrDecelerating() && !AreFalling(), dAccelDecelScale);
-				if (!bAltered) m_dLastPreStoppingScale = d;
+				if (eSourceMovement != MovableCamera.DIRECTION.DOWN) m_dLastGameTickMoveScale = d;
 
 				if (nMoveAttemptCount > 1)
 					return false;
@@ -392,20 +403,36 @@ namespace engine
 
 		public override double GetVelocity()
 		{
-			return m_dLastPreStoppingScale;
+			return m_dLastGameTickMoveScale;
 		}
 
 		private double GetSlowDownScale()
 		{
             double dScale = 1.0;
 
-			double dRatio = (double)m_swPostMoveDecelTimer.ElapsedMilliseconds / m_dDecelTimeMS;
-			dScale = (1.0 - dRatio) * m_dDecelStartMoveScale; 
+			double dRatio = (double)m_swPostMoveDecelTimer.ElapsedMilliseconds / m_dDecelAccelTimeMS;
+			dScale = (1.0 - dRatio) * m_dDecelStartMoveScale;
+
+			LOGGER.Debug("Decel scale is " + dScale + " for ellapsed of " + m_swPostMoveDecelTimer.ElapsedMilliseconds);
+
+			return dScale;
+        }
+		 
+        private double GetSpeedUpScale()
+        {
+            double dScale = 1.0;
+
+			//double dRatio = (double)m_swStartMoveAccelTimer.ElapsedMilliseconds / m_dDecelAccelTimeMS;
+			//dScale = (dRatio) * m_dAccelStartMoveScale;
+
+			dScale = (double)m_swStartMoveAccelTimer.ElapsedMilliseconds * .0075;
+
+			LOGGER.Debug("Accel scale is " + dScale + " for ellapsed of " + m_swStartMoveAccelTimer.ElapsedMilliseconds);
 
             return dScale;
         }
 
-		private double GetFallScale()
+        private double GetFallScale()
 		{
 			double dScale = 1.0;
 
@@ -471,7 +498,7 @@ namespace engine
 
 		private bool AcceleratingOrDecelerating()
 		{
-			return m_swPostMoveDecelTimer.IsRunning;
+			return m_swPostMoveDecelTimer.IsRunning || m_swStartMoveAccelTimer.IsRunning;
 		}
 
 		override public void CacheMove(MovableCamera.DIRECTION direction)
@@ -479,14 +506,58 @@ namespace engine
 			m_MovesForThisTick.SetState(direction, true);
 		}
 
-		override public void GameTick(MoveStates stoppedMovingStates) 
+		private void HandleAccelDecel(MoveStates stoppedMovingStates, MoveStates startedMovingStates)
+		{
+			if (stoppedMovingStates.AnyTrue())
+			{
+				m_swStartMoveAccelTimer.Reset(); // if you stop moving, reset the accel stopwatch
+				m_eDecelingDirection = stoppedMovingStates.GetRelevant();
+				m_dDecelStartMoveScale = m_dLastGameTickMoveScale;
+				m_swPostMoveDecelTimer.Start();
+				LOGGER.Debug("Stopped moving with decel move scale " + m_dDecelStartMoveScale);
+			}
+			if (startedMovingStates.AnyTrue())
+			{
+				m_swPostMoveDecelTimer.Reset(); // if start moving, stop decel timer for now
+
+				m_eAccelingDirection = startedMovingStates.GetRelevant();
+				m_dAccelStartMoveScale = m_dLastGameTickMoveScale;
+				m_swStartMoveAccelTimer.Start();
+				LOGGER.Debug("Started moving with accel move scale " + m_dAccelStartMoveScale);
+			}
+
+			// do deceleration movement if needed
+			if (m_swPostMoveDecelTimer.IsRunning)
+			{
+				// player stopped moving and they are decelerating to a stop
+				if (m_swPostMoveDecelTimer.ElapsedMilliseconds >= (long)m_dDecelAccelTimeMS)
+				{
+					m_swPostMoveDecelTimer.Reset();
+				}
+				else
+				{
+					MoveInternal(m_eDecelingDirection, false);
+				}
+			}
+			if (m_swStartMoveAccelTimer.IsRunning)
+			{
+				if (m_swStartMoveAccelTimer.ElapsedMilliseconds >= (long)m_dDecelAccelTimeMS)
+				{
+					m_swStartMoveAccelTimer.Reset();
+				}
+			}
+		}
+
+		override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates) 
 		{
 			// Handle cached moves here. The cached moves represent the movement keys the user pressed since the last game tick
-			// If they pressed left and forward we will move diagnoally once instead of left and then forward. This reduces
+			// If they pressed left and forward we will move diagnolly once instead of left and then forward. This reduces
 			// the number of collision detection tests and should provide smoother movement especially along walls
 
+			HandleAccelDecel(stoppedMovingStates, startedMovingStates);
+
 			// standard moves
-			if(m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.FORWARD))
+			if (m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.FORWARD))
 			{
 				MoveInternal(MovableCamera.DIRECTION.FORWARD, true);
 			}
@@ -520,31 +591,15 @@ namespace engine
                 MoveInternal(MovableCamera.DIRECTION.BACK_RIGHT, true);
             }
 
+			bool bUserMoved = m_MovesForThisTick.AnyTrue();
+
             // clear way for next tick
             m_MovesForThisTick.Clear();
 
-			if(stoppedMovingStates.AnyTrue())
-			{
-				LOGGER.Debug("Stopped moving");
-				m_eDecelingDirection = stoppedMovingStates.GetRelevant();
-				m_dDecelStartMoveScale = m_dLastPreStoppingScale;
-				m_dLastPreStoppingScale = 0.0;
-				m_swPostMoveDecelTimer.Start();
-			}			
-
-			// do deceleration movement if needed
-			if (m_swPostMoveDecelTimer.IsRunning)
-			{
-				// player stopped moving and they are decelerating to a stop
-				if (m_swPostMoveDecelTimer.ElapsedMilliseconds >= (long)m_dDecelTimeMS)
-				{
-					m_swPostMoveDecelTimer.Reset();
-				}
-				else
-				{
-					MoveInternal(m_eDecelingDirection, false);
-                }
-			}                    
+			if (!m_swPostMoveDecelTimer.IsRunning && !bUserMoved)
+            {
+                m_dLastGameTickMoveScale = 0.0;
+            }
         }
 
 		/// <summary>

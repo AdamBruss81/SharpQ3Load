@@ -17,8 +17,9 @@ namespace simulator
             // key game functions
             ProcessMouseButtons();
             MoveStates stoppedMovingStates = new MoveStates();
-            ProcessKeyStates(stoppedMovingStates);
-            m_Engine.GameTick(stoppedMovingStates);
+            MoveStates startedMovingStates = new MoveStates();
+            ProcessKeyStates(stoppedMovingStates, startedMovingStates);
+            m_Engine.GameTick(stoppedMovingStates, startedMovingStates);
             SetLastMoveStates();
             m_Engine.showScene(GetRecentKey);
             // ###            

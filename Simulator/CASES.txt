@@ -72,4 +72,8 @@ and main thread. - DONE
 
 27. Implement wix installer
 
+----------------------
 
+Current movement issue. While moving forward, if you continue to move forward and press left, it delays before starting the strafe run. I think pressing left makes it accelerate
+from 0 instead of taking your existing speed. Conversely, when you start moving it takes 1.5 as the scale to base your first move off which is wrong. I need to switch these and then make the get
+accelscale function handle it correctly.

@@ -84,3 +84,6 @@ I'm aborting the diagnol movement system and going back to just four movements w
 because you just need the four stopwatches and you're pretty much done. To deal with the bumpy strafe running along wall issue, I plan on detected when two collisions in one tick
 happens. If that does happen, restore the camera to where it was at the start of the tick and do a diagnol move. This will then respond smoothly along the wall. So diagnol
 movement will be a special case.
+
+Also I think I will need four current velocities rather than one. I need to know which way I'm accelerating or decelerating. If you're running forward full speed
+and hit left, it should accelerate you left and not start you left at fullspeed.

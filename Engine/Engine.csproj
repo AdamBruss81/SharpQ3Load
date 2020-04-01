@@ -72,6 +72,7 @@
     <Compile Include="Engine.cs" />
     <Compile Include="Figure\Plane.cs" />
     <Compile Include="SoundManager.cs" />
+    <Compile Include="StopWatchManager.cs" />
     <Compile Include="Zipping\Zipper.cs" />
     <Compile Include="Figure\BoundingBox.cs" />
     <Compile Include="Figure\Face.cs" />

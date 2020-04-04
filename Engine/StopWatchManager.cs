@@ -25,7 +25,7 @@ namespace engine
 
         MovableCamera m_cam = null;
 
-        const double mc_dDecelAccelTimeMS = 1000.0;
+        const double mc_dDecelAccelTimeMS = 150.0;
 
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxDecelMS = new Dictionary<MovableCamera.DIRECTION, double>();
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxAccelMS = new Dictionary<MovableCamera.DIRECTION, double>();
@@ -63,8 +63,12 @@ namespace engine
         public void Command(MovableCamera.DIRECTION dir, bool bAccel, SWCommand command)
         {
             Stopwatch sw = GetStopWatch(dir, bAccel);
-            if (command == SWCommand.RESET) sw.Reset();
-            else sw.Start();
+            if (command == SWCommand.RESET)
+            {
+                sw.Reset();
+            }
+            else
+                sw.Start();
         }
 
         public bool IsRunning(MovableCamera.DIRECTION dir, bool bAccel)
@@ -117,14 +121,6 @@ namespace engine
             return m_swFallTimer.IsRunning;
         }
 
-        public void UserMoved()
-        {
-            m_swPostMoveBackDecelTimer.Reset();
-            m_swPostMoveForwardDecelTimer.Reset();
-            m_swPostMoveLeftDecelTimer.Reset();
-            m_swPostMoveRightDecelTimer.Reset();
-        }
-
         public double GetFallScale()
         {
             double dScale = 1.0;
@@ -147,7 +143,7 @@ namespace engine
 
             dScale = (1.0 - dRatio) * m_cam.GetStandardMovementScale();
 
-            // LOGGER.Debug("Decel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds);
+            LOGGER.Debug("Decel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds + " for direction " + dir);
 
             return dScale;
         }
@@ -162,7 +158,7 @@ namespace engine
 
             dScale = dElapsedAdjusted / mc_dDecelAccelTimeMS * m_cam.GetStandardMovementScale();
 
-            //LOGGER.Debug("Accel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds);
+            LOGGER.Debug("Accel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds + " for direction " + dir);
 
             return dScale;
         }
@@ -217,6 +213,8 @@ namespace engine
         {
             if(stoppedMovingStates.GetState(MovableCamera.DIRECTION.FORWARD))
             {
+                LOGGER.Debug("Stopped moving forward");
+
                 m_swStartMoveForwardAccelTimer.Reset(); // if you stop moving, reset the accel stopwatch
 
                 m_dictMaxDecelMS[MovableCamera.DIRECTION.FORWARD] = dictLastMoveScales[MovableCamera.DIRECTION.FORWARD] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS;

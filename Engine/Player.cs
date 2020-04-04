@@ -342,24 +342,61 @@ namespace engine
 					dAccelDecelScale = m_swmgr.GetFallScale();
 				}
 				else {
-					if (m_swmgr.IsRunning(MovableCamera.DIRECTION.FORWARD, false))
+					if (eSourceMovement == MovableCamera.DIRECTION.FORWARD)
 					{
-						dAccelDecelScale = m_swmgr.GetSlowDownScale(MovableCamera.DIRECTION.FORWARD);
+						if (m_swmgr.IsRunning(MovableCamera.DIRECTION.FORWARD, false))
+						{
+							dAccelDecelScale = m_swmgr.GetSlowDownScale(MovableCamera.DIRECTION.FORWARD);
+						}
+						else if (m_swmgr.IsRunning(MovableCamera.DIRECTION.FORWARD, true))
+						{
+							dAccelDecelScale = m_swmgr.GetSpeedUpScale(MovableCamera.DIRECTION.FORWARD);
+						}
 					}
-					if (m_swmgr.IsRunning(MovableCamera.DIRECTION.FORWARD, true))
+					else if(eSourceMovement == MovableCamera.DIRECTION.BACK)
 					{
-						dAccelDecelScale = m_swmgr.GetSpeedUpScale(MovableCamera.DIRECTION.FORWARD);
+                        if (m_swmgr.IsRunning(MovableCamera.DIRECTION.BACK, false))
+                        {
+                            dAccelDecelScale = m_swmgr.GetSlowDownScale(MovableCamera.DIRECTION.BACK);
+                        }
+                        else if (m_swmgr.IsRunning(MovableCamera.DIRECTION.BACK, true))
+                        {
+                            dAccelDecelScale = m_swmgr.GetSpeedUpScale(MovableCamera.DIRECTION.BACK);
+                        }
                     }
-                 }
+                    else if (eSourceMovement == MovableCamera.DIRECTION.LEFT)
+                    {
+                        if (m_swmgr.IsRunning(MovableCamera.DIRECTION.LEFT, false))
+                        {
+                            dAccelDecelScale = m_swmgr.GetSlowDownScale(MovableCamera.DIRECTION.LEFT);
+                        }
+                        else if (m_swmgr.IsRunning(MovableCamera.DIRECTION.LEFT, true))
+                        {
+                            dAccelDecelScale = m_swmgr.GetSpeedUpScale(MovableCamera.DIRECTION.LEFT);
+                        }
+                    }
+                    else if (eSourceMovement == MovableCamera.DIRECTION.RIGHT)
+                    {
+                        if (m_swmgr.IsRunning(MovableCamera.DIRECTION.RIGHT, false))
+                        {
+                            dAccelDecelScale = m_swmgr.GetSlowDownScale(MovableCamera.DIRECTION.RIGHT);
+                        }
+                        else if (m_swmgr.IsRunning(MovableCamera.DIRECTION.RIGHT, true))
+                        {
+                            dAccelDecelScale = m_swmgr.GetSpeedUpScale(MovableCamera.DIRECTION.RIGHT);
+                        }
+                    }
+                }
 
-				double d = m_cam.MoveToPosition(d3MoveTo, !m_swmgr.GetAnyRunning(StopWatchManager.AccelModes.ALL), dAccelDecelScale);
+				bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
+				double d = m_cam.MoveToPosition(d3MoveTo, bAllowKeyBasedScaling, dAccelDecelScale);
 				if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
 				{
 					m_dLastGameTickMoveScale = d;
 					m_dictLastMoveScales[eSourceMovement] = d;
 				}
 
-				if (nMoveAttemptCount > 1)
+				if (nMoveAttemptCount > 1) 
 					return false;
 				else 
 					return true;
@@ -415,14 +452,9 @@ namespace engine
             m_cam.MoveForward(30.0);
         }
 
-		private void MoveInternal(MovableCamera.DIRECTION dir, bool bUserMove)
+		private void MoveInternal(MovableCamera.DIRECTION dir)
 		{
 			if (m_swmgr.AreFalling()) return;
-
-			if (bUserMove)
-			{
-				m_swmgr.UserMoved();				
-			}
 
 			switch(dir)
 			{
@@ -489,7 +521,43 @@ namespace engine
 				}
 				else
 				{
-					MoveInternal(MovableCamera.DIRECTION.FORWARD, false);
+					MoveInternal(MovableCamera.DIRECTION.FORWARD);
+				}               
+            }
+
+			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.BACK, false))
+			{
+				if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.BACK, false) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.BACK, false))
+				{
+					m_swmgr.Command(MovableCamera.DIRECTION.BACK, false, StopWatchManager.SWCommand.RESET);
+				}
+				else
+				{
+					MoveInternal(MovableCamera.DIRECTION.BACK);
+				}
+			}
+
+			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.LEFT, false))
+			{
+				if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.LEFT, false) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.LEFT, false))
+				{
+					m_swmgr.Command(MovableCamera.DIRECTION.LEFT, false, StopWatchManager.SWCommand.RESET);
+				}
+				else
+				{
+					MoveInternal(MovableCamera.DIRECTION.LEFT);
+				}
+			}
+
+			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.RIGHT, false))
+			{
+				if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.RIGHT, false) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.RIGHT, false))
+				{
+					m_swmgr.Command(MovableCamera.DIRECTION.RIGHT, false, StopWatchManager.SWCommand.RESET);
+				}
+				else
+				{
+					MoveInternal(MovableCamera.DIRECTION.RIGHT);
 				}
 			}
 
@@ -501,6 +569,30 @@ namespace engine
 					m_swmgr.Command(MovableCamera.DIRECTION.FORWARD, true, StopWatchManager.SWCommand.RESET);
 				}
 			}
+
+			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.BACK, true))
+			{
+				if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.BACK, true) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.BACK, true))
+				{
+					m_swmgr.Command(MovableCamera.DIRECTION.BACK, true, StopWatchManager.SWCommand.RESET);
+				}
+			}
+
+			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.LEFT, true))
+			{
+				if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.LEFT, true) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.LEFT, true))
+				{
+					m_swmgr.Command(MovableCamera.DIRECTION.LEFT, true, StopWatchManager.SWCommand.RESET);
+				}
+			}
+
+            if (m_swmgr.IsRunning(MovableCamera.DIRECTION.RIGHT, true))
+            {
+                if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.RIGHT, true) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.RIGHT, true))
+                {
+                    m_swmgr.Command(MovableCamera.DIRECTION.RIGHT, true, StopWatchManager.SWCommand.RESET);
+                }
+            }
 		}
 
 		override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates) 
@@ -512,21 +604,21 @@ namespace engine
 			HandleAccelDecel(stoppedMovingStates, startedMovingStates);
 
 			// standard moves
-			if (m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.FORWARD))
+			if (m_MovesForThisTick.GetState(MovableCamera.DIRECTION.FORWARD))
 			{
-				MoveInternal(MovableCamera.DIRECTION.FORWARD, true);
+				MoveInternal(MovableCamera.DIRECTION.FORWARD);
 			}
-            if (m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.BACK))
+            if (m_MovesForThisTick.GetState(MovableCamera.DIRECTION.BACK))
             {
-				MoveInternal(MovableCamera.DIRECTION.BACK, true);
+				MoveInternal(MovableCamera.DIRECTION.BACK);
 			}
-            if (m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.LEFT))
+            if (m_MovesForThisTick.GetState(MovableCamera.DIRECTION.LEFT))
             {
-				MoveInternal(MovableCamera.DIRECTION.LEFT, true);
+				MoveInternal(MovableCamera.DIRECTION.LEFT);
 			}
-            if (m_MovesForThisTick.OnlyState(MovableCamera.DIRECTION.RIGHT))
+            if (m_MovesForThisTick.GetState(MovableCamera.DIRECTION.RIGHT))
             {
-				MoveInternal(MovableCamera.DIRECTION.RIGHT, true);
+				MoveInternal(MovableCamera.DIRECTION.RIGHT);
 			}
 
 			// strafe running

@@ -246,5 +246,92 @@ namespace engine
                 m_swPostMoveRightDecelTimer.Start();
             }
         }
+
+        public void StopAccelTimers()
+        {
+            if (IsRunning(MovableCamera.DIRECTION.FORWARD, true))
+            {
+                if (GetElapsed(MovableCamera.DIRECTION.FORWARD, true) >= GetMaxMS(MovableCamera.DIRECTION.FORWARD, true))
+                {
+                    Command(MovableCamera.DIRECTION.FORWARD, true, StopWatchManager.SWCommand.RESET);
+                }
+            }
+
+            if (IsRunning(MovableCamera.DIRECTION.BACK, true))
+            {
+                if (GetElapsed(MovableCamera.DIRECTION.BACK, true) >= GetMaxMS(MovableCamera.DIRECTION.BACK, true))
+                {
+                    Command(MovableCamera.DIRECTION.BACK, true, StopWatchManager.SWCommand.RESET);
+                }
+            }
+
+            if (IsRunning(MovableCamera.DIRECTION.LEFT, true))
+            {
+                if (GetElapsed(MovableCamera.DIRECTION.LEFT, true) >= GetMaxMS(MovableCamera.DIRECTION.LEFT, true))
+                {
+                    Command(MovableCamera.DIRECTION.LEFT, true, StopWatchManager.SWCommand.RESET);
+                }
+            }
+
+            if (IsRunning(MovableCamera.DIRECTION.RIGHT, true))
+            {
+                if (GetElapsed(MovableCamera.DIRECTION.RIGHT, true) >= GetMaxMS(MovableCamera.DIRECTION.RIGHT, true))
+                {
+                    Command(MovableCamera.DIRECTION.RIGHT, true, StopWatchManager.SWCommand.RESET);
+                }
+            }
+        }
+
+        public double GetAccelDecelScale(MovableCamera.DIRECTION eSourceMovement)
+        {
+            double dAccelDecelScale = 1.0;
+
+            if (eSourceMovement == MovableCamera.DIRECTION.FORWARD)
+            {
+                if (IsRunning(MovableCamera.DIRECTION.FORWARD, false))
+                {
+                    dAccelDecelScale = GetSlowDownScale(MovableCamera.DIRECTION.FORWARD);
+                }
+                else if (IsRunning(MovableCamera.DIRECTION.FORWARD, true))
+                {
+                    dAccelDecelScale = GetSpeedUpScale(MovableCamera.DIRECTION.FORWARD);
+                }
+            }
+            else if (eSourceMovement == MovableCamera.DIRECTION.BACK)
+            {
+                if (IsRunning(MovableCamera.DIRECTION.BACK, false))
+                {
+                    dAccelDecelScale = GetSlowDownScale(MovableCamera.DIRECTION.BACK);
+                }
+                else if (IsRunning(MovableCamera.DIRECTION.BACK, true))
+                {
+                    dAccelDecelScale = GetSpeedUpScale(MovableCamera.DIRECTION.BACK);
+                }
+            }
+            else if (eSourceMovement == MovableCamera.DIRECTION.LEFT)
+            {
+                if (IsRunning(MovableCamera.DIRECTION.LEFT, false))
+                {
+                    dAccelDecelScale = GetSlowDownScale(MovableCamera.DIRECTION.LEFT);
+                }
+                else if (IsRunning(MovableCamera.DIRECTION.LEFT, true))
+                {
+                    dAccelDecelScale = GetSpeedUpScale(MovableCamera.DIRECTION.LEFT);
+                }
+            }
+            else if (eSourceMovement == MovableCamera.DIRECTION.RIGHT)
+            {
+                if (IsRunning(MovableCamera.DIRECTION.RIGHT, false))
+                {
+                    dAccelDecelScale = GetSlowDownScale(MovableCamera.DIRECTION.RIGHT);
+                }
+                else if (IsRunning(MovableCamera.DIRECTION.RIGHT, true))
+                {
+                    dAccelDecelScale = GetSpeedUpScale(MovableCamera.DIRECTION.RIGHT);
+                }
+            }
+
+            return dAccelDecelScale;
+        }
     }
 }

@@ -23,8 +23,8 @@ namespace engine
 	/// </summary>
 	public class Axe:VRMLProjectile
 	{
-		private float SPEED = 0.18F;
-		private double AXE_SPIN_AMOUNT = 8.0;
+		private float SPEED = 0.3F;
+		private double AXE_SPIN_AMOUNT = 10.0; 
 		private double m_AxeSpinRotation = 0.0;
 		private double m_setupRotateAmount = 0.0;
 

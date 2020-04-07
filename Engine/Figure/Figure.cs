@@ -731,8 +731,11 @@ namespace engine
 					i.DistanceFromCam = (position - i.Intersection).Length;
 				}
 				m_lAllIntersections.Sort(Player.CompareIntersectionInfos);
-				intersection.Intersection.Copy(m_lAllIntersections[0].Intersection);
-				intersection.Face = m_lAllIntersections[0].Face;
+				if (intersection != null)
+				{
+					intersection.Intersection.Copy(m_lAllIntersections[0].Intersection);
+					intersection.Face = m_lAllIntersections[0].Face;
+				}
 			}
 
 			return !bCollision;

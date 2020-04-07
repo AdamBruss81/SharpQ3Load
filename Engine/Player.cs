@@ -25,6 +25,7 @@ namespace engine
 	public class Player:Engine
 	{
 		// ### MEMBER VARIABLES
+		const double mcd_Height = .98;
 
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
@@ -54,7 +55,8 @@ namespace engine
 
 		public Player(OpenGLControlModded.simpleOpenGlControlEx win, SoundManager sm) : base(win) 
 		{ 
-			m_SoundManager = sm; m_swmgr = new StopWatchManager(m_cam); 
+			m_SoundManager = sm; 
+			m_swmgr = new StopWatchManager(m_cam); 
 		}
 
 		/// <summary>
@@ -64,6 +66,7 @@ namespace engine
 		public Player(Engine driver):base(driver) 
 		{
 			InitializeProjectiles();
+			m_swmgr = new StopWatchManager(m_cam);
 		}		
 
 		public void SetSoundManager(SoundManager sm)
@@ -319,13 +322,39 @@ namespace engine
 			else return 0;
 		}
 
+		private bool InternalMove(MovableCamera.DIRECTION eSourceMovement, D3Vect d3MoveTo, int nMoveAttemptCount)
+		{
+			double dAccelDecelScale = 1.0;
+			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true))
+			{
+				dAccelDecelScale = m_swmgr.GetFallScale();
+			}
+			else
+			{
+				dAccelDecelScale = m_swmgr.GetAccelDecelScale(eSourceMovement);
+			}
+
+			bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
+			double d = m_cam.MoveToPosition(d3MoveTo, bAllowKeyBasedScaling, dAccelDecelScale);
+			if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
+			{
+				m_dLastGameTickMoveScale = d;
+				m_dictLastMoveScales[eSourceMovement] = d;
+			}
+
+			if (nMoveAttemptCount > 1)
+				return false;
+			else
+				return true;
+		}
+
 		/// <summary>
 		/// Attempt to move forward by determining if a face is in the way. If a collision is detected,
 		/// slide the MovableCamera along the wall.
 		/// </summary>
 		/// <param name="d3MoveTo">target location to move to</param>
 		/// <param name="d3Position">current location of the MovableCamera</param>
-		private bool TryToMove(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWall, MovableCamera.DIRECTION eSourceMovement)
+		private bool TryToMove(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWallOrUpStairs, MovableCamera.DIRECTION eSourceMovement)
 		{
 			nMoveAttemptCount++;
 
@@ -334,30 +363,24 @@ namespace engine
 
 			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
 			{
-				double dAccelDecelScale = 1.0;
-				if (m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true))
-				{
-					dAccelDecelScale = m_swmgr.GetFallScale();
-				}
-				else {
-					dAccelDecelScale = m_swmgr.GetAccelDecelScale(eSourceMovement);					
-                }
-
-				bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
-				double d = m_cam.MoveToPosition(d3MoveTo, bAllowKeyBasedScaling, dAccelDecelScale);
-				if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
-				{
-					m_dLastGameTickMoveScale = d;
-					m_dictLastMoveScales[eSourceMovement] = d;
-				}
-
-				if (nMoveAttemptCount > 1) 
-					return false;
-				else 
-					return true;
+				return InternalMove(eSourceMovement, d3MoveTo, nMoveAttemptCount);
 			}
-			else if(bMoveAlongWall)
+			else if(bMoveAlongWallOrUpStairs)
 			{
+				// first try to move up stairs
+				// ===
+				D3Vect d3StepUpPos = new D3Vect(d3Position);
+				D3Vect d3StepUpMoveTo = new D3Vect(d3MoveTo);
+				d3StepUpPos.z = d3StepUpPos.z + 0.3;
+				d3StepUpMoveTo.z = d3StepUpMoveTo.z + 0.3;
+
+				if(m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam))
+				{
+					bool bNoWallCollides = InternalMove(eSourceMovement, d3StepUpMoveTo, nMoveAttemptCount);					
+					return bNoWallCollides;
+				}
+				// ===
+
 				D3Vect normal = m_Intersection.Face.GetNewNormal;
 				D3Vect dcamfor = d3MoveTo - d3Position;
 				dcamfor.normalize();
@@ -396,6 +419,32 @@ namespace engine
 			}
 		}
 
+		private void StandUp()
+		{
+			// do this after going up stairs
+			// need to "stand  up" i.e. get to the right height from the ground.
+			//double dAmountToMoveUp = 0.0;
+			m_cam.TurnDown();
+			IntersectionInfo info = new IntersectionInfo();
+			bool bCanMove = m_lStaticFigList[0].CanMove(m_cam.GetLookAtNew, m_cam.Position, info, m_cam);
+			m_cam.RestoreOrientation();
+
+			if (!bCanMove)
+			{
+				double dDistanceFromCam = m_cam.Position.z - info.Intersection.z;
+				if(dDistanceFromCam < mcd_Height)
+				{
+                     D3Vect d3CamPos = m_cam.Position;
+					d3CamPos.z = d3CamPos.z + (mcd_Height - dDistanceFromCam);
+					m_cam.Position = d3CamPos;
+					//dAmountToMoveUp = (mcd_Height - d3CamPos.z);
+				}
+			}
+			
+			//m_cam.TurnUp();
+			//m_cam.MoveToPosition( )
+		}
+
 		public override double GetVelocity()
 		{
 			return m_dLastGameTickMoveScale;
@@ -409,8 +458,6 @@ namespace engine
 
 		private void MoveInternal(MovableCamera.DIRECTION dir)
 		{
-			if (m_swmgr.AreFalling()) return;
-
 			switch(dir)
 			{
 				case MovableCamera.DIRECTION.FORWARD: 
@@ -534,6 +581,8 @@ namespace engine
 				MoveInternal(MovableCamera.DIRECTION.RIGHT);
 			}
 
+			Fall();
+
 			bool bUserMoved = m_MovesForThisTick.AnyTrue();
 
             // clear way for next tick
@@ -556,9 +605,10 @@ namespace engine
 		override public void Fall()
         {
             m_cam.TurnDown();
-
             int nMoveAttemptCount = 0;
             bool bCanMove = TryToMove(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MovableCamera.DIRECTION.DOWN);
+			m_cam.RestoreOrientation();
+
 			if (bCanMove)
 			{
 				if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true)) 
@@ -578,8 +628,17 @@ namespace engine
 					}
 					m_swmgr.Command(MovableCamera.DIRECTION.DOWN, true, StopWatchManager.SWCommand.RESET);
 				}
+				else
+				{
+					// check that we are the right distance from the ground(player's height)
+					double dCurrentPlayerHeight = m_cam.Position.z - m_Intersection.Intersection.z;
+                    if (dCurrentPlayerHeight < mcd_Height)
+                    {
+                        D3Vect d3CamPos = m_cam.Position;
+                        d3CamPos.z = d3CamPos.z + (mcd_Height - dCurrentPlayerHeight);
+                    }
+                }
 			}
-            m_cam.RestoreOrientation();
         }
 
         public override void MouseMove(MouseEventArgs e, ref bool bPostOpen)

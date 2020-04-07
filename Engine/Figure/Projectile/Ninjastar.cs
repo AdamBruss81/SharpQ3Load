@@ -23,7 +23,7 @@ namespace engine
 	/// </summary>
 	public class NinjaStar : VRMLProjectile
 	{
-		private float SPEED = 0.18F;
+		private float SPEED = 0.3F;
 		private double ROTATE_DELTA = 7.0;
 		private double ORIENTATION_ADJUSTMENT = 10;
 		private double m_SpinRotation = 0.0;

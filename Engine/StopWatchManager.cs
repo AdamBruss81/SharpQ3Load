@@ -116,11 +116,6 @@ namespace engine
             return false;
         }
 
-        public bool AreFalling()
-        {
-            return m_swFallTimer.IsRunning;
-        }
-
         public double GetFallScale()
         {
             double dScale = 1.0;

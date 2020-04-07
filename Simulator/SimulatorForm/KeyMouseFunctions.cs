@@ -149,8 +149,6 @@ namespace simulator
             {
                 m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK_RIGHT, true);
             }*/
-
-            m_Engine.Fall();
         }
 
         private void m_openGLControl_ProcessKey(object sender, KeyEventArgs e)

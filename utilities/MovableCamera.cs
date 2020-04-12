@@ -6,7 +6,7 @@ namespace utilities
 {
 	public class MoveStates
 	{
-		List<bool> m_lStates = new List<bool> { false, false, false, false, false, false, false, false };
+		List<bool> m_lStates = new List<bool> { false, false, false, false, false, false, false, false, false };
 
 		public List<bool> GetStates() { return m_lStates; }
 
@@ -83,6 +83,7 @@ namespace utilities
                 case MovableCamera.DIRECTION.FORWARD_RIGHT: return 5;
                 case MovableCamera.DIRECTION.BACK_LEFT: return 6;
                 case MovableCamera.DIRECTION.BACK_RIGHT: return 7;
+				case MovableCamera.DIRECTION.UP: return 8;
             }
 
 			throw new Exception("Invalid direction");

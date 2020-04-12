@@ -43,7 +43,7 @@ namespace simulator
             if (m_swDelayMusicStart.IsRunning && m_swDelayMusicStart.ElapsedMilliseconds >= 5000)
             {
                 m_swDelayMusicStart.Reset();
-                m_SoundManager.PlayRandomSong();
+                //m_SoundManager.PlayRandomSong();
             }
         }
 

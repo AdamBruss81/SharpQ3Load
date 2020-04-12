@@ -87,3 +87,15 @@ movement will be a special case.
 
 Also I think I will need four current velocities rather than one. I need to know which way I'm accelerating or decelerating. If you're running forward full speed
 and hit left, it should accelerate you left and not start you left at fullspeed.
+
+---------------------------
+
+I ran into a bug in the collision detection system while jumping around into walls. I've known it's been there for a while but never saw it cause a real problem in game. When I call canmove,
+I'm using the default lookat. I need to use the scales look at which is where the player will actually go if the canmove succeeds. This will probably
+require moving some code around. So CanMove needs to take the actual soon to be moved scaled lookat and not the default one.
+
+Turn off collision detection for fog faces. For example in hero's keep.
+
+The jumping jumps too high and too fast up I think. It should level out but keep you in the air longer. This way you can jump longer without having to go so high.
+
+Get jumppads to work. Shouldn't be hard. Just detect when you collide with one going down(falling) and then trigger a high jump in the direction of the normal of the jumppad face.

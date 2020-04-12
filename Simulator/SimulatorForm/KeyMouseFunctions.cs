@@ -65,45 +65,40 @@ namespace simulator
 
         private void SetLastMoveStates()
         {
-            bool bForward = false, bBackward = false, bLeft = false, bRight = false;
+            bool bForward = false, bBackward = false, bLeft = false, bRight = false, bJump = false;
             m_dictKeyStates.TryGetValue(Keys.W, out bForward);
             m_dictKeyStates.TryGetValue(Keys.S, out bBackward);
             m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
             m_dictKeyStates.TryGetValue(Keys.D, out bRight);
+            m_dictKeyStates.TryGetValue(Keys.Space, out bJump);
 
             m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD, bForward);
             m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK, bBackward);
             m_lastTickMovestates.SetState(MovableCamera.DIRECTION.LEFT, bLeft);
-            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.RIGHT, bRight);       
+            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.RIGHT, bRight);
+            m_lastTickMovestates.SetState(MovableCamera.DIRECTION.UP, bJump);
         }
 
         private void ProcessKeyStates(MoveStates stoppedMovingStates, MoveStates startedMovingStates)
         {
-            bool bForward = false, bBackward = false, bLeft = false, bRight = false;
+            bool bForward = false, bBackward = false, bLeft = false, bRight = false, bJump = false;
             m_dictKeyStates.TryGetValue(Keys.W, out bForward);
             m_dictKeyStates.TryGetValue(Keys.S, out bBackward);
             m_dictKeyStates.TryGetValue(Keys.A, out bLeft);
             m_dictKeyStates.TryGetValue(Keys.D, out bRight);
+            m_dictKeyStates.TryGetValue(Keys.Space, out bJump);
 
             stoppedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD) && !bForward ? true : false);
             stoppedMovingStates.SetState(MovableCamera.DIRECTION.BACK, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK) && !bBackward ? true : false);
             stoppedMovingStates.SetState(MovableCamera.DIRECTION.LEFT, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.LEFT) && !bLeft ? true : false);
             stoppedMovingStates.SetState(MovableCamera.DIRECTION.RIGHT, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.RIGHT) && !bRight ? true : false);
-
-            /*stoppedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD_LEFT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD_LEFT) && !bForward && !bLeft) ? true : false);
-            stoppedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD_RIGHT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD_RIGHT) && !bForward && !bRight) ? true : false);
-            stoppedMovingStates.SetState(MovableCamera.DIRECTION.BACK_LEFT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK_LEFT) && !bBackward && !bLeft) ? true : false);
-            stoppedMovingStates.SetState(MovableCamera.DIRECTION.BACK_RIGHT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK_RIGHT) && !bBackward && !bRight) ? true : false);*/
+            stoppedMovingStates.SetState(MovableCamera.DIRECTION.UP, m_lastTickMovestates.GetState(MovableCamera.DIRECTION.UP) && !bJump ? true : false);
 
             startedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD, !m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD) && bForward ? true : false);
             startedMovingStates.SetState(MovableCamera.DIRECTION.BACK, !m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK) && bBackward ? true : false);
             startedMovingStates.SetState(MovableCamera.DIRECTION.LEFT, !m_lastTickMovestates.GetState(MovableCamera.DIRECTION.LEFT) && bLeft ? true : false);
             startedMovingStates.SetState(MovableCamera.DIRECTION.RIGHT, !m_lastTickMovestates.GetState(MovableCamera.DIRECTION.RIGHT) && bRight ? true : false);
-
-            /*startedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD_LEFT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD_LEFT) && !bForward && !bLeft) ? true : false);
-            startedMovingStates.SetState(MovableCamera.DIRECTION.FORWARD_RIGHT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.FORWARD_RIGHT) && !bForward && !bRight) ? true : false);
-            startedMovingStates.SetState(MovableCamera.DIRECTION.BACK_LEFT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK_LEFT) && !bBackward && !bLeft) ? true : false);
-            startedMovingStates.SetState(MovableCamera.DIRECTION.BACK_RIGHT, (m_lastTickMovestates.GetState(MovableCamera.DIRECTION.BACK_RIGHT) && !bBackward && !bRight) ? true : false);*/
+            startedMovingStates.SetState(MovableCamera.DIRECTION.UP, !m_lastTickMovestates.GetState(MovableCamera.DIRECTION.UP) && bJump ? true : false);
 
             m_lastTickMovestates.Clear();
 
@@ -131,24 +126,12 @@ namespace simulator
                 m_Engine.CacheMove(MovableCamera.DIRECTION.RIGHT);
                 m_Engine.MoveRight();
                 m_lastTickMovestates.SetState(MovableCamera.DIRECTION.RIGHT, true);
-            }    
-
-            /*if(bForward && bLeft)
+            }   
+            if(bJump)
             {
-                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD_LEFT, true);
+                m_Engine.CacheMove(MovableCamera.DIRECTION.UP);
+                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.UP, true);
             }
-            if (bForward && bRight)
-            {
-                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.FORWARD_RIGHT, true);
-            }
-            if (bBackward && bLeft)
-            {
-                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK_LEFT, true);
-            }
-            if (bBackward && bRight)
-            {
-                m_lastTickMovestates.SetState(MovableCamera.DIRECTION.BACK_RIGHT, true);
-            }*/
         }
 
         private void m_openGLControl_ProcessKey(object sender, KeyEventArgs e)

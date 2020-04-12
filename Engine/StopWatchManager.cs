@@ -10,6 +10,7 @@ namespace engine
     class StopWatchManager
     {
         Stopwatch m_swFallTimer = new Stopwatch();
+        Stopwatch m_swJumpTimer = new Stopwatch();
 
         Stopwatch m_swPostMoveForwardDecelTimer = new Stopwatch();
         Stopwatch m_swStartMoveForwardAccelTimer = new Stopwatch();        
@@ -24,8 +25,10 @@ namespace engine
         Stopwatch m_swStartMoveBackAccelTimer = new Stopwatch();
 
         MovableCamera m_cam = null;
+        Player m_Player = null;
 
         const double mc_dDecelAccelTimeMS = 150.0;
+        const double mc_dDecelJumpMS = 250;
 
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxDecelMS = new Dictionary<MovableCamera.DIRECTION, double>();
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxAccelMS = new Dictionary<MovableCamera.DIRECTION, double>();
@@ -33,9 +36,10 @@ namespace engine
         public enum AccelModes { ACCEL, DECEL, ACCEL_AND_DECEL, FALL, ALL };
         public enum SWCommand { START, RESET };
 
-        public StopWatchManager(MovableCamera cam) 
+        public StopWatchManager(MovableCamera cam, Player player) 
         {
             m_cam = cam;
+            m_Player = player;
         }
 
         public long GetElapsed(MovableCamera.DIRECTION dir, bool bAccel)
@@ -94,6 +98,8 @@ namespace engine
                     else return m_swPostMoveRightDecelTimer;
                 case MovableCamera.DIRECTION.DOWN:
                     return m_swFallTimer;
+                case MovableCamera.DIRECTION.UP:
+                    return m_swJumpTimer;
             }
 
             throw new Exception("No stopwatch found");
@@ -158,18 +164,14 @@ namespace engine
             return dScale;
         }
 
-        public void HandleStartedMoving(MoveStates startedMovingStates, Dictionary<MovableCamera.DIRECTION, double> dictLastMoveScales)
+        public void Jump(double dDecelJumpMS)
         {
-            /*if (startedMovingStates.AnyTrue())
-			{
-				m_swPostMoveDecelTimer.Reset(); // if start moving, stop decel timer for now
+            m_dictMaxDecelMS[MovableCamera.DIRECTION.UP] = dDecelJumpMS;
+            m_swJumpTimer.Start(); 
+        }
 
-				m_eAccelingDirection = startedMovingStates.GetRelevant();
-				m_dAccelMaxMS = (mc_dDecelAccelTimeMS - (m_dLastGameTickMoveScale / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
-				m_swStartMoveAccelTimer.Start();
-				LOGGER.Debug("Started moving with accel move scale " + m_dLastGameTickMoveScale);
-			}*/
-
+    public void HandleStartedMoving(MoveStates startedMovingStates, Dictionary<MovableCamera.DIRECTION, double> dictLastMoveScales)
+        {
             if (startedMovingStates.GetState(MovableCamera.DIRECTION.FORWARD))
             {
                 m_swPostMoveForwardDecelTimer.Reset();
@@ -201,6 +203,13 @@ namespace engine
                 m_dictMaxAccelMS[MovableCamera.DIRECTION.RIGHT] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.RIGHT] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
 
                 m_swStartMoveRightAccelTimer.Start();
+            }
+            if(startedMovingStates.GetState(MovableCamera.DIRECTION.UP))
+            {
+                if (!m_swJumpTimer.IsRunning && !m_swFallTimer.IsRunning) {
+                    m_Player.GetSoundManager().PlayEffect(SoundManager.EEffects.JUMP);
+                    Jump(mc_dDecelJumpMS);
+                }
             }
         }
 
@@ -324,6 +333,15 @@ namespace engine
                 {
                     dAccelDecelScale = GetSpeedUpScale(MovableCamera.DIRECTION.RIGHT);
                 }
+            }
+            else if(eSourceMovement == MovableCamera.DIRECTION.UP)
+            {
+                Debug.Assert(m_swJumpTimer.IsRunning);
+                dAccelDecelScale = GetSlowDownScale(MovableCamera.DIRECTION.UP);
+            }
+            else
+            {
+                throw new Exception("Invalid direction: " + eSourceMovement);
             }
 
             return dAccelDecelScale;

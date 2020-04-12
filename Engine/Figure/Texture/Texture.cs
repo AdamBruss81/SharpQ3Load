@@ -119,7 +119,9 @@ namespace engine
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "bluemetal2_shiny_trans", "bluemetal2_shiny.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "proto_light_2k", "proto_light2.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
+
+                    // q3dm17
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "diamond2cjumppad", "bouncepad01_diamond2cTGA.jpg");
 
                     if (!File.Exists(sFullPath))
                     {

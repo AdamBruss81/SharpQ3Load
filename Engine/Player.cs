@@ -38,6 +38,7 @@ namespace engine
 		IntersectionInfo m_Intersection = new IntersectionInfo(); // this is for two reasons. so I don't have to recreate it all the time and also for use around the class.
 		double[] m_pvUtilMatrix = new double[16];
         SoundManager m_SoundManager = null;
+		int m_nStepCounter = 0;
 		
 		MoveStates m_MovesForThisTick = new MoveStates();				
 
@@ -327,11 +328,17 @@ namespace engine
 			else return 0;
 		}
 
+		/// <summary>
+		/// Passed collision detection by this point. Just move here.
+		/// </summary>
+		/// <param name="eSourceMovement"></param>
+		/// <param name="d3MoveTo"></param>
+		/// <param name="nMoveAttemptCount"></param>
+		/// <returns></returns>
 		private bool InternalMove(MovableCamera.DIRECTION eSourceMovement, D3Vect d3MoveTo, int nMoveAttemptCount)
 		{
-			double dAccelDecelScale = 1.0;
+			double dAccelDecelScale;
 
-			//if (m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true))
 			if(eSourceMovement == MovableCamera.DIRECTION.DOWN)
 			{
 				dAccelDecelScale = m_swmgr.GetFallScale();
@@ -342,10 +349,13 @@ namespace engine
 			}
 
 			bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
+
+			PlaySteps();
+
 			double d = m_cam.MoveToPosition(d3MoveTo, bAllowKeyBasedScaling, dAccelDecelScale);
 			if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
 			{
-				m_dLastGameTickMoveScale = d;
+				m_dLastGameTickMoveScale = d; // revisit this double and the dict below. do we need? why the check on esourcemovement equaling DOWN?
 				m_dictLastMoveScales[eSourceMovement] = d;
 			}
 
@@ -612,6 +622,34 @@ namespace engine
 			}
         }
 
+		private SoundManager.EEffects HandleJumppads(string sTextureInfo)
+		{
+			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
+
+			// jumppads
+			if (sTextureInfo.Contains("diamond2cjumppad") || sTextureInfo.Contains("bouncepad01_block17") || sTextureInfo.Contains("bounce_largeblock3b")
+				|| sTextureInfo.Contains("bounce_concrete"))
+			{
+				if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false))
+				{
+					m_SoundManager.PlayEffect(SoundManager.EEffects.JUMPPAD);
+					m_swmgr.Jump(1000);
+					eEffect = SoundManager.EEffects.NONE;
+				}
+			} // launch pads
+            /*else if (sTextureInfo.Contains("launchpad"))
+            {
+                if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false))
+                {
+                    m_SoundManager.PlayEffect(SoundManager.EEffects.JUMPPAD);
+                    m_swmgr.Jump(1000);
+                    eEffect = SoundManager.EEffects.NONE;
+                }
+            }*/
+
+            return eEffect;
+		}
+
 		/// <summary>
 		/// Attempt to fall. This is called every game tick. It checks if there is ground below you. If there isn't, you move downward in an accelerating
 		/// fashion as if gravity is pulling you down.
@@ -653,7 +691,6 @@ namespace engine
 			if (m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true))
 			{
 				// fall
-				// if elapsed is more than 2000, play ahhhh sound
 				MoveInternal(MovableCamera.DIRECTION.DOWN);				
 			}
 			else
@@ -666,16 +703,10 @@ namespace engine
                     else
                         sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[0].GetPath();
                 }
-				if(sTextureInfo.Contains("diamond2cjumppad"))
-				{
-					if(!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false))
-					{
-						m_SoundManager.PlayEffect(SoundManager.EEffects.JUMPPAD);
-						m_swmgr.Jump(1000);
-						eEffectToPlay = SoundManager.EEffects.NONE;
-					}
-				}
 
+				SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
+				eEffectReturn = HandleJumppads(sTextureInfo);
+				if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;
 				m_SoundManager.PlayEffect(eEffectToPlay);
 
                 // check that we are the right distance from the ground(player's height)
@@ -692,5 +723,42 @@ namespace engine
 		{
 			MoveMovableCameraViaMouse(e, ref bPostOpen);
 		}
-	}
+
+        private void PlaySteps()
+        {
+            // if we are moving on ground, consider playing a step sound
+            if (m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) == false && m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false)
+            {
+                bool bPlayStep = false;
+
+                if (m_swmgr.GetStepper().IsRunning == false)
+                {
+                    bPlayStep = true;
+                    m_swmgr.GetStepper().Start();
+                }
+                else if (m_swmgr.GetStepper().IsRunning && m_swmgr.GetStepper().ElapsedMilliseconds > 400)
+                {
+                    // the step sound has played already and hopefully is finished. stop stopwatch so it can start again next time it needs to
+                    m_swmgr.GetStepper().Reset();
+                    //bPlayStep = true;
+                }
+
+				if (bPlayStep)
+				{
+					/*m_nStepCounter++;
+					if (m_nStepCounter == 4) m_nStepCounter = 0;
+					switch(m_nStepCounter)
+					{
+						case 0: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1); break;
+						case 1: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP2); break;
+						case 2: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP3); break;
+						case 3: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP); break;
+					}*/
+
+					m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP3);
+				}
+            }
+            // ===
+        }
+    }
 }

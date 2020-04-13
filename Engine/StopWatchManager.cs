@@ -11,6 +11,7 @@ namespace engine
     {
         Stopwatch m_swFallTimer = new Stopwatch();
         Stopwatch m_swJumpTimer = new Stopwatch();
+        Stopwatch m_swStepTimer = new Stopwatch();
 
         Stopwatch m_swPostMoveForwardDecelTimer = new Stopwatch();
         Stopwatch m_swStartMoveForwardAccelTimer = new Stopwatch();        
@@ -51,6 +52,8 @@ namespace engine
             }
             else return 0;
         }
+
+        public Stopwatch GetStepper() { return m_swStepTimer; }
 
         public double GetMaxMS(MovableCamera.DIRECTION dir, bool bAccel)
         {
@@ -99,7 +102,7 @@ namespace engine
                 case MovableCamera.DIRECTION.DOWN:
                     return m_swFallTimer;
                 case MovableCamera.DIRECTION.UP:
-                    return m_swJumpTimer;
+                    return m_swJumpTimer;                    
             }
 
             throw new Exception("No stopwatch found");

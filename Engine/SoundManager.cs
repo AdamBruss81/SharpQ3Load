@@ -9,7 +9,9 @@ namespace engine
 {    
     public class SoundManager : IDisposable
     {
-        public enum EEffects { NONE, SPAWN, ROCKET_AWAY, PLASMA_AWAY, FALL, FALL_MINOR, LAND, FOOTSTEP1, JUMPPAD, JUMP };
+        public enum EEffects { NONE, SPAWN, ROCKET_AWAY, PLASMA_AWAY, 
+            FALL, FALL_MINOR, LAND, FOOTSTEP1, FOOTSTEP2, FOOTSTEP3, FOOTSTEP4,
+            JUMPPAD, JUMP };
         public enum ESongs { SONIC4, SONIC3, SONIC6, SONIC5, SONIC1, SONIC2, FLA22K_03, FLA22K_06, FLA22K_05, FLA22K_04, FLA22K_02 };
 
         private Dictionary<EEffects, string> m_dictEffects = new Dictionary<EEffects, string>();
@@ -32,17 +34,24 @@ namespace engine
             outputDevice.Init(mixer);
             outputDevice.Play();
 
+            // effects
             m_dictEffects[EEffects.SPAWN] = "Sounds/sound/world/telein.wav";
 
             m_dictEffects[EEffects.ROCKET_AWAY] = "Sounds/sound/weapons/rocket/rocklf1a.wav";
             m_dictEffects[EEffects.PLASMA_AWAY] = "Sounds/sound/weapons/plasma/hyprbf1a.wav";
+
             m_dictEffects[EEffects.JUMPPAD] = "Sounds/sound/world/jumppad.wav";
             m_dictEffects[EEffects.FALL] = "Sounds/sound/player/sarge/fall1.wav";
             m_dictEffects[EEffects.FALL_MINOR] = "Sounds/sound/player/sarge/pain100_1.wav";
-            m_dictEffects[EEffects.FOOTSTEP1] = "Sounds/sound/player/footsteps/step1.wav";
             m_dictEffects[EEffects.JUMP] = "Sounds/sound/player/sarge/jump1.wav";
             m_dictEffects[EEffects.LAND] = "Sounds/sound/player/land1.wav";
 
+            m_dictEffects[EEffects.FOOTSTEP1] = "Sounds/sound/player/footsteps/clank1.wav";
+            m_dictEffects[EEffects.FOOTSTEP2] = "Sounds/sound/player/footsteps/clank2.wav";
+            m_dictEffects[EEffects.FOOTSTEP3] = "Sounds/sound/player/footsteps/clank3.wav";
+            m_dictEffects[EEffects.FOOTSTEP4] = "Sounds/sound/player/footsteps/clank4.wav";
+
+            // songs
             m_dictSongs[ESongs.SONIC4] = "Sounds/music/sonic4.wav";
             m_dictSongs[ESongs.SONIC3] = "Sounds/music/sonic3.wav";
             m_dictSongs[ESongs.SONIC6] = "Sounds/music/sonic6.wav";

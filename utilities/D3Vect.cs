@@ -221,21 +221,5 @@ namespace utilities
 
 			return division;
 		}
-
-        public static bool operator ==(D3Vect v1, D3Vect v2)
-        {
-            for (int i = 0; i < 3; i++)
-                if (v1[i] != v2[i]) return false;
-
-            return true;
-        }
-
-        public static bool operator !=(D3Vect v1, D3Vect v2)
-        {
-            for (int i = 0; i < 3; i++)
-                if (v1[i] != v2[i]) return true;
-
-            return false;
-        }
 	}
 }

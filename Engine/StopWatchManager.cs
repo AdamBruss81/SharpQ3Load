@@ -25,10 +25,12 @@ namespace engine
         Stopwatch m_swPostMoveBackDecelTimer = new Stopwatch();
         Stopwatch m_swStartMoveBackAccelTimer = new Stopwatch();
 
+        D3Vect m_currentJumpVector = null;
+
         MovableCamera m_cam = null;
         Player m_Player = null;
 
-        const double mc_dDecelAccelTimeMS = 150.0;
+        const double mc_dDecelAccelTimeMS = 250.0;
         const double mc_dDecelJumpMS = 250;
 
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxDecelMS = new Dictionary<MovableCamera.DIRECTION, double>();
@@ -77,6 +79,8 @@ namespace engine
             else
                 sw.Start();
         }
+
+        public D3Vect GetCurrentJumpVector() { return m_currentJumpVector; }
 
         public bool IsRunning(MovableCamera.DIRECTION dir, bool bAccel)
         {
@@ -167,13 +171,21 @@ namespace engine
             return dScale;
         }
 
-        public void Jump(double dDecelJumpMS)
+        /// <summary>
+        /// Perform an normal spacebar jump, jumppad or launch pad
+        /// </summary>
+        /// <param name="dDecelJumpMS">how long to jump for</param>
+        /// <param name="customLookAt">optional vector to jump along</param>
+        public void Jump(double dDecelJumpMS, D3Vect customLookAt = null)
         {
+            LOGGER.Debug("JUMP!");
+            m_currentJumpVector = customLookAt;
+            m_swJumpTimer.Reset();
             m_dictMaxDecelMS[MovableCamera.DIRECTION.UP] = dDecelJumpMS;
             m_swJumpTimer.Start(); 
         }
 
-    public void HandleStartedMoving(MoveStates startedMovingStates, Dictionary<MovableCamera.DIRECTION, double> dictLastMoveScales)
+        public void HandleStartedMoving(MoveStates startedMovingStates, Dictionary<MovableCamera.DIRECTION, double> dictLastMoveScales)
         {
             if (startedMovingStates.GetState(MovableCamera.DIRECTION.FORWARD))
             {
@@ -341,6 +353,7 @@ namespace engine
             {
                 Debug.Assert(m_swJumpTimer.IsRunning);
                 dAccelDecelScale = GetSlowDownScale(MovableCamera.DIRECTION.UP);
+                //LOGGER.Debug("Up slowdown scale is: " + dAccelDecelScale);
             }
             else
             {

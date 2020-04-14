@@ -26,6 +26,7 @@ namespace engine
 	{
 		// ### MEMBER VARIABLES
 		const double mcd_Height = .98;
+		const double mcd_PadPowerInMS = 1050;
 
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
@@ -455,7 +456,7 @@ namespace engine
         }
 
 		private void MoveInternal(MovableCamera.DIRECTION dir)
-		{ 
+		{ 			
 			switch(dir)
 			{
 				case MovableCamera.DIRECTION.FORWARD: 
@@ -494,11 +495,16 @@ namespace engine
 
 			int nMoveAttemptCount = 0;
 			bool bMoveAlongWall = dir != MovableCamera.DIRECTION.UP;
-			bool bSuccess = TryToMove(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, bMoveAlongWall, dir);
-			if(!bSuccess && dir == MovableCamera.DIRECTION.UP)
+			D3Vect lookatToUse = m_cam.GetLookAtNew;
+			if(m_swmgr.GetCurrentJumpVector() != null && m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) && dir == MovableCamera.DIRECTION.UP)
 			{
-				m_swmgr.Command(MovableCamera.DIRECTION.UP, false, StopWatchManager.SWCommand.RESET);
+				lookatToUse.Copy(m_cam.Position);
+				lookatToUse.x = lookatToUse.x + m_swmgr.GetCurrentJumpVector().x;
+				lookatToUse.y = lookatToUse.y + m_swmgr.GetCurrentJumpVector().y;
+				lookatToUse.z = lookatToUse.z + m_swmgr.GetCurrentJumpVector().z;
 			}
+			bool bSuccess = TryToMove(lookatToUse, m_cam.Position, ref nMoveAttemptCount, bMoveAlongWall, dir);
+
 			m_cam.RestoreOrientation();
 		}
 
@@ -622,7 +628,7 @@ namespace engine
 			}
         }
 
-		private SoundManager.EEffects HandleJumppads(string sTextureInfo)
+		private SoundManager.EEffects HandleJumppads(string sTextureInfo, IntersectionInfo intersection)
 		{
 			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
 
@@ -630,24 +636,50 @@ namespace engine
 			if (sTextureInfo.Contains("diamond2cjumppad") || sTextureInfo.Contains("bouncepad01_block17") || sTextureInfo.Contains("bounce_largeblock3b")
 				|| sTextureInfo.Contains("bounce_concrete"))
 			{
-				if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false))
+				D3Vect jumpDir = intersection.Face.GetNewNormal;
+				jumpDir.Negate();
+				if (jumpDir.x != 0.0 || jumpDir.y != 0.0)
 				{
-					m_SoundManager.PlayEffect(SoundManager.EEffects.JUMPPAD);
-					m_swmgr.Jump(1000);
-					eEffect = SoundManager.EEffects.NONE;
+					// rotate pi over 8 radians towards up vector z
+					jumpDir = GetLaunchPadDirection(intersection.Face, (Math.PI / 8) * GLB.RadToDeg * -1.0);
+					jumpDir.Negate();
 				}
+				jumpDir.Length = m_cam.RHO;				
+                m_swmgr.Jump(mcd_PadPowerInMS, jumpDir); 
+				eEffect = SoundManager.EEffects.JUMPPAD;
 			} // launch pads
-            /*else if (sTextureInfo.Contains("launchpad"))
+            else if (sTextureInfo.Contains("launchpad"))
             {
-                if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false))
-                {
-                    m_SoundManager.PlayEffect(SoundManager.EEffects.JUMPPAD);
-                    m_swmgr.Jump(1000);
-                    eEffect = SoundManager.EEffects.NONE;
-                }
-            }*/
+				D3Vect jumpDir = GetLaunchPadDirection(intersection.Face);
+				jumpDir.Length = m_cam.RHO;
+                m_swmgr.Jump(mcd_PadPowerInMS, jumpDir);
+                eEffect = SoundManager.EEffects.JUMPPAD;
+            }
 
             return eEffect;
+		}
+
+		/// <summary>
+		/// Returns direction to launch. Takes cross product of up vector(z) and face normal to get rotation vector.
+		/// Then rotate the face normal 90degrees to get the launch dir
+		/// </summary>
+		/// <param name="face"></param>
+		/// <returns></returns>
+		private D3Vect GetLaunchPadDirection(Face face, double degRotation = 90.0)
+		{
+			D3Vect d3Dir = new D3Vect(face.GetNormal);
+			D3Vect rotationVec = new D3Vect(face.GetNormal, new D3Vect(0, 0, 1));
+			rotationVec.normalize();
+
+            Gl.glPushMatrix();
+            Gl.glLoadIdentity();
+            Gl.glRotated(degRotation, rotationVec.x, rotationVec.y, rotationVec.z);
+            Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_pvUtilMatrix);
+            Gl.glPopMatrix();
+
+			d3Dir = D3Vect.Mult(m_pvUtilMatrix, d3Dir);
+
+            return d3Dir;
 		}
 
 		/// <summary>
@@ -681,7 +713,7 @@ namespace engine
 				{
 					eEffectToPlay = SoundManager.EEffects.FALL_MINOR;
 				}
-				else if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.DOWN, true) >= 250) 
+				else if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.DOWN, true) >= 400) 
 				{
 					eEffectToPlay = SoundManager.EEffects.LAND;
 				}
@@ -705,7 +737,7 @@ namespace engine
                 }
 
 				SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
-				eEffectReturn = HandleJumppads(sTextureInfo);
+				eEffectReturn = HandleJumppads(sTextureInfo, m_Intersection);
 				if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;
 				m_SoundManager.PlayEffect(eEffectToPlay);
 

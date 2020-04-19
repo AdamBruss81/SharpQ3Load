@@ -43,7 +43,7 @@ namespace simulator
         private Stopwatch m_swDelayMusicStart = new Stopwatch();
         private SoundManager m_SoundManager = new SoundManager();
         private int m_nFrameCounter = 0;
-        private double m_dElapsedSecondsShowScene = 0.0;
+        private double m_dFPS = 0.0;
 		private double m_dVelocity = 0.0;
 		Dictionary<Keys, bool> m_dictKeyStates = new Dictionary<Keys, bool>();
 		Dictionary<MouseButtons, bool> m_dictMouseButtonStates = new Dictionary<MouseButtons, bool>();
@@ -468,6 +468,6 @@ namespace simulator
 				m_bRunning = false;
 				StopAllTimers();
 			}
-		}	
+		}
 	}
 }

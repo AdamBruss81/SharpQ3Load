@@ -25,8 +25,10 @@ namespace engine
 	public class Player:Engine
 	{
 		// ### MEMBER VARIABLES
-		const double mcd_Height = .98;
+		const double mcd_Height = 1.0;
 		const double mcd_PadPowerInMS = 1050;
+		const double mdc_StairHeight = 0.3;
+		const double mdc_MinDistanceToWall = .75 ; // if you collide with wall, you will get this far from it;
 
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
@@ -39,7 +41,6 @@ namespace engine
 		IntersectionInfo m_Intersection = new IntersectionInfo(); // this is for two reasons. so I don't have to recreate it all the time and also for use around the class.
 		double[] m_pvUtilMatrix = new double[16];
         SoundManager m_SoundManager = null;
-		int m_nStepCounter = 0;
 		
 		MoveStates m_MovesForThisTick = new MoveStates();				
 
@@ -329,6 +330,39 @@ namespace engine
 			else return 0;
 		}
 
+		private double GetMoveScale(MovableCamera.DIRECTION eSourceMovement)
+		{
+			double dAccelDecelScale;
+
+			bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
+
+			if (bAllowKeyBasedScaling) // this block is currently for normal movement(non fall/non decel)
+			{
+				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+				{
+					// walking
+					dAccelDecelScale = 0.4;
+				}
+				else
+				{
+					// normal movement
+					dAccelDecelScale = m_cam.GetStandardMovementScale();
+				}
+			}
+			else
+			{
+				if (eSourceMovement == MovableCamera.DIRECTION.DOWN)
+				{
+					dAccelDecelScale = m_swmgr.GetFallScale();
+				}
+				else
+				{
+					dAccelDecelScale = m_swmgr.GetAccelDecelScale(eSourceMovement);
+				}
+			}
+			return dAccelDecelScale;
+		}
+
 		/// <summary>
 		/// Passed collision detection by this point. Just move here.
 		/// </summary>
@@ -336,28 +370,19 @@ namespace engine
 		/// <param name="d3MoveTo"></param>
 		/// <param name="nMoveAttemptCount"></param>
 		/// <returns></returns>
-		private bool InternalMove(MovableCamera.DIRECTION eSourceMovement, D3Vect d3MoveTo, int nMoveAttemptCount)
+		private bool InternalMove(MovableCamera.DIRECTION eSourceMovement, D3Vect d3MoveToPosition, int nMoveAttemptCount, double dMoveScaleUsed)
 		{
-			double dAccelDecelScale;
-
-			if(eSourceMovement == MovableCamera.DIRECTION.DOWN)
-			{
-				dAccelDecelScale = m_swmgr.GetFallScale();
-			}
-			else
-			{
-				dAccelDecelScale = m_swmgr.GetAccelDecelScale(eSourceMovement);
-			}
-
 			bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
 
 			PlaySteps();
 
-			double d = m_cam.MoveToPosition(d3MoveTo, bAllowKeyBasedScaling, dAccelDecelScale);
+			// SCALE 
+			m_cam.MoveToPosition(d3MoveToPosition);
+
 			if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
 			{
-				m_dLastGameTickMoveScale = d; // revisit this double and the dict below. do we need? why the check on esourcemovement equaling DOWN?
-				m_dictLastMoveScales[eSourceMovement] = d;
+				m_dLastGameTickMoveScale = dMoveScaleUsed; // revisit this double and the dict below. do we need? why the check on esourcemovement equaling DOWN?
+				m_dictLastMoveScales[eSourceMovement] = dMoveScaleUsed;
 			}
 
 			if (nMoveAttemptCount > 1)
@@ -372,7 +397,7 @@ namespace engine
 		/// </summary>
 		/// <param name="d3MoveTo">target location to move to</param>
 		/// <param name="d3Position">current location of the MovableCamera</param>
-		private bool TryToMove(D3Vect d3MoveTo, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWallOrUpStairs, 
+		private bool TryToMove(D3Vect d3MoveToPosition, D3Vect d3Position, ref int nMoveAttemptCount, bool bMoveAlongWallOrUpStairs, 
 			MovableCamera.DIRECTION eSourceMovement, bool bDoTheMove = true)
 		{
 			nMoveAttemptCount++;
@@ -380,67 +405,103 @@ namespace engine
 			if (bDoTheMove && nMoveAttemptCount >= 3) 
 				return false;
 
-			if (m_lStaticFigList[0].CanMove(d3MoveTo, d3Position, m_Intersection, m_cam))
+			double dMoveScale;
+
+			// === Scale d3MoveTo here.	
+			//if (eSourceMovement != MovableCamera.DIRECTION.DOWN) // falling is kind of a unique beast. revisit
+			//{
+				dMoveScale = GetMoveScale(eSourceMovement);
+				D3Vect d3MoveVec = d3MoveToPosition - m_cam.Position;
+				d3MoveVec.Scale(dMoveScale);
+				d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
+			//}
+			// ===
+
+			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, 1.0, eSourceMovement))
 			{
 				if (!bDoTheMove) return true;								
-				return InternalMove(eSourceMovement, d3MoveTo, nMoveAttemptCount);
-			}
-			else if(bMoveAlongWallOrUpStairs)
-			{
-				if (!bDoTheMove) return false;
-
-				// first try to move up stairs if not jumping or falling
-				// ===
-				if (m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) == false && m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false)
-				{
-					D3Vect d3StepUpPos = new D3Vect(d3Position);
-					D3Vect d3StepUpMoveTo = new D3Vect(d3MoveTo);
-					d3StepUpPos.z = d3StepUpPos.z + 0.3;
-					d3StepUpMoveTo.z = d3StepUpMoveTo.z + 0.3;
-
-					if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam))
-					{
-						bool bNoWallCollides = InternalMove(eSourceMovement, d3StepUpMoveTo, nMoveAttemptCount);
-						return bNoWallCollides;
-					}
-				}
-				// ===
-
-				D3Vect normal = m_Intersection.Face.GetNewNormal;
-				D3Vect dcamfor = d3MoveTo - d3Position;
-				dcamfor.normalize();
-				if (D3Vect.DotProduct(normal, dcamfor) > 0)
-					normal.Negate(); // Force normal of face to point toward MovableCamera
-
-				D3Vect cross = new D3Vect(dcamfor, normal);
-
-				double dBounceAngle = Math.Acos(D3Vect.DotProduct(dcamfor, normal)) * GLB.RadToDeg;
-
-				dBounceAngle -= 90;
-
-				if (dBounceAngle <= 0 || dBounceAngle > 90)
-					throw new Exception(Convert.ToString(dBounceAngle) + " is an invalid bounce angle. Range is (0 < angle <= 90)");
-
-				Gl.glPushMatrix();
-				Gl.glLoadIdentity();
-				Gl.glRotated(dBounceAngle, cross.x, cross.y, cross.z);
-				Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_pvUtilMatrix);
-				Gl.glPopMatrix();
-
-				D3Vect d3SlideVector = D3Vect.Mult(m_pvUtilMatrix, dcamfor);
-
-				double len;
-				if (dBounceAngle == 0) len = 0;
-				else len = Cam.RHO * ((90 - dBounceAngle) / 90);
-				d3SlideVector.Length = len;
-
-				D3Vect d3NewMoveTo = new D3Vect(m_cam.Position + d3SlideVector);
-
-				return TryToMove(d3NewMoveTo, d3Position, ref nMoveAttemptCount, true, eSourceMovement);
+				return InternalMove(eSourceMovement, d3MoveToPosition, nMoveAttemptCount, dMoveScale);
 			}
 			else
 			{
-				return false;
+				// === try to move next to the wall
+				// if distance from camera to closest intersection is greater than mdc_MinDistanceToWall,
+				// move to min distance to wall
+				// don't do this if falling for now
+				// this is wrong. The distance from cam is along the vector from position to intersection. It needs to be along face normal.
+				// So, how far are you from the wall along the normal now?
+				/*if(eSourceMovement != MovableCamera.DIRECTION.DOWN && m_Intersection.DistanceFromCam - mdc_MinDistanceToWall > .05)
+				{
+					D3Vect d3PositionToIntersectionRay = m_Intersection.Intersection - m_cam.Position; // could be angled up or down
+					d3PositionToIntersectionRay.z = 0; // we only want to move horizontally here(at least for now)
+					d3PositionToIntersectionRay.Length = d3PositionToIntersectionRay.Length - mdc_MinDistanceToWall;
+					d3MoveToPosition = m_cam.Position + d3PositionToIntersectionRay;
+					
+					return InternalMove(eSourceMovement, d3MoveToPosition, nMoveAttemptCount, dMoveScale);
+				}*/
+				// ===
+
+				if (bMoveAlongWallOrUpStairs)
+				{
+					if (!bDoTheMove) return false;
+
+					// first try to move up stairs if not jumping or falling
+					// ===
+					if (m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) == false && m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false)
+					{
+						D3Vect d3StepUpPos = new D3Vect(d3Position);
+						D3Vect d3StepUpMoveTo = new D3Vect(d3MoveToPosition);
+						d3StepUpPos.z = d3StepUpPos.z + mdc_StairHeight;
+						d3StepUpMoveTo.z = d3StepUpMoveTo.z + mdc_StairHeight;
+
+						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, 1.0, eSourceMovement))
+						{
+							bool bNoWallCollides = InternalMove(eSourceMovement, d3StepUpMoveTo, nMoveAttemptCount, dMoveScale);
+							return bNoWallCollides;
+						}
+					}
+					// ===
+
+					// TEST THIS 
+					// move along surface
+					D3Vect normal = m_Intersection.Face.GetNewNormal;
+					D3Vect dcamfor = d3MoveToPosition - d3Position;
+					dcamfor.normalize();
+					if (D3Vect.DotProduct(normal, dcamfor) > 0)
+						normal.Negate(); // Force normal of face to point toward MovableCamera
+
+					D3Vect cross = new D3Vect(dcamfor, normal);
+
+					double dBounceAngle = Math.Acos(D3Vect.DotProduct(dcamfor, normal)) * GLB.RadToDeg;
+
+					dBounceAngle -= 90;
+
+					if (dBounceAngle <= 0 || dBounceAngle > 90)
+						throw new Exception(Convert.ToString(dBounceAngle) + " is an invalid bounce angle. Range is (0 < angle <= 90)");
+
+					Gl.glPushMatrix();
+					Gl.glLoadIdentity();
+					Gl.glRotated(dBounceAngle, cross.x, cross.y, cross.z);
+					Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_pvUtilMatrix);
+					Gl.glPopMatrix();
+
+					D3Vect d3SlideVector = D3Vect.Mult(m_pvUtilMatrix, dcamfor);
+
+					double len;
+					if (dBounceAngle == 0) len = 0;
+					else len = d3MoveVec.Length * ((90 - dBounceAngle) / 90);
+					d3SlideVector.Length = len;
+
+					D3Vect d3NewMoveTo = new D3Vect(m_cam.Position + d3SlideVector);
+
+					return TryToMove(d3NewMoveTo, d3Position, ref nMoveAttemptCount, true, eSourceMovement);
+
+					//return false;
+				}
+				else
+				{
+					return false;
+				}
 			}
 		}
 
@@ -494,7 +555,7 @@ namespace engine
 			}			
 
 			int nMoveAttemptCount = 0;
-			bool bMoveAlongWall = dir != MovableCamera.DIRECTION.UP;
+			bool bMoveAlongWall = true; // dir != MovableCamera.DIRECTION.UP;
 			D3Vect lookatToUse = m_cam.GetLookAtNew;
 			if(m_swmgr.GetCurrentJumpVector() != null && m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) && dir == MovableCamera.DIRECTION.UP)
 			{
@@ -610,8 +671,18 @@ namespace engine
 				MoveInternal(MovableCamera.DIRECTION.RIGHT);
 			}
 
-			if(!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false)) // don't fall if jumping
-				Fall();
+			if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false)) // don't fall if jumping
+			{
+				SoundManager.EEffects eEffectToPlay = SoundManager.EEffects.NONE;
+				Fall(ref eEffectToPlay);
+
+				if(m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false)
+                {
+                    DetectJumppads(ref eEffectToPlay);
+                }
+
+				if (eEffectToPlay != SoundManager.EEffects.NONE) m_SoundManager.PlayEffect(eEffectToPlay);
+			}
 
 			bool bUserMoved = m_MovesForThisTick.AnyTrue();
 
@@ -633,8 +704,7 @@ namespace engine
 			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
 
 			// jumppads
-			if (sTextureInfo.Contains("diamond2cjumppad") || sTextureInfo.Contains("bouncepad01_block17") || sTextureInfo.Contains("bounce_largeblock3b")
-				|| sTextureInfo.Contains("bounce_concrete"))
+			if (sTextureInfo.Contains("jumppad") || sTextureInfo.Contains("bounce"))
 			{
 				D3Vect jumpDir = intersection.Face.GetNewNormal;
 				jumpDir.Negate();
@@ -682,18 +752,42 @@ namespace engine
             return d3Dir;
 		}
 
+		private void DetectJumppads(ref SoundManager.EEffects eEffectToPlay)
+		{
+			string sTextureInfo = "";
+			if (m_Intersection.Face.GetParentShape().GetTextures().Count > 0)
+			{
+				if (m_Intersection.Face.GetParentShape().GetTextures().Count > 1)
+					sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[1].GetPath();
+				else
+					sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[0].GetPath();
+			}
+
+			SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
+			eEffectReturn = HandleJumppads(sTextureInfo, m_Intersection);
+			if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;			
+
+			// check that we are the right distance from the ground(player's height)
+			double dCurrentPlayerHeight = m_cam.Position.z - m_Intersection.Intersection.z;
+			if (dCurrentPlayerHeight < mcd_Height)
+			{
+				D3Vect d3CamPos = m_cam.Position;
+				d3CamPos.z = d3CamPos.z + (mcd_Height - dCurrentPlayerHeight);
+			}
+		}
+
 		/// <summary>
 		/// Attempt to fall. This is called every game tick. It checks if there is ground below you. If there isn't, you move downward in an accelerating
 		/// fashion as if gravity is pulling you down.
 		/// </summary>
-		override public void Fall()
+		override public void Fall(ref SoundManager.EEffects eEffectToPlay)
         {
             m_cam.TurnDown();
             int nMoveAttemptCount = 0;
             bool bCanMove = TryToMove(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MovableCamera.DIRECTION.DOWN, false);
 			m_cam.RestoreOrientation();
 
-			SoundManager.EEffects eEffectToPlay = SoundManager.EEffects.NONE;
+			eEffectToPlay = SoundManager.EEffects.NONE;
 
 			// enable stopwatch
 			if (bCanMove && !m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true))
@@ -707,16 +801,18 @@ namespace engine
 				// stop falling
 				if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.DOWN, true) >= 1500)
 				{
-					eEffectToPlay = SoundManager.EEffects.FALL;					
+					eEffectToPlay = SoundManager.EEffects.FALL;
 				}
 				else if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.DOWN, true) >= 750)
 				{
 					eEffectToPlay = SoundManager.EEffects.FALL_MINOR;
 				}
-				else if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.DOWN, true) >= 400) 
+				else if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.DOWN, true) >= 400)
 				{
 					eEffectToPlay = SoundManager.EEffects.LAND;
 				}
+				else eEffectToPlay = SoundManager.EEffects.FOOTSTEP2;
+
                 m_swmgr.Command(MovableCamera.DIRECTION.DOWN, true, StopWatchManager.SWCommand.RESET);
             }
 		
@@ -725,31 +821,7 @@ namespace engine
 				// fall
 				MoveInternal(MovableCamera.DIRECTION.DOWN);				
 			}
-			else
-			{               
-                string sTextureInfo = "";
-                if (m_Intersection.Face.GetParentShape().GetTextures().Count > 0)
-                {
-                    if (m_Intersection.Face.GetParentShape().GetTextures().Count > 1)
-                        sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[1].GetPath();
-                    else
-                        sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[0].GetPath();
-                }
-
-				SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
-				eEffectReturn = HandleJumppads(sTextureInfo, m_Intersection);
-				if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;
-				m_SoundManager.PlayEffect(eEffectToPlay);
-
-                // check that we are the right distance from the ground(player's height)
-                double dCurrentPlayerHeight = m_cam.Position.z - m_Intersection.Intersection.z;
-                if (dCurrentPlayerHeight < mcd_Height)
-                {
-                    D3Vect d3CamPos = m_cam.Position;
-                    d3CamPos.z = d3CamPos.z + (mcd_Height - dCurrentPlayerHeight);
-                }
-            }
-        }
+		}
 
         public override void MouseMove(MouseEventArgs e, ref bool bPostOpen)
 		{
@@ -772,21 +844,10 @@ namespace engine
                 {
                     // the step sound has played already and hopefully is finished. stop stopwatch so it can start again next time it needs to
                     m_swmgr.GetStepper().Reset();
-                    //bPlayStep = true;
                 }
 
 				if (bPlayStep)
 				{
-					/*m_nStepCounter++;
-					if (m_nStepCounter == 4) m_nStepCounter = 0;
-					switch(m_nStepCounter)
-					{
-						case 0: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP1); break;
-						case 1: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP2); break;
-						case 2: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP3); break;
-						case 3: m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP); break;
-					}*/
-
 					m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP3);
 				}
             }

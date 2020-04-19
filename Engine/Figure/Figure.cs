@@ -63,6 +63,8 @@ namespace engine
 		private List<D3Vect> m_ld3Head = new List<D3Vect>();
 		private List<D3Vect> m_ld3HeadLookAts = new List<D3Vect>();
         private D3Vect m_LookAtRay = new D3Vect();
+		private D3Vect m_LeftSideRay = new D3Vect();
+		private D3Vect m_RightSideRay = new D3Vect();
 
 		private BasicFont m_fonter = null;
 
@@ -656,35 +658,65 @@ namespace engine
 		/// <param name="position">start of ray to test</param>
 		/// <param name="intersection">the closest intersection</param>
 		/// <returns>true if nothing in way</returns>
-		public bool CanMove(D3Vect dest, D3Vect position, IntersectionInfo intersection, MovableCamera cam)
+		public bool CanMove(D3Vect dest, D3Vect position, IntersectionInfo intersection, MovableCamera cam, double dExtraDistanceToCheck,
+			MovableCamera.DIRECTION eSourceMovement)
 		{
-			D3Vect d3Up = cam.GetVector(MovableCamera.DIRECTION.UP);
-			D3Vect d3Down = cam.GetVector(MovableCamera.DIRECTION.DOWN);
-			D3Vect d3Left = cam.GetVector(MovableCamera.DIRECTION.LEFT);
-			D3Vect d3Right = cam.GetVector(MovableCamera.DIRECTION.RIGHT);
+			bool bUpOrDown = eSourceMovement == MovableCamera.DIRECTION.UP || eSourceMovement == MovableCamera.DIRECTION.DOWN;
 
-			d3Up.Scale(3.0);
-			d3Down.Scale(3.0);
-			d3Left.Scale(3.0);
-			d3Right.Scale(3.0);
+			// get up, down, left and right vectors from current camera position
+			D3Vect d3UpDirection = cam.GetVector(MovableCamera.DIRECTION.UP);
+			D3Vect d3DownDirection = cam.GetVector(MovableCamera.DIRECTION.DOWN);
+			D3Vect d3LeftDirection = cam.GetVector(MovableCamera.DIRECTION.LEFT);
+			D3Vect d3RightDirection = cam.GetVector(MovableCamera.DIRECTION.RIGHT);
+
+			// scale them a bit to give player some size
+			d3UpDirection.Scale(3.0);
+			d3DownDirection.Scale(3.0);
+			d3LeftDirection.Scale(3.0);
+			d3RightDirection.Scale(3.0);
 
 			m_ld3Head.Clear();
 			m_ld3HeadLookAts.Clear();
 
-			m_ld3Head.Add(position + (d3Left + d3Up));
-			m_ld3Head.Add(position + (d3Right + d3Up));
-			m_ld3Head.Add(position + (d3Right + d3Down));
-			m_ld3Head.Add(position + (d3Left + d3Down));
-			m_ld3Head.Add(position);
+			// create points in space around player and including camera position to be used for collision detection
+			m_ld3Head.Add(position + (d3LeftDirection + d3UpDirection)); // top left
+			m_ld3Head.Add(position + (d3RightDirection + d3UpDirection)); // top right
+			m_ld3Head.Add(position + (d3RightDirection + d3DownDirection)); // lower right
+			m_ld3Head.Add(position + (d3LeftDirection + d3DownDirection)); // lower left
+			m_ld3Head.Add(position); // cam position
+			/*if (!bUpOrDown)
+			{
+				m_ld3Head.Add(position); // cam position
+				m_ld3Head.Add(position); // cam position
+			}*/
 
-			m_LookAtRay.x = dest[0] - position[0];
+			// ray from cam position to dest look at
+            m_LookAtRay.x = dest[0] - position[0];
 			m_LookAtRay.y = dest[1] - position[1];
 			m_LookAtRay.z = dest[2] - position[2];
 
-			m_LookAtRay.Scale(10.0);
-
-			for (int i = 0; i < m_ld3Head.Count; i++)
+			/*if (!bUpOrDown)
 			{
+				m_LeftSideRay = d3LeftDirection;
+				m_RightSideRay = d3RightDirection;
+			}*/
+
+			if (!m_LookAtRay.Empty)
+				m_LookAtRay.Length = m_LookAtRay.Length + dExtraDistanceToCheck;
+
+			/*if (!bUpOrDown)
+			{
+				if (!m_LeftSideRay.Empty)
+					m_LeftSideRay.Length = m_LeftSideRay.Length + dExtraDistanceToCheck;
+
+				if (!m_RightSideRay.Empty)
+					m_RightSideRay.Length = m_RightSideRay.Length + dExtraDistanceToCheck;
+			}*/
+
+            for (int i = 0; i < m_ld3Head.Count; i++)
+			{
+				/*if(i == 5) m_ld3HeadLookAts.Add(m_ld3Head[i] + m_LeftSideRay);
+				else if(i == 6) m_ld3HeadLookAts.Add(m_ld3Head[i] + m_RightSideRay);*/
 				m_ld3HeadLookAts.Add(m_ld3Head[i] + m_LookAtRay);
 			}
 
@@ -734,6 +766,7 @@ namespace engine
 				if (intersection != null)
 				{
 					intersection.Intersection.Copy(m_lAllIntersections[0].Intersection);
+					intersection.DistanceFromCam = m_lAllIntersections[0].DistanceFromCam;
 					intersection.Face = m_lAllIntersections[0].Face;
 				}
 			}

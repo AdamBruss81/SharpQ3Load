@@ -126,7 +126,8 @@ namespace utilities
 			set 
 			{
 				if (value == 0.0) Zero();
-				else 
+				else if (Empty) return;
+				else
 				{
 					double length = Length;
 					vect[0] = vect[0] / (length / value);

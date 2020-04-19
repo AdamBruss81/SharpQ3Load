@@ -157,7 +157,12 @@ namespace utilities
 			m_Window = window;
 		}
 
-		public double GetStandardMovementScale() { return 1.5; }
+		public double GetStandardMovementScale() 
+		{
+			//return 1.5;
+			//return 5.0;
+			return 1.5;
+		}
 
 		public D3Vect GetVector(DIRECTION dir)
 		{
@@ -261,12 +266,11 @@ namespace utilities
 		/// <param name="d3Position"></param>
 		/// <param name="bAllowKeyBasedScaling"></param>
 		/// <param name="dModifierScale"></param>
-		public double MoveToPosition(D3Vect d3Position, bool bAllowKeyBasedScaling, double dModifierScale)
+		public void MoveToPosition(D3Vect d3Position)
 		{
 			D3Vect d3Vector = d3Position - m_vCamPos;
-			double dUsedScale = 0.0;
 
-			if (bAllowKeyBasedScaling) // this block is currently for normal movement(non fall/non decel)
+			/*if (bAllowKeyBasedScaling) // this block is currently for normal movement(non fall/non decel)
 			{
 				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
 				{
@@ -285,10 +289,9 @@ namespace utilities
 			{
 				dUsedScale = dModifierScale;
 				d3Vector.Scale(dModifierScale);
-			}
+			}*/
 
 			m_vCamPos += d3Vector;
-			return dUsedScale;
 		}
 
 		// Move the camera to its look at point

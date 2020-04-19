@@ -43,6 +43,7 @@ namespace simulator
             this.m_tlContainer = new System.Windows.Forms.TableLayoutPanel();
             this.m_controlMapProgress = new simulator.MapLoadControl();
             this.m_openGLControl = new OpenGLControlModded.simpleOpenGlControlEx();
+            this.timerShowFPS = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // timerRedrawer
@@ -99,6 +100,11 @@ namespace simulator
             this.m_openGLControl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.openGLControl_MouseMove);
             this.m_openGLControl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.m_openGLControl_MouseUp);
             // 
+            // timerShowFPS
+            // 
+            this.timerShowFPS.Interval = 1000;
+            this.timerShowFPS.Tick += new System.EventHandler(this.timerShowFPS_Tick);
+            // 
             // SimulatorForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
@@ -121,5 +127,6 @@ namespace simulator
 		private System.Windows.Forms.Timer timerRedrawer;
 		private MapLoadControl m_controlMapProgress;
 		private System.Windows.Forms.TableLayoutPanel m_tlContainer;
-	}
+        private System.Windows.Forms.Timer timerShowFPS;
+    }
 }

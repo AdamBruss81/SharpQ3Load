@@ -103,3 +103,8 @@ The jumping jumps too high and too fast up I think. It should level out but keep
 Get jumppads to work. Shouldn't be hard. Just detect when you collide with one going down(falling) and then trigger a high jump in the direction of the normal of the jumppad face.
 
 Get lower volume working for music.
+
+When moving left and right... If moving left and you hit right, stop the left decel timer instead of letting it playout. There is too much play in the movement left to right 
+at the moment. Front to back is ok. Can improve air travel by reducing the friction in the air and also lessening movement amounts user inputs while in the air.
+
+Only play footsteps if you're moving at a good clip. Not if you say tap forward quickly.

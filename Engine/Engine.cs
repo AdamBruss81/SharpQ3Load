@@ -81,7 +81,7 @@ namespace engine
 
 		abstract public string GetGameMode();
 
-		virtual public void Fall() { }
+		virtual public void Fall(ref SoundManager.EEffects eEffectToPlay) { }
 
 		public BasicFont Fonter
 		{

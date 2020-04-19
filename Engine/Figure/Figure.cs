@@ -684,39 +684,17 @@ namespace engine
 			m_ld3Head.Add(position + (d3RightDirection + d3DownDirection)); // lower right
 			m_ld3Head.Add(position + (d3LeftDirection + d3DownDirection)); // lower left
 			m_ld3Head.Add(position); // cam position
-			/*if (!bUpOrDown)
-			{
-				m_ld3Head.Add(position); // cam position
-				m_ld3Head.Add(position); // cam position
-			}*/
 
 			// ray from cam position to dest look at
             m_LookAtRay.x = dest[0] - position[0];
 			m_LookAtRay.y = dest[1] - position[1];
 			m_LookAtRay.z = dest[2] - position[2];
 
-			/*if (!bUpOrDown)
-			{
-				m_LeftSideRay = d3LeftDirection;
-				m_RightSideRay = d3RightDirection;
-			}*/
-
 			if (!m_LookAtRay.Empty)
 				m_LookAtRay.Length = m_LookAtRay.Length + dExtraDistanceToCheck;
 
-			/*if (!bUpOrDown)
-			{
-				if (!m_LeftSideRay.Empty)
-					m_LeftSideRay.Length = m_LeftSideRay.Length + dExtraDistanceToCheck;
-
-				if (!m_RightSideRay.Empty)
-					m_RightSideRay.Length = m_RightSideRay.Length + dExtraDistanceToCheck;
-			}*/
-
             for (int i = 0; i < m_ld3Head.Count; i++)
 			{
-				/*if(i == 5) m_ld3HeadLookAts.Add(m_ld3Head[i] + m_LeftSideRay);
-				else if(i == 6) m_ld3HeadLookAts.Add(m_ld3Head[i] + m_RightSideRay);*/
 				m_ld3HeadLookAts.Add(m_ld3Head[i] + m_LookAtRay);
 			}
 

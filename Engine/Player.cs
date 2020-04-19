@@ -407,15 +407,10 @@ namespace engine
 
 			double dMoveScale;
 
-			// === Scale d3MoveTo here.	
-			//if (eSourceMovement != MovableCamera.DIRECTION.DOWN) // falling is kind of a unique beast. revisit
-			//{
-				dMoveScale = GetMoveScale(eSourceMovement);
-				D3Vect d3MoveVec = d3MoveToPosition - m_cam.Position;
-				d3MoveVec.Scale(dMoveScale);
-				d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
-			//}
-			// ===
+			dMoveScale = GetMoveScale(eSourceMovement);
+			D3Vect d3MoveVec = d3MoveToPosition - m_cam.Position;
+			d3MoveVec.Scale(dMoveScale);
+			d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
 
 			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, 1.0, eSourceMovement))
 			{
@@ -424,23 +419,6 @@ namespace engine
 			}
 			else
 			{
-				// === try to move next to the wall
-				// if distance from camera to closest intersection is greater than mdc_MinDistanceToWall,
-				// move to min distance to wall
-				// don't do this if falling for now
-				// this is wrong. The distance from cam is along the vector from position to intersection. It needs to be along face normal.
-				// So, how far are you from the wall along the normal now?
-				/*if(eSourceMovement != MovableCamera.DIRECTION.DOWN && m_Intersection.DistanceFromCam - mdc_MinDistanceToWall > .05)
-				{
-					D3Vect d3PositionToIntersectionRay = m_Intersection.Intersection - m_cam.Position; // could be angled up or down
-					d3PositionToIntersectionRay.z = 0; // we only want to move horizontally here(at least for now)
-					d3PositionToIntersectionRay.Length = d3PositionToIntersectionRay.Length - mdc_MinDistanceToWall;
-					d3MoveToPosition = m_cam.Position + d3PositionToIntersectionRay;
-					
-					return InternalMove(eSourceMovement, d3MoveToPosition, nMoveAttemptCount, dMoveScale);
-				}*/
-				// ===
-
 				if (bMoveAlongWallOrUpStairs)
 				{
 					if (!bDoTheMove) return false;
@@ -462,7 +440,6 @@ namespace engine
 					}
 					// ===
 
-					// TEST THIS 
 					// move along surface
 					D3Vect normal = m_Intersection.Face.GetNewNormal;
 					D3Vect dcamfor = d3MoveToPosition - d3Position;
@@ -495,8 +472,6 @@ namespace engine
 					D3Vect d3NewMoveTo = new D3Vect(m_cam.Position + d3SlideVector);
 
 					return TryToMove(d3NewMoveTo, d3Position, ref nMoveAttemptCount, true, eSourceMovement);
-
-					//return false;
 				}
 				else
 				{

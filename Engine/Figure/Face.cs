@@ -173,6 +173,8 @@ namespace engine
 		/// </summary>      
 		public bool CanMove(D3Vect position, D3Vect dest, IntersectionInfo intersection)
 		{
+			if (m_pParentShape != null && m_pParentShape.IsFog()) return true;
+
 			bool bCanMove = false;
 
 			EPointClassification positionClass = ClassifyPoint(position, GetNormal, DistanceToOriginAlongNormal);

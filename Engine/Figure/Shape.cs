@@ -151,6 +151,16 @@ namespace engine
 			}
 		}
 
+		public bool IsFog()
+		{
+			bool bFog = false;
+			Texture tex = null;
+			if (m_lTextures.Count == 1) tex = m_lTextures[0];
+			else if (m_lTextures.Count > 1) tex = m_lTextures[1]; 
+			if(tex != null) bFog = tex.GetPath().Contains("fog");
+			return bFog;
+		}
+
         public List<Texture> GetTextures() { return m_lTextures; }
 
 		/// <summary>

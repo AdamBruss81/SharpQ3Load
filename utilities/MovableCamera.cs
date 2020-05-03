@@ -321,6 +321,8 @@ namespace utilities
 
 		public void RestoreOrientation()
 		{
+			if (m_UtilityStack.Count == 0) return;
+
 			if (m_UtilityStack.Count % 2 != 0)
 				throw new Exception("Invalid stack size of " + System.Convert.ToString(m_UtilityStack.Count));
 

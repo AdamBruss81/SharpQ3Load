@@ -24,21 +24,11 @@ namespace simulator
             m_Engine.showScene(GetRecentKey);
             // ###            
 
-            //m_swFramerate.Stop();
-
-            /*if (m_nFrameCounter % 10 == 0)
-            {
-                //m_dVelocity = m_Engine.GetVelocity();
-                //m_dFPS = Math.Round(1.0 / m_swFramerate.Elapsed.TotalSeconds);
-                //m_nFrameCounter = 0;
-            }*/
-
             m_fonter.PrintLowerRight(Math.Round(m_dVelocity, 2).ToString(), m_openGLControl.Width, 2);
             m_fonter.PrintLowerRight(m_dFPS.ToString(), m_openGLControl.Width, 1);
-
-            //m_swFramerate.Reset();
-
             m_fonter.PrintLowerRight(GetRecentKey.ToString(), m_openGLControl.Width, 0);
+
+            m_openGLControl.SwapBuffers();
 
             if (m_swDelayMusicStart.IsRunning && m_swDelayMusicStart.ElapsedMilliseconds >= 5000)
             {

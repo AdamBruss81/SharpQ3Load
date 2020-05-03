@@ -1,87 +1,103 @@
 ﻿using System;
-using Tao.OpenGl;
+using OpenTK.Graphics.OpenGL;
 using System.IO;
 
 namespace utilities
 {
 	public class ShaderHelper
 	{
-		public static void AttachShader(int nProgram, string sPath, int nType, out int nShader)
+		public static void AttachShader(int nProgram, string sPathOrContent, ShaderType eType, out int nShader, bool bContent)
 		{
-			if (Gl.glIsProgram(nProgram) == 0) {
+			if (!GL.IsProgram(nProgram)) {
 				nShader = -1;
 			}
 			else
 			{
 				string sSource;
-				ReadSource(out sSource, sPath);
+				if (bContent) sSource = sPathOrContent;
+				else ReadSource(out sSource, sPathOrContent);
 
-				if (nType == Gl.GL_VERTEX_SHADER) 
-					nShader = Gl.glCreateShader(Gl.GL_VERTEX_SHADER);
-				else if (nType == Gl.GL_FRAGMENT_SHADER)
-					nShader = Gl.glCreateShader(Gl.GL_FRAGMENT_SHADER);
+				if (eType == ShaderType.VertexShader) 
+					nShader = GL.CreateShader(ShaderType.VertexShader);
+				else if (eType == ShaderType.FragmentShader)
+					nShader = GL.CreateShader(ShaderType.FragmentShader);
 				else
 				{
 					nShader = -1;
 					return;
 				}
 
-				string[] aShader = { sSource };
-
-				Gl.glShaderSource(nShader, 1, aShader, null);
+				GL.ShaderSource(nShader, sSource);
 
 				int nStatus;
 				int nLinked;
 
-				Gl.glCompileShader(nShader);
-				Gl.glGetShaderiv(nShader, Gl.GL_COMPILE_STATUS, out nStatus);
-				if(nStatus == 0) printShaderInfoLog(nShader);
+				GL.CompileShader(nShader);
+				GL.GetShader(nShader, ShaderParameter.CompileStatus, out nStatus);
 
-				Gl.glAttachShader(nProgram, nShader);
-				Gl.glLinkProgram(nProgram);
-				Gl.glGetProgramiv(nProgram, Gl.GL_LINK_STATUS, out nLinked);
+				if (nStatus == 0) printShaderInfoLog(nShader);
+
+				GL.AttachShader(nProgram, nShader);
+				GL.LinkProgram(nProgram);
+				GL.GetProgram(nProgram, GetProgramParameterName.LinkStatus, out nLinked);
 				if(nLinked == 0) printProgramInfoLog(nProgram);
 			}
 		}
 
-		public static void AttachShaders(int nProgram, string sVertPath, string sFragPath, 
+        public static void AttachShadersFromContent(int nProgram, string sVert, string sFrag,
+            out int nVertShader, out int nFragShader)
+        {
+            AttachShader(nProgram, sVert, ShaderType.VertexShader, out nVertShader, true);
+            AttachShader(nProgram, sFrag, ShaderType.FragmentShader, out nFragShader, true);
+        }
+
+        public static void AttachShaders(int nProgram, string sVertPath, string sFragPath, 
 			out int nVertShader, out int nFragShader)
 		{
-			AttachShader(nProgram, sVertPath, Gl.GL_VERTEX_SHADER, out nVertShader);
-			AttachShader(nProgram, sFragPath, Gl.GL_FRAGMENT_SHADER, out nFragShader);
+			AttachShader(nProgram, sVertPath, ShaderType.VertexShader, out nVertShader, false);
+			AttachShader(nProgram, sFragPath, ShaderType.FragmentShader, out nFragShader, false);
 		}
 
 		public static void DetachShader(int nRunningProgram, int nShader)
 		{
-			if (Gl.glIsProgram(nRunningProgram) == 0) return;
+			if (!GL.IsProgram(nRunningProgram)) return;
 			else {
-				Gl.glDetachShader(nRunningProgram, nShader);
+				GL.DetachShader(nRunningProgram, nShader);
 			}
 		}
 
 		public static void DetachAndDeleteShader(int nProgram, int nShader)
 		{
-			if (Gl.glIsProgram(nProgram) == 0) return;
+			if (!GL.IsProgram(nProgram)) return;
 			else
 			{
-				Gl.glDetachShader(nProgram, nShader);
-				Gl.glDeleteShader(nShader);
+				GL.DetachShader(nProgram, nShader);
+				GL.DeleteShader(nShader);
 			}
 		}
 
 		public static int CreateProgram()
 		{
-			return Gl.glCreateProgram();
+			return GL.CreateProgram();
 		}
 
-		public static int CreateProgram(string sPath, int nShaderType)
+		public static int CreateProgram(string sPath, ShaderType eType)
 		{
 			int nProgram = CreateProgram();
 
 			int nShader;
-			AttachShader(nProgram, sPath, nShaderType, out nShader);
+			AttachShader(nProgram, sPath, eType, out nShader, false);
 			return nProgram;
 		}
+
+		public static int CreateProgramFromContent(string sVertShader, string sFragShader)
+		{
+            int nProgram = CreateProgram();
+
+            int nVertShader, nFragShader;
+            AttachShadersFromContent(nProgram, sVertShader, sFragShader, out nVertShader, out nFragShader);
+            return nProgram;
+        }
 
 		public static int CreateProgram(string sPathVert, string sPathFrag)
 		{
@@ -92,11 +108,11 @@ namespace utilities
 			return nProgram;
 		}
 
-		public static int CreateProgram(string sPath, int nShaderType, out int nShader)
+		public static int CreateProgram(string sPath, ShaderType eType, out int nShader)
 		{
 			int nProgram = CreateProgram();
 
-			AttachShader(nProgram, sPath, nShaderType, out nShader);
+			AttachShader(nProgram, sPath, eType, out nShader, false);
 			return nProgram;
 		}
 
@@ -108,18 +124,26 @@ namespace utilities
 			return nProgram;
 		}
 
+		public static int GetOpenGLErrors(ref string sErrors)
+		{
+            ErrorCode eCode;
+            int retCode = 0;
+
+            eCode = GL.GetError();
+            while (eCode != ErrorCode.NoError)
+            {
+				sErrors += "glError : " + eCode;
+                retCode = 1;
+                eCode = GL.GetError();
+            }
+			return retCode;
+        }
+
 		public static int printOpenGLError()
 		{
-			int glErr;
-			int retCode = 0;
-
-			glErr = Gl.glGetError();
-			while (glErr != Gl.GL_NO_ERROR)
-			{
-				Console.WriteLine("glError : " + Glu.gluErrorString(glErr));
-				retCode = 1;
-				glErr = Gl.glGetError();
-			}
+			string s = "";
+			int retCode = GetOpenGLErrors(ref s);
+			Console.WriteLine(s);
 			return retCode;
 		}
 
@@ -129,30 +153,30 @@ namespace utilities
 			int nCount;
 			int[] nShaders = new int[nMaxAttached];
 
-			if (Gl.glIsProgram(nProgram) == 1)
+			if (GL.IsProgram(nProgram))
 			{
-				Gl.glGetAttachedShaders(nProgram, nMaxAttached, out nCount, nShaders);
+				GL.GetAttachedShaders(nProgram, nMaxAttached, out nCount, nShaders);
 				for (int i = 0; i < nCount; i++)
 				{
-					Gl.glDetachShader(nProgram, nShaders[i]);
-					Gl.glDeleteShader(nShaders[i]);
+					GL.DetachShader(nProgram, nShaders[i]);
+					GL.DeleteShader(nShaders[i]);
 				}
-				Gl.glDeleteProgram(nProgram);
-				Gl.glUseProgram(0);
+				GL.DeleteProgram(nProgram);
+				GL.UseProgram(0);
 			}
 		}
 
 		public static void printShaderInfoLog(int nShader)
 		{
-			int infologLength;
-			int charsWritten;
+			int infologLength = 0;
+			int charsWritten = 0;			
 
-			Gl.glGetShaderiv(nShader, Gl.GL_INFO_LOG_LENGTH, out infologLength);
+			GL.GetShader(nShader, ShaderParameter.InfoLogLength, out infologLength);
 
 			if (infologLength > 0)
 			{
-				System.Text.StringBuilder infoLog = new System.Text.StringBuilder();
-				Gl.glGetShaderInfoLog(nShader, infologLength, out charsWritten, infoLog);
+				string infoLog;
+				GL.GetShaderInfoLog(nShader, infologLength, out charsWritten, out infoLog);
 				Console.WriteLine("Shader InfoLog:\n" + infoLog);
 			}
 		}
@@ -162,12 +186,12 @@ namespace utilities
 			int infologLength;
 			int charsWritten;
 
-			Gl.glGetProgramiv(nProgram, Gl.GL_INFO_LOG_LENGTH, out infologLength);
+			GL.GetProgram(nProgram, GetProgramParameterName.InfoLogLength, out infologLength);
 
 			if (infologLength > 0)
 			{
-				System.Text.StringBuilder infoLog = new System.Text.StringBuilder();
-				Gl.glGetProgramInfoLog(nProgram, infologLength, out charsWritten, infoLog);
+				string infoLog;
+				GL.GetProgramInfoLog(nProgram, infologLength, out charsWritten, out infoLog);
 				Console.WriteLine("Program InfoLog:\n" + infoLog);
 			}
 		}

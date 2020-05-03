@@ -14,8 +14,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.Diagnostics;
-using Tao.OpenGl;
-using Tao.Platform.Windows;
+using OpenTK;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Platform.Windows;
 using Tao.FreeGlut;
 using engine;
 using utilities;
@@ -96,34 +97,38 @@ namespace simulator
 
 		private void Simulator_Load(object sender, EventArgs e)
 		{
-			m_openGLControl.InitializeContexts();
 			Glut.glutInit();
 
-			m_mainDC = Wgl.wglGetCurrentDC();
-			m_mainRC = Wgl.wglGetCurrentContext();
+			//m_mainDC = Wgl.Arb.GetCurrentReadDC();
+			//m_mainRC = m_openGLControl.make
+
+			//m_mainDC = Wgl.wglGetCurrentDC();
+			//m_mainRC = Wgl.wglGetCurrentContext();
 
 			m_fonter = new gl_font.BasicFont();
 
-			Gl.glShadeModel(Gl.GL_SMOOTH);
+			GL.ShadeModel(ShadingModel.Smooth);
 
-            Gl.glEnable(Gl.GL_CULL_FACE);
-            Gl.glCullFace(Gl.GL_FRONT);
+            GL.Enable(EnableCap.CullFace);
+            GL.CullFace(CullFaceMode.Front);
 
-			Gl.glClearColor(0.0f, 0.0f, 0.0f, .5f);
-			Gl.glClearDepth(1.0f);
+			GL.ClearColor(0.0f, 0.0f, 0.0f, .5f);
+			GL.ClearDepth(1.0f);
 
-			Gl.glEnable(Gl.GL_DEPTH_TEST);
-			Gl.glMatrixMode(Gl.GL_PROJECTION);
+			GL.Enable(EnableCap.DepthTest);
+			GL.MatrixMode(MatrixMode.Projection);
 
-			Gl.glDepthFunc(Gl.GL_LEQUAL);
-			Gl.glHint(Gl.GL_PERSPECTIVE_CORRECTION_HINT, Gl.GL_NICEST);
+			GL.DepthFunc(DepthFunction.Lequal);
+			GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
 
-			Gl.glLoadIdentity();
-			Glu.gluPerspective(70, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .005f, 200.0f);
+			GL.LoadIdentity();
+			Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(70f * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .005f, 200.0f);
+			//Glu.gluPerspective(70, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .005f, 200.0f);
+			GL.LoadMatrix(ref persMat);
 
-			Gl.glMatrixMode(Gl.GL_MODELVIEW);
+			GL.MatrixMode(MatrixMode.Modelview);
 
-			Gl.glClear(Gl.GL_COLOR_BUFFER_BIT | Gl.GL_DEPTH_BUFFER_BIT);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			m_openGLControl.Focus();
 
@@ -192,7 +197,7 @@ namespace simulator
 			m_bCursorShown = bShow;
 		}
 
-		private void bw_LoadMap(object sender, DoWorkEventArgs e)
+		private void workerthread_LoadMap(object sender, DoWorkEventArgs e)
 		{
 			m_bLoadingMap = true;
 
@@ -206,12 +211,15 @@ namespace simulator
 
 			m_controlMapProgress.DoneCreatingBoundingBoxes();
 
-			Wgl.wglMakeCurrent(m_mainDC, m_mainRC);
+			//Wgl.Arb.MakeContextCurrent()
+			//Wgl.wglMakeCurrent(m_mainDC, m_mainRC); // there is no context in this worker thread so set it to cached one
+			m_openGLControl.MakeCurrent();
 
-			m_controlMapProgress.Details("Initializing lists");
+			m_controlMapProgress.Details("Initializing lists"); // do open gl stuff
 			static_theEngine.InitializeLists();
 
-			Wgl.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
+			//Wgl.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
+			m_openGLControl.Context.MakeCurrent(null);
 
 			m_controlMapProgress.Details("Cleaning up map");
 			static_theMap.CleanUpMap();
@@ -227,11 +235,12 @@ namespace simulator
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
-		private void bw_LoadMapCompleted(object sender, RunWorkerCompletedEventArgs e)
+		private void mainthread_LoadMapCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
 			LOGGER.Info("Entered load map completed function");
 
-			Wgl.wglMakeCurrent(m_mainDC, m_mainRC);
+			//Wgl.wglMakeCurrent(m_mainDC, m_mainRC);
+			m_openGLControl.MakeCurrent();
 
 			m_bLoadingMap = false;
 			m_bClosed = false;
@@ -242,8 +251,8 @@ namespace simulator
 
 			m_openGLControl.Focus();
 
-			Gl.glClear(Gl.GL_COLOR_BUFFER_BIT | Gl.GL_DEPTH_BUFFER_BIT);
-			Gl.glFlush();
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GL.Flush();
 
 			m_Engine.showScene(GetRecentKey);
 
@@ -346,8 +355,8 @@ namespace simulator
 			{
 				if (m_Engine != null)
 				{
-					Gl.glClear(Gl.GL_COLOR_BUFFER_BIT | Gl.GL_DEPTH_BUFFER_BIT);
-					Gl.glFlush();
+					GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+					GL.Flush();
 					Refresh();
 
 					m_Engine.Delete();
@@ -361,8 +370,8 @@ namespace simulator
 				m_Engine = new Player(m_openGLControl, m_SoundManager);
 
 				BackgroundWorker bw = new BackgroundWorker();
-				bw.DoWork += bw_LoadMap;
-				bw.RunWorkerCompleted += bw_LoadMapCompleted;
+				bw.DoWork += workerthread_LoadMap;
+				bw.RunWorkerCompleted += mainthread_LoadMapCompleted;
 
 				static_theEngine = m_Engine;
 				static_theMap = map;
@@ -370,7 +379,8 @@ namespace simulator
 				m_openGLControl.Visible = false;
 				m_controlMapProgress.Visible = true;
 
-				Wgl.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
+				m_openGLControl.Context.MakeCurrent(null);
+				//Wgl.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
 				bw.RunWorkerAsync();
 
 				SetViewMode(false);
@@ -404,9 +414,9 @@ namespace simulator
 
 		private void WriteOpenMapMessage()
 		{
-			Gl.glClear(Gl.GL_COLOR_BUFFER_BIT | Gl.GL_DEPTH_BUFFER_BIT);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			m_fonter.PrintGLUTCenter("Press 'O' to open a map", m_openGLControl.Width, m_openGLControl.Height, 0);
-			Gl.glFlush();
+			GL.Flush();
 			Refresh();
 		}
 

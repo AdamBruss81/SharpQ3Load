@@ -1,6 +1,6 @@
 ﻿using System;
-using Tao.OpenGl;
 using Tao.FreeGlut;
+using OpenTK.Graphics.OpenGL;
 
 #pragma warning disable 0660
 #pragma warning disable 0661
@@ -64,17 +64,17 @@ namespace utilities
 		{
 			if (!Empty)
 			{
-				sgl.PUSHATT(Gl.GL_CURRENT_BIT);
-				Gl.glColor3ubv(col.GetColor);
+				sgl.PUSHATT(AttribMask.CurrentBit);
+				GL.Color3(col.GetColor);
 
 				if (!bGlut)
 				{
-					Gl.glBegin(Gl.GL_LINES);
+					GL.Begin(PrimitiveType.Lines);
 					{
-						Gl.glVertex3dv(Vertice1.Vect);
-						Gl.glVertex3dv(Vertice2.Vect);
+						GL.Vertex3(Vertice1.Vect);
+						GL.Vertex3(Vertice2.Vect);
 					}
-					Gl.glEnd();
+					GL.End();
 				}
 				else
 				{
@@ -86,8 +86,8 @@ namespace utilities
 					if (Math.Abs(rotAngle) < 0.001) rotAngle = 0.0;
 					D3Vect rotAxis = new D3Vect(zup, ray);
 					sgl.PUSHMAT();
-					Gl.glTranslated(Vertice1[0], Vertice1[1], Vertice1[2]);
-					Gl.glRotated(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
+					GL.Translate(Vertice1[0], Vertice1[1], Vertice1[2]);
+					GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
 					Glut.glutSolidCylinder(0.01, (Vertice2 - Vertice1).Length, 20, 10);
 					sgl.POPMAT();
 				}

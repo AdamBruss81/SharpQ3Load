@@ -1,4 +1,4 @@
-using Tao.OpenGl;
+using OpenTK.Graphics.OpenGL;
 using System.Drawing;
 
 namespace utilities
@@ -6,6 +6,7 @@ namespace utilities
 	public class GLB
 	{
 		public static double RadToDeg { get { return 57.2957795; } }
+		public static double DegToRad { get { return 0.01745329; } }
 	}
 
 	/// <summary>
@@ -13,24 +14,24 @@ namespace utilities
 	/// </summary>
 	public class sgl
 	{
-		public static void PUSHATT(int mask)
+		public static void PUSHATT(AttribMask mask)
 		{
-			Gl.glPushAttrib(mask);
+			GL.PushAttrib(mask);
 		}
 
 		public static void POPATT()
 		{
-			Gl.glPopAttrib();
+			GL.PopAttrib();
 		}
 
 		public static void PUSHMAT()
 		{
-			Gl.glPushMatrix();
+			GL.PushMatrix();
 		}
 
 		public static void POPMAT()
 		{
-			Gl.glPopMatrix();
+			GL.PopMatrix();
 		}
 	}
 
@@ -42,7 +43,7 @@ namespace utilities
 			System.Drawing.Imaging.BitmapData data = bmp.LockBits(new Rectangle(0, 0, dims.Width, dims.Height),
 				System.Drawing.Imaging.ImageLockMode.WriteOnly,
 				System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-			Gl.glReadPixels(0, 0, dims.Width, dims.Height, Gl.GL_BGR, Gl.GL_UNSIGNED_BYTE, data.Scan0);
+			GL.ReadPixels(0, 0, dims.Width, dims.Height, PixelFormat.Bgr, PixelType.UnsignedByte, data.Scan0);
 			bmp.UnlockBits(data);
 			bmp.RotateFlip(RotateFlipType.RotateNoneFlipY);
 

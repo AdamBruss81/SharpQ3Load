@@ -11,14 +11,11 @@
 
 using System;
 using System.IO;
-using Tao.OpenGl;
-using Tao.Platform.Windows;
 using System.Collections.Generic;
-using System.Diagnostics;
 using utilities;
 using gl_font;
 using obsvr;
-using engine;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -165,9 +162,9 @@ namespace engine
 		{
 			if (mode == Engine.EGraphicsMode.WIREFRAME)
 			{
-				sgl.PUSHATT(Gl.GL_TEXTURE_BIT | Gl.GL_LINE_BIT);
-				Gl.glDisable(Gl.GL_TEXTURE_2D);
-				Gl.glLineWidth(1.2f);
+				sgl.PUSHATT(AttribMask.TextureBit | AttribMask.LineBit);
+				GL.Disable(EnableCap.Texture2D);
+				GL.LineWidth(1.2f);
 				for (int i = 0; i < m_lbboxes.Count; i++)
 				{
 					if(m_lbboxes[i].InsideFrustrum(lFrustrum))
@@ -177,7 +174,7 @@ namespace engine
 			}
 			else
 			{
-				sgl.PUSHATT(Gl.GL_ALL_ATTRIB_BITS);
+				sgl.PUSHATT(AttribMask.AllAttribBits);
 
 				foreach(BoundingBox box in m_lbboxes)
 				{

@@ -1,4 +1,4 @@
-﻿using Tao.OpenGl;
+﻿using OpenTK.Graphics.OpenGL;
 
 namespace utilities
 {
@@ -18,25 +18,25 @@ namespace utilities
 			else
 			{
 				//x-axis
-				Gl.glBegin(Gl.GL_LINE_LOOP);
-				Gl.glColor3d(1.0, 0.0, 0.0);
-				Gl.glVertex3d(0.0, 0.0, 0.0);
-				Gl.glVertex3d(200.0, 0.0, 0.0);
-				Gl.glEnd();
+				GL.Begin(PrimitiveType.LineLoop);
+				GL.Color3(1.0, 0.0, 0.0);
+				GL.Vertex3(0.0, 0.0, 0.0);
+				GL.Vertex3(200.0, 0.0, 0.0);
+				GL.End();
 
 				//y-axis
-				Gl.glBegin(Gl.GL_LINE_LOOP);
-				Gl.glColor3d(0.0, 1.0, 0.0);
-				Gl.glVertex3d(0.0, 0.0, 0.0);
-				Gl.glVertex3d(0.0, 200.0, 0.0);
-				Gl.glEnd();
+				GL.Begin(PrimitiveType.LineLoop);
+				GL.Color3(0.0, 1.0, 0.0);
+				GL.Vertex3(0.0, 0.0, 0.0);
+				GL.Vertex3(0.0, 200.0, 0.0);
+				GL.End();
 
 				//z-axis
-				Gl.glBegin(Gl.GL_LINE_LOOP);
-				Gl.glColor3d(0.0, 0.0, 1.0);
-				Gl.glVertex3d(0.0, 0.0, 0.0);
-				Gl.glVertex3d(0.0, 0.0, 200.0);
-				Gl.glEnd();
+				GL.Begin(PrimitiveType.LineLoop);
+				GL.Color3(0.0, 0.0, 1.0);
+				GL.Vertex3(0.0, 0.0, 0.0);
+				GL.Vertex3(0.0, 0.0, 200.0);
+				GL.End();
 			}
 		}
 	}

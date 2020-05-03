@@ -8,12 +8,9 @@
 //*
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
-
-using System;
-using Tao.OpenGl;
-using Tao.Platform.Windows;
 using System.Drawing;
 using System.IO;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -45,8 +42,8 @@ namespace engine
 
 		public void Delete()
 		{
-			Gl.glDeleteTextures(1, m_pnTextures);
-			Gl.glDeleteLists(m_nBindTexture, 1);
+			GL.DeleteTextures(1, m_pnTextures);
+			GL.DeleteLists(m_nBindTexture, 1);
 		}
 
         private bool FindMissingTexture(ref string sFullPath, string sURL, string sSearchString, string sReplacer)
@@ -122,6 +119,8 @@ namespace engine
 
                     // q3dm17
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "diamond2cjumppad", "bouncepad01_diamond2cTGA.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "light5", "light5.jpg");
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "lt2", "light2.jpg");
 
                     if (!File.Exists(sFullPath))
                     {
@@ -142,14 +141,22 @@ namespace engine
             bitmapdata = image.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly,
                 System.Drawing.Imaging.PixelFormat.Format24bppRgb);
 
-            Gl.glGenTextures(1, m_pnTextures);
-            Gl.glBindTexture(Gl.GL_TEXTURE_2D, m_pnTextures[0]);
+            GL.GenTextures(1, m_pnTextures);
+            GL.BindTexture(TextureTarget.Texture2D, m_pnTextures[0]);
 
-            Gl.glTexParameteri(Gl.GL_TEXTURE_2D, Gl.GL_TEXTURE_MIN_FILTER, Gl.GL_LINEAR_MIPMAP_NEAREST);
-            Gl.glTexParameteri(Gl.GL_TEXTURE_2D, Gl.GL_TEXTURE_MAG_FILTER, Gl.GL_LINEAR);
-            
-            Glu.gluBuild2DMipmaps(Gl.GL_TEXTURE_2D, 3, image.Width,
-                image.Height, Gl.GL_BGR_EXT, Gl.GL_UNSIGNED_BYTE, bitmapdata.Scan0);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, image.Width, 
+                image.Height, 0, PixelFormat.Bgr, PixelType.UnsignedByte, bitmapdata.Scan0);
+
+            string sErrors = "";
+            int nRet = utilities.ShaderHelper.GetOpenGLErrors(ref sErrors);
+            if(nRet != 0)
+            {
+                LOGGER.Error("Texture open gl errors: " + sErrors);
+            }
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             image.UnlockBits(bitmapdata);
             image.Dispose();
@@ -160,7 +167,7 @@ namespace engine
 
         public void bindMe()
         {
-		    Gl.glCallList(m_nBindTexture);
+		    GL.CallList(m_nBindTexture);
         }
 
 		public void InitializeLists()
@@ -187,10 +194,10 @@ namespace engine
 				SetTexture(sFullTexturePath);
 			}
 
-			m_nBindTexture = Gl.glGenLists(1);
-			Gl.glNewList(m_nBindTexture, Gl.GL_COMPILE);
-				Gl.glBindTexture(Gl.GL_TEXTURE_2D, m_pnTextures[0]);
-			Gl.glEndList();
+			m_nBindTexture = GL.GenLists(1);
+			GL.NewList(m_nBindTexture, ListMode.Compile);
+				GL.BindTexture(TextureTarget.Texture2D, m_pnTextures[0]);
+			GL.EndList();
 		}
     }
 }

@@ -12,10 +12,9 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using Tao.OpenGl;
 using utilities;
 using Tao.FreeGlut;
-using System.Diagnostics;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -25,10 +24,9 @@ namespace engine
 	public class Player:Engine
 	{
 		// ### MEMBER VARIABLES
-		const double mcd_Height = 1.0;
+		const double mcd_Height = 0.8;
 		const double mcd_PadPowerInMS = 1050;
-		const double mdc_StairHeight = 0.3;
-		const double mdc_MinDistanceToWall = .75 ; // if you collide with wall, you will get this far from it;
+		const double mdc_StairHeight = 0.1;
 
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
@@ -152,9 +150,9 @@ namespace engine
 		{
 			base.Draw(nNumFaceCount);
 
-			sgl.PUSHATT(Gl.GL_CURRENT_BIT | Gl.GL_TEXTURE_BIT | Gl.GL_LINE_BIT);
-			Gl.glDisable(Gl.GL_TEXTURE_2D);
-			Gl.glLineWidth(1.5f);
+			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.TextureBit | AttribMask.LineBit);
+			GL.Disable(EnableCap.Texture2D);
+			GL.LineWidth(1.5f);
 
 			if (STATE.DebuggingMode)
 			{
@@ -164,11 +162,11 @@ namespace engine
 					m_lStaticFigList[0].DrawBoundingBoxes();
 				}
 
-				Gl.glColor3d(0.0, 1.0, 0.2);
+				GL.Color3(0.0, 1.0, 0.2);
 				if (STATE.AllowPrinting) m_fonter.PrintTopRight("\n\nDEBUGGING ON", m_GControl.Width, m_GControl.Height, 0);
 			}
 			else {
-				Gl.glColor3d(0.8, 0.0, 0.0);
+				GL.Color3(0.8, 0.0, 0.0);
 				if (STATE.AllowPrinting) m_fonter.PrintTopRight("\n\nDEBUGGING OFF", m_GControl.Width, m_GControl.Height, 0);
 			}
 
@@ -178,7 +176,7 @@ namespace engine
 
 			int nLineCounter = 0;
 
-			Gl.glColor3d(1.0, 1.0, 0.0);
+			GL.Color3(1.0, 1.0, 0.0);
 			if (STATE.AllowPrinting) m_fonter.PrintTopLeft(sFigureString, m_GControl.Width, m_GControl.Height, 0);
 			nLineCounter += 3;
 			nLineCounter += m_lStaticFigList[0].GetNumBBoxesLastInside;
@@ -189,7 +187,7 @@ namespace engine
 			{
 				if (nCounter == 0)
 				{
-					Gl.glColor3ub(230,230,230);
+					GL.Color3(.9,.9,.9);
 					if (STATE.AllowPrinting)
 					{
 						m_fonter.PrintTopLeft("Ray Intersections " + m_lRayIntersectionInfos.Count.ToString(), m_GControl.Width, m_GControl.Height, nLineCounter++);
@@ -210,13 +208,13 @@ namespace engine
 					sRayIntersectedFaces += "\n";
 			}
 
-			Gl.glColor3ub(255, 255, 0);
+			GL.Color3(1.0, 1.0, 0);
 			if(m_lRayIntersectionInfos.Count > 0) {
 				if (STATE.AllowPrinting) m_fonter.PrintTopLeft(sRayIntersectedFaces, m_GControl.Width, m_GControl.Height, nLineCounter);
 				nLineCounter += m_lRayIntersectionInfos.Count;
 			}
 
-			Gl.glColor3d(0.0, 1.0, 1.0);
+			GL.Color3(0.0, 1.0, 1.0);
 			if (STATE.AllowPrinting) m_fonter.PrintTopLeft(m_cam.GetCurrentStateDataString(true), m_GControl.Width, m_GControl.Height, nLineCounter++);
 
 			m_ray.Draw(new Color(180, 180, 255), true);
@@ -225,8 +223,8 @@ namespace engine
 			foreach(IntersectionInfo i in m_lRayIntersectionInfos) 
 			{
 				sgl.PUSHMAT();
-				Gl.glTranslated(i.Intersection.x, i.Intersection.y, i.Intersection.z);
-				Gl.glColor3ub(intensity, intensity, intensity);
+				GL.Translate(i.Intersection.x, i.Intersection.y, i.Intersection.z);
+				GL.Color3(intensity, intensity, intensity);
 				if (intensity == 15) intensity = 255;
 				else intensity -= 60;
 				Glut.glutSolidSphere(0.1, 20, 20);
@@ -412,7 +410,7 @@ namespace engine
 			d3MoveVec.Scale(dMoveScale);
 			d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
 
-			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, 1.0, eSourceMovement))
+			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, mcd_Height, eSourceMovement))
 			{
 				if (!bDoTheMove) return true;								
 				return InternalMove(eSourceMovement, d3MoveToPosition, nMoveAttemptCount, dMoveScale);
@@ -432,7 +430,7 @@ namespace engine
 						d3StepUpPos.z = d3StepUpPos.z + mdc_StairHeight;
 						d3StepUpMoveTo.z = d3StepUpMoveTo.z + mdc_StairHeight;
 
-						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, 1.0, eSourceMovement))
+						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, mcd_Height, eSourceMovement))
 						{
 							bool bNoWallCollides = InternalMove(eSourceMovement, d3StepUpMoveTo, nMoveAttemptCount, dMoveScale);
 							return bNoWallCollides;
@@ -456,11 +454,11 @@ namespace engine
 					if (dBounceAngle <= 0 || dBounceAngle > 90)
 						throw new Exception(Convert.ToString(dBounceAngle) + " is an invalid bounce angle. Range is (0 < angle <= 90)");
 
-					Gl.glPushMatrix();
-					Gl.glLoadIdentity();
-					Gl.glRotated(dBounceAngle, cross.x, cross.y, cross.z);
-					Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_pvUtilMatrix);
-					Gl.glPopMatrix();
+					GL.PushMatrix();
+					GL.LoadIdentity();
+					GL.Rotate(dBounceAngle, cross.x, cross.y, cross.z);
+					GL.GetDouble(GetPName.ModelviewMatrix, m_pvUtilMatrix);
+					GL.PopMatrix();
 
 					D3Vect d3SlideVector = D3Vect.Mult(m_pvUtilMatrix, dcamfor);
 
@@ -716,11 +714,11 @@ namespace engine
 			D3Vect rotationVec = new D3Vect(face.GetNormal, new D3Vect(0, 0, 1));
 			rotationVec.normalize();
 
-            Gl.glPushMatrix();
-            Gl.glLoadIdentity();
-            Gl.glRotated(degRotation, rotationVec.x, rotationVec.y, rotationVec.z);
-            Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_pvUtilMatrix);
-            Gl.glPopMatrix();
+            GL.PushMatrix();
+            GL.LoadIdentity();
+            GL.Rotate(degRotation, rotationVec.x, rotationVec.y, rotationVec.z);
+            GL.GetDouble(GetPName.ModelviewMatrix, m_pvUtilMatrix);
+            GL.PopMatrix();
 
 			d3Dir = D3Vect.Mult(m_pvUtilMatrix, d3Dir);
 

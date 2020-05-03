@@ -10,12 +10,10 @@
 //*===================================================================================
 
 using System;
-using Tao.OpenGl;
-using Tao.Platform.Windows;
 using Tao.FreeGlut;
 using System.Collections.Generic;
-using System.Diagnostics;
 using utilities;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -71,7 +69,7 @@ namespace engine
 			if (m_TextureType == Shape.ETextureType.MULTI)
 				m_lTextureCoordinates.Add(new List<DPoint>(lTextCoords[1]));
 			m_lVertices = new List<D3Vect>(lVerts);
-			m_lVertColors = new List<D3Vect>(lVertColors);
+			m_lVertColors = new List<D3Vect>(lVertColors);			
 			m_NormalCapColor = normalCap;
 			m_NormalStemColor = normalStem;
 			m_nIndex = index;
@@ -123,8 +121,18 @@ namespace engine
 
         public void SetParentShape(Shape s)
         {
-            m_pParentShape = s;
-        }
+			m_pParentShape = s;
+
+			/*if (m_pParentShape != null && m_pParentShape.GetMainTexture().GetPath().ToLower().Contains("metalsupport4b"))
+            {*/
+				/*foreach(D3Vect v in m_lVertColors)
+				{
+					v.x = v.x * 1.3;
+					v.y = v.y * 1.3;
+					v.z = v.z * 1.3;
+				}*/
+           /* }*/
+		}
 
         public Shape GetParentShape()
         {
@@ -232,20 +240,21 @@ namespace engine
 
 			if (m_TextureType == Shape.ETextureType.MULTI)
 			{
-				m_TwoTextureFaceDrawList = Gl.glGenLists(1);
-				Gl.glNewList(m_TwoTextureFaceDrawList, Gl.GL_COMPILE);
-				Gl.glBegin(Gl.GL_POLYGON);
+				// multitexture
+				m_TwoTextureFaceDrawList = GL.GenLists(1);
+				GL.NewList(m_TwoTextureFaceDrawList, ListMode.Compile);
+				GL.Begin(PrimitiveType.Polygon);
 				{
 					for (int i = 0; i < m_lVertices.Count; i++)
 					{
-						Gl.glColor3d(1.0, 1.0, 1.0);
-						Gl.glMultiTexCoord2dv(Gl.GL_TEXTURE1, m_lTextureCoordinates[1][i].Vect);
-						Gl.glMultiTexCoord2dv(Gl.GL_TEXTURE0, m_lTextureCoordinates[0][i].Vect);
-						Gl.glVertex3dv(m_lVertices[i].Vect);
+						GL.Color3(1.0, 1.0, 1.0);
+						GL.MultiTexCoord2(TextureUnit.Texture0, m_lTextureCoordinates[1][i].Vect); 
+                        GL.MultiTexCoord2(TextureUnit.Texture1, m_lTextureCoordinates[0][i].Vect);
+                        GL.Vertex3(m_lVertices[i].Vect);
 					}
 				}
-				Gl.glEnd();
-				Gl.glEndList();
+				GL.End();
+				GL.EndList();
 
 				GenSingleTextureDisplayLists(1);
 			}
@@ -255,21 +264,22 @@ namespace engine
 			}
 			if (m_TextureType != Shape.ETextureType.NONE)
 			{
-				m_nWireframeDrawList = Gl.glGenLists(1);
-				Gl.glNewList(m_nWireframeDrawList, Gl.GL_COMPILE);
-				Gl.glBegin(Gl.GL_LINE_LOOP);
+				// wireframe
+				m_nWireframeDrawList = GL.GenLists(1);
+				GL.NewList(m_nWireframeDrawList, ListMode.Compile);
+				GL.Begin(PrimitiveType.LineLoop);
 				{
 					for (int j = 0; j < m_lVertices.Count; j++)
-						Gl.glVertex3dv(m_lVertices[j].Vect);
+						GL.Vertex3(m_lVertices[j].Vect);
 				}
-				Gl.glEnd();
-				Gl.glEndList();
+				GL.End();
+				GL.EndList();
 			}
 
-			m_nDrawNormalList = Gl.glGenLists(1);
-			Gl.glNewList(m_nDrawNormalList, Gl.GL_COMPILE);
+			m_nDrawNormalList = GL.GenLists(1);
+			GL.NewList(m_nDrawNormalList, ListMode.Compile);
 			DrawNormals();
-			Gl.glEndList();
+			GL.EndList();
 		}
 
 		/// <summary>
@@ -301,60 +311,60 @@ namespace engine
 
 		public void Delete()
 		{
-			Gl.glDeleteLists(m_TwoTextureFaceDrawList, 1);
-			Gl.glDeleteLists(m_nWireframeDrawList, 1);
-			Gl.glDeleteLists(m_nDrawNormalList, 1);
-			Gl.glDeleteLists(m_nSolidColorDrawList, 1);
-			Gl.glDeleteLists(m_nOneTextureFaceDrawList, 1);
-			Gl.glDeleteLists(m_nOneTextureFaceDrawListWhite, 1);
+			GL.DeleteLists(m_TwoTextureFaceDrawList, 1);
+			GL.DeleteLists(m_nWireframeDrawList, 1);
+			GL.DeleteLists(m_nDrawNormalList, 1);
+			GL.DeleteLists(m_nSolidColorDrawList, 1);
+			GL.DeleteLists(m_nOneTextureFaceDrawList, 1);
+			GL.DeleteLists(m_nOneTextureFaceDrawListWhite, 1);
 		}
 
 		private void GenDebugDrawList()
 		{
-			m_nSolidColorDrawList = Gl.glGenLists(1);
-			Gl.glNewList(m_nSolidColorDrawList, Gl.GL_COMPILE);
-			sgl.PUSHATT(Gl.GL_ALL_ATTRIB_BITS);
-			Gl.glColor3ubv(m_SolidColor.GetColor);
-			Gl.glBegin(Gl.GL_POLYGON);
+			m_nSolidColorDrawList = GL.GenLists(1);
+			GL.NewList(m_nSolidColorDrawList, ListMode.Compile);
+			sgl.PUSHATT(AttribMask.AllAttribBits);
+			GL.Color3(m_SolidColor.GetColor);
+			GL.Begin(PrimitiveType.Polygon);
 			{
 				for (int i = 0; i < m_lVertices.Count; i++)
 				{
-					Gl.glVertex3dv(m_lVertices[i].Vect);
+					GL.Vertex3(m_lVertices[i].Vect);
 				}
 			}
-			Gl.glEnd();
+			GL.End();
 			sgl.POPATT();
-			Gl.glEndList();
+			GL.EndList();
 		}
 
 		private void GenSingleTextureDisplayLists(int TexCoordSetIndex)
 		{
-			m_nOneTextureFaceDrawList = Gl.glGenLists(1);
-			Gl.glNewList(m_nOneTextureFaceDrawList, Gl.GL_COMPILE);
-			Gl.glBegin(Gl.GL_POLYGON);
+			m_nOneTextureFaceDrawList = GL.GenLists(1);
+			GL.NewList(m_nOneTextureFaceDrawList, ListMode.Compile);
+			GL.Begin(PrimitiveType.Polygon);
 			{
 				for (int i = 0; i < m_lVertices.Count; i++)
 				{
-					Gl.glColor3dv(m_lVertColors[i].Vect);
-					Gl.glTexCoord2dv(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
-					Gl.glVertex3dv(m_lVertices[i].Vect);
+					GL.Color3(m_lVertColors[i].Vect);
+					GL.TexCoord2(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
+					GL.Vertex3(m_lVertices[i].Vect);
 				}
 			}
-			Gl.glEnd();
-			Gl.glEndList();
+			GL.End();
+			GL.EndList();
 
-			m_nOneTextureFaceDrawListWhite = Gl.glGenLists(1);
-			Gl.glNewList(m_nOneTextureFaceDrawListWhite, Gl.GL_COMPILE);
-			Gl.glBegin(Gl.GL_POLYGON);
+            m_nOneTextureFaceDrawListWhite = GL.GenLists(1);
+			GL.NewList(m_nOneTextureFaceDrawListWhite, ListMode.Compile);
+			GL.Begin(PrimitiveType.Polygon);
 			{
 				for (int i = 0; i < m_lVertices.Count; i++)
-				{					
-					Gl.glTexCoord2dv(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
-					Gl.glVertex3dv(m_lVertices[i].Vect);
+				{
+                    GL.TexCoord2(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
+					GL.Vertex3(m_lVertices[i].Vect);
 				}
 			}
-			Gl.glEnd();
-			Gl.glEndList();
+			GL.End();
+			GL.EndList();
 		}
 
 		/// <summary>
@@ -371,24 +381,24 @@ namespace engine
             if (bDraw)
             {
                 if (DrawSolidColor)
-                    Gl.glCallList(m_nSolidColorDrawList);
+                    GL.CallList(m_nSolidColorDrawList);
                 else if (mode == Engine.EGraphicsMode.WIREFRAME)
-                    Gl.glCallList(m_nWireframeDrawList);
+                    GL.CallList(m_nWireframeDrawList);
                 else if (mode == Engine.EGraphicsMode.MULTI_TEXTURE_WHITE)
                 {
                     if (m_TextureType == Shape.ETextureType.MULTI)
-                        Gl.glCallList(m_TwoTextureFaceDrawList);
+                        GL.CallList(m_TwoTextureFaceDrawList);
                     else if (m_TextureType == Shape.ETextureType.SINGLE)
-                        Gl.glCallList(m_nOneTextureFaceDrawList);
+                        GL.CallList(m_nOneTextureFaceDrawList);
                 }
                 else if (mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR)
-                    Gl.glCallList(m_nOneTextureFaceDrawList);
+                    GL.CallList(m_nOneTextureFaceDrawList);
                 else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
-                    Gl.glCallList(m_nOneTextureFaceDrawListWhite);
+                    GL.CallList(m_nOneTextureFaceDrawListWhite);
 
                 if (STATE.DebuggingMode && STATE.DrawFaceNormals)
                 {
-                    Gl.glCallList(m_nDrawNormalList);
+                    GL.CallList(m_nDrawNormalList);
                 }
 
                 nRendered++;
@@ -414,10 +424,10 @@ namespace engine
 			// draw line from midpoint to midpoint plus normal
 			D3Vect normEnd = start + normal * m_dVisualNormalScale;
 
-			sgl.PUSHATT(Gl.GL_CURRENT_BIT | Gl.GL_LINE_BIT | Gl.GL_TEXTURE_BIT);
+			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.LineBit | AttribMask.TextureBit);
 
-			Gl.glDisable(Gl.GL_TEXTURE_2D);
-			Gl.glColor3ubv(m_NormalStemColor.GetColor);
+			GL.Disable(EnableCap.Texture2D);
+			GL.Color3(m_NormalStemColor.GetColor);
 
 			sgl.PUSHMAT();
 			// http://www.euclideanspace.com/maths/algebra/vectors/angleBetween/index.htm
@@ -426,15 +436,15 @@ namespace engine
 			if (Math.Abs(rotAngle) < 0.001) 
 				rotAngle = 0.0;
 			D3Vect rotAxis = new D3Vect(zup, normal);
-			Gl.glTranslated(start[0], start[1], start[2]);
-			Gl.glRotated(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
+			GL.Translate(start[0], start[1], start[2]);
+			GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
 			Glut.glutSolidCylinder(0.05, (start - normEnd).Length, 7, 1);
 			sgl.POPMAT();
 
-			Gl.glColor3ubv(m_NormalCapColor.GetColor);
+			GL.Color3(m_NormalCapColor.GetColor);
 			sgl.PUSHMAT();
-			Gl.glTranslated(normEnd[0], normEnd[1], normEnd[2]);
-			Gl.glRotated(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
+			GL.Translate(normEnd[0], normEnd[1], normEnd[2]);
+			GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
 			Glut.glutSolidCone(0.05, 0.3, 7, 1);
 			sgl.POPMAT();
 

@@ -11,9 +11,8 @@
 
 using utilities;
 using System;
-using Tao.OpenGl;
-using System.IO;
 using System.Collections.Generic;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -60,11 +59,11 @@ namespace engine
 			sgl.PUSHMAT();
 
 			m_translateAmt = m_translateAmt + BulletFlyTranslationAmt;
-			Gl.glTranslated(m_translateAmt[0], m_translateAmt[1], m_translateAmt[2]); 
-			Gl.glRotated(m_setupRotateAmount, 0, 0, 1);
+			GL.Translate(m_translateAmt[0], m_translateAmt[1], m_translateAmt[2]); 
+			GL.Rotate(m_setupRotateAmount, 0, 0, 1);
 			m_AxeSpinRotation += AXE_SPIN_AMOUNT;
 			if (m_AxeSpinRotation > 360) m_AxeSpinRotation -= 360;
-			Gl.glRotated(m_AxeSpinRotation, 1, 0, 0);
+			GL.Rotate(m_AxeSpinRotation, 1, 0, 0);
 			base.Show(mode, ref nNumFacesRendered, lFrustrum, cam);
 
 			sgl.POPMAT();

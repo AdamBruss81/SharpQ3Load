@@ -11,9 +11,9 @@
 
 using utilities;
 using System.Collections.Generic;
-using Tao.OpenGl;
 using System;
 using System.Diagnostics;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -87,10 +87,10 @@ namespace engine
 			double t;
 
 			/* Get the current PROJECTION matrix from OpenGL */
-			Gl.glGetDoublev( Gl.GL_PROJECTION_MATRIX, proj );
+			GL.GetDouble(GetPName.ProjectionMatrix, proj);
 
 			/* Get the current MODELVIEW matrix from OpenGL */
-			Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, modl);
+			GL.GetDouble(GetPName.ModelviewMatrix, modl);
 
 			/* Combine the two matrices (multiply projection by modelview) */
 			clip[ 0] = modl[ 0] * proj[ 0] + modl[ 1] * proj[ 4] + modl[ 2] * proj[ 8] + modl[ 3] * proj[12];

@@ -1,5 +1,6 @@
 ﻿using System;
-using Tao.OpenGl;
+using System.Runtime.InteropServices;
+using OpenTK.Graphics.OpenGL;
 using Tao.FreeGlut;
 
 namespace gl_font
@@ -125,27 +126,29 @@ namespace gl_font
 		void MakeRasterFont() 
 		{
 			int i, j;
-			Gl.glPixelStorei(Gl.GL_UNPACK_ALIGNMENT, 1);
-			m_fontoffset = Gl.glGenLists(128);
+			GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
+			m_fontoffset = GL.GenLists(128);
 			for (i = 0, j = ' '; i < 95; i++, j++)
 			{
-				Gl.glNewList(m_fontoffset + j, Gl.GL_COMPILE);
-				Gl.glBitmap(8, (int)m_fCharHeight, 0.0f, m_fYOrigOffset, m_fCharWidth, 0.0f, rasters[i]);
-				Gl.glEndList();
+				GL.NewList(m_fontoffset + j, ListMode.Compile);
+				GL.Bitmap(8, (int)m_fCharHeight, 0.0f, m_fYOrigOffset, m_fCharWidth, 0.0f, rasters[i]);
+				GL.EndList();
 			}
 		}
 
 		public void Delete()
 		{
-			Gl.glDeleteLists(m_fontoffset, 128);
+			GL.DeleteLists(m_fontoffset, 128);
 		}
 
 		public void PrintString(string s) 
 		{
-			Gl.glPushAttrib(Gl.GL_LIST_BIT);
-			Gl.glListBase(m_fontoffset);
-			Gl.glCallLists(s.Length, Gl.GL_SHORT, s);
-			Gl.glPopAttrib();
+			IntPtr strPtr = Marshal.StringToHGlobalUni(s);
+			GL.PushAttrib(AttribMask.ListBit);
+			GL.ListBase(m_fontoffset);
+			GL.CallLists(s.Length, ListNameType.Short, strPtr);
+			GL.PopAttrib();
+			Marshal.FreeHGlobal(strPtr);
 		}
 
 		/// <summary>
@@ -159,7 +162,7 @@ namespace gl_font
 
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d(m_fLeftPadding, windowHeight - m_fCharHeight * (i + 1 + nLineOffset));
+				GL.WindowPos2(m_fLeftPadding, windowHeight - m_fCharHeight * (i + 1 + nLineOffset));
 				PrintString(lines[i]);
 			}
 		}
@@ -170,7 +173,7 @@ namespace gl_font
 
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d(windowWidth / 2 - (lines[i].Length * (m_fCharWidth / 2)),
+				GL.WindowPos2(windowWidth / 2 - (lines[i].Length * (m_fCharWidth / 2)),
 					windowHeight - m_fCharHeight * (i + 1 + nLineOffset));
 
 				PrintString(lines[i]);
@@ -183,7 +186,7 @@ namespace gl_font
 
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d(windowWidth - lines[i].Length * m_fCharWidth, 
+				GL.WindowPos2(windowWidth - lines[i].Length * m_fCharWidth, 
 					windowHeight - m_fCharHeight * (i + 1 + nLineOffset));
 
 				PrintString(lines[i]);
@@ -197,7 +200,7 @@ namespace gl_font
 			int nCounter = lines.Length - 1;
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d((windowWidth / 2) - ((lines[i].Length * m_fCharWidth) / 2),
+				GL.WindowPos2((windowWidth / 2) - ((lines[i].Length * m_fCharWidth) / 2),
 					(windowHeight / 2) + (m_fCharHeight / 2) + (m_fCharHeight * nCounter) + (nLineOffset * m_fCharHeight));
 
 				PrintString(lines[i]);
@@ -213,7 +216,7 @@ namespace gl_font
 			int nCounter = lines.Length - 1;
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d(m_fLeftPadding, (nCounter * m_fCharHeight) + (m_fCharHeight * nLineOffset) + m_fYOrigOffset);
+				GL.WindowPos2(m_fLeftPadding, (nCounter * m_fCharHeight) + (m_fCharHeight * nLineOffset) + m_fYOrigOffset);
 
 				PrintString(lines[i]);
 
@@ -228,7 +231,7 @@ namespace gl_font
 			int nCounter = lines.Length - 1;
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d((windowWidth / 2) - (lines[i].Length * (m_fCharWidth / 2)), 
+				GL.WindowPos2((windowWidth / 2) - (lines[i].Length * (m_fCharWidth / 2)), 
 					(nCounter * m_fCharHeight) + (m_fCharHeight * nLineOffset) + m_fYOrigOffset);
 
 				PrintString(lines[i]);
@@ -244,8 +247,10 @@ namespace gl_font
 			int nCounter = lines.Length - 1;
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d(windowWidth - lines[i].Length * m_fCharWidth,
-					(nCounter * m_fCharHeight) + (m_fCharHeight * nLineOffset) + m_fYOrigOffset);
+				float x = windowWidth - lines[i].Length * m_fCharWidth;
+				float y = (nCounter * m_fCharHeight) + (m_fCharHeight * nLineOffset) + m_fYOrigOffset;
+
+				GL.WindowPos2(x, y);
 
 				PrintString(lines[i]);
 
@@ -260,7 +265,7 @@ namespace gl_font
 			int nCounter = lines.Length - 1;
 			for (int i = 0; i < lines.Length; i++)
 			{
-				Gl.glWindowPos2d((windowWidth / 2) - ((lines[i].Length * m_fCharWidth-10) / 2),
+				GL.WindowPos2((windowWidth / 2) - ((lines[i].Length * m_fCharWidth-10) / 2),
 					(windowHeight / 2) + (18 / 2) + (18 * nCounter) + (nLineOffset * 18));
 
 				for (int j = 0; j < lines[i].Length; j++)

@@ -10,11 +10,9 @@
 //*===================================================================================
 
 using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
-using Tao.Platform.Windows;
-using Tao.OpenGl;
 using utilities;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -59,10 +57,10 @@ namespace engine
 
 			if (STATE.AllowPrinting)
 			{
-				sgl.PUSHATT(Gl.GL_CURRENT_BIT | Gl.GL_TEXTURE_BIT);
+				sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.TextureBit);
 
-				Gl.glColor3d(0.0, 1.0, 1.0);
-				Gl.glDisable(Gl.GL_TEXTURE_2D);
+				GL.Color3(0.0, 1.0, 1.0);
+				GL.Disable(EnableCap.Texture2D);
 
 				m_fonter.PrintTopLeft(m_cam.GetCurrentStateDataString(true), m_GControl.Width, m_GControl.Height, 0);
 

@@ -108,3 +108,15 @@ When moving left and right... If moving left and you hit right, stop the left de
 at the moment. Front to back is ok. Can improve air travel by reducing the friction in the air and also lessening movement amounts user inputs while in the air.
 
 Only play footsteps if you're moving at a good clip. Not if you say tap forward quickly.
+
+Enable mipmapping. This woudl vastly speed up my game I bet. It means textures far away aren't done with full complexity. They will use a lower res somehow.
+
+Since switching the entire simulator to opentk would be a big job I'm going to first take the time to setup a glprojects project to test multitexturing 
+with lightmaps a face. Setup a project to multitexture one or more faces using a quake3 lightmap and texture. Initially just do it using the normal
+pipeline(no shaders). Hardcode if I have to. Then switch it or have the option to do it through shaders. As of now I have idea how to use shaders with texture
+files. If I can get the multitexturing to work right(correct lighting) then I can convert simulator to opentk with some confidence.
+
+I got the brickshader up and running. The problem is some of the faces get rendered black. I tried messing with opengl state things like depthtest and culling.
+Depthtets has some effect  but it doesn't fix the problem. I'm going to mess around with the shaders themselves for a bit and try to figure it out.
+
+Look into not reflecting the world when I read it in. This makes debugging faces and such confusing.

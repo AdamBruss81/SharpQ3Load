@@ -80,18 +80,10 @@ namespace simulator
             // 
             // m_openGLControl
             // 
-            this.m_openGLControl.AccumBits = ((byte)(0));
-            this.m_openGLControl.AutoCheckErrors = false;
-            this.m_openGLControl.AutoFinish = false;
-            this.m_openGLControl.AutoMakeCurrent = false;
-            this.m_openGLControl.AutoSwapBuffers = true;
             this.m_openGLControl.BackColor = System.Drawing.Color.Black;
-            this.m_openGLControl.ColorBits = ((byte)(32));
-            this.m_openGLControl.DepthBits = ((byte)(16));
             this.m_openGLControl.Location = new System.Drawing.Point(128, 80);
             this.m_openGLControl.Name = "m_openGLControl";
             this.m_openGLControl.Size = new System.Drawing.Size(313, 218);
-            this.m_openGLControl.StencilBits = ((byte)(0));
             this.m_openGLControl.TabIndex = 0;
             this.m_openGLControl.GotFocus += new System.EventHandler(this.m_openGLControl_GotFocus);
             this.m_openGLControl.KeyUp += new System.Windows.Forms.KeyEventHandler(this.openGLControl_KeyUp);

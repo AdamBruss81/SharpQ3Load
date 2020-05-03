@@ -12,9 +12,8 @@
 using System;
 using System.Collections.Generic;
 using utilities;
-using System.Diagnostics;
-using Tao.OpenGl;
 using System.IO;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -106,48 +105,48 @@ namespace engine
 
 		public void InitializeLists()
 		{
-			m_nDrawDisplayList = Gl.glGenLists(1);
-			Gl.glNewList(m_nDrawDisplayList, Gl.GL_COMPILE);
+			m_nDrawDisplayList = GL.GenLists(1);
+			GL.NewList(m_nDrawDisplayList, ListMode.Compile);
 			{
-				Gl.glBegin(Gl.GL_LINES);
+				GL.Begin(PrimitiveType.Lines);
 				// MAX END
-				Gl.glVertex3dv((m_lVertices[0] + zeroAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[1] + oneAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[1] + oneAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[2] + twoAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[2] + twoAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[3] + threeAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[3] + threeAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[0] + zeroAdj).Vect);
+				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
+				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
+				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
+				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
+				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
+				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
+				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
+				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
 
 				// BODY
-				Gl.glVertex3dv((m_lVertices[0] + zeroAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[6] + sixAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[1] + oneAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[7] + sevenAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[3] + threeAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[5] + fiveAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[2] + twoAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[4] + fourAdj).Vect);
-
+				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
+				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
+				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
+				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
+				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
+				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
+				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
+				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
+						 
 				// MIN END
-				Gl.glVertex3dv((m_lVertices[4] + fourAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[5] + fiveAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[5] + fiveAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[6] + sixAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[6] + sixAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[7] + sevenAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[7] + sevenAdj).Vect);
-				Gl.glVertex3dv((m_lVertices[4] + fourAdj).Vect);
+				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
+				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
+				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
+				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
+				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
+				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
+				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
+				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
 
-				Gl.glEnd();
+				GL.End();
 			}
-			Gl.glEndList();
+			GL.EndList();
 		}
 
 		public void Delete()
 		{
-			Gl.glDeleteLists(m_nDrawDisplayList, 1);
+			GL.DeleteLists(m_nDrawDisplayList, 1);
 		}
 
 		private void DrawFaceNormals()
@@ -260,11 +259,11 @@ namespace engine
 
 		public void Draw()
 		{
-			sgl.PUSHATT(Gl.GL_CURRENT_BIT | Gl.GL_LINE_BIT);
+			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.LineBit);
 
-			Gl.glColor3ubv(m_color.GetColor);
-            Gl.glLineWidth(2.5f);
-			Gl.glCallList(m_nDrawDisplayList);
+			GL.Color3(m_color.GetColor);
+            GL.LineWidth(2.5f);
+			GL.CallList(m_nDrawDisplayList);
 
 			if(STATE.DrawFaceNormals) {
 				DrawFaceNormals();

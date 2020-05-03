@@ -16,18 +16,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulatorUI", "Simulator\Si
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Observer", "Observer\Observer.csproj", "{DB83A30C-071E-410E-B693-0FF47CEE4BA8}"
 EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "SimulatorInstaller", "Installer\Simulator\SimulatorInstaller.wixproj", "{F5D4B09B-F236-4196-AD3D-A986A649A299}"
-	ProjectSection(ProjectDependencies) = postProject
-		{DB83A30C-071E-410E-B693-0FF47CEE4BA8} = {DB83A30C-071E-410E-B693-0FF47CEE4BA8}
-		{95C0BA16-214B-429C-8BE1-27B6ED286C3F} = {95C0BA16-214B-429C-8BE1-27B6ED286C3F}
-		{45E1BA5C-307D-44CE-A23F-5EF620EC89ED} = {45E1BA5C-307D-44CE-A23F-5EF620EC89ED}
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gl_font", "basicfont\gl_font.csproj", "{75AFEE27-E96E-422C-92B9-F743B1AABC7A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "utilities", "utilities\utilities.csproj", "{F024422F-19A4-4987-9672-12849566B5E3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenGLControlModded", "utilities\OpenGLControlModded\OpenGLControlModded.csproj", "{C51323FB-26CE-4BDF-A1B9-B9EC9E7FCCDB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderTest", "ShaderTest\ShaderTest.csproj", "{D9274B47-0F2E-4FF1-87FA-C75C37AD772D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +42,6 @@ Global
 		{DB83A30C-071E-410E-B693-0FF47CEE4BA8}.Debug|x86.Build.0 = Debug|x86
 		{DB83A30C-071E-410E-B693-0FF47CEE4BA8}.Release|x86.ActiveCfg = Release|x86
 		{DB83A30C-071E-410E-B693-0FF47CEE4BA8}.Release|x86.Build.0 = Release|x86
-		{F5D4B09B-F236-4196-AD3D-A986A649A299}.Debug|x86.ActiveCfg = Debug|x86
-		{F5D4B09B-F236-4196-AD3D-A986A649A299}.Debug|x86.Build.0 = Debug|x86
-		{F5D4B09B-F236-4196-AD3D-A986A649A299}.Release|x86.ActiveCfg = Release|x86
-		{F5D4B09B-F236-4196-AD3D-A986A649A299}.Release|x86.Build.0 = Release|x86
 		{75AFEE27-E96E-422C-92B9-F743B1AABC7A}.Debug|x86.ActiveCfg = Debug|x86
 		{75AFEE27-E96E-422C-92B9-F743B1AABC7A}.Debug|x86.Build.0 = Debug|x86
 		{75AFEE27-E96E-422C-92B9-F743B1AABC7A}.Release|x86.ActiveCfg = Release|x86
@@ -63,6 +54,10 @@ Global
 		{C51323FB-26CE-4BDF-A1B9-B9EC9E7FCCDB}.Debug|x86.Build.0 = Debug|x86
 		{C51323FB-26CE-4BDF-A1B9-B9EC9E7FCCDB}.Release|x86.ActiveCfg = Release|x86
 		{C51323FB-26CE-4BDF-A1B9-B9EC9E7FCCDB}.Release|x86.Build.0 = Release|x86
+		{D9274B47-0F2E-4FF1-87FA-C75C37AD772D}.Debug|x86.ActiveCfg = Debug|x86
+		{D9274B47-0F2E-4FF1-87FA-C75C37AD772D}.Debug|x86.Build.0 = Debug|x86
+		{D9274B47-0F2E-4FF1-87FA-C75C37AD772D}.Release|x86.ActiveCfg = Release|x86
+		{D9274B47-0F2E-4FF1-87FA-C75C37AD772D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

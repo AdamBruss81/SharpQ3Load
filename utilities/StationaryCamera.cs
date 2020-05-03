@@ -52,31 +52,31 @@ namespace utilities
 
 		public void GLResize()
 		{
-			Gl.glMatrixMode(Gl.GL_PROJECTION);
-			Gl.glLoadIdentity();
+			GL.MatrixMode(Gl.GL_PROJECTION);
+			GL.LoadIdentity();
 			m_dfov = 20 * m_dZoomFactor;
 			if (m_dfov > 180) m_dfov = 180;
 			else if (m_dfov < 0) m_dfov = 0;
 			Glu.gluPerspective(m_dfov, (double)(m_window.Width / m_window.Height), 1.0, 100.0);
-			Gl.glViewport(0, 0, m_window.Width, m_window.Height);
-			Gl.glTranslatef(0.0f, 0.0f, -20.0f);
-			Gl.glMatrixMode(Gl.GL_MODELVIEW);
+			GL.Viewport(0, 0, m_window.Width, m_window.Height);
+			GL.Translatef(0.0f, 0.0f, -20.0f);
+			GL.MatrixMode(Gl.GL_MODELVIEW);
 		}
 
 		public void Rotate()
 		{
-			Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
-			Gl.glLoadIdentity();
-			Gl.glRotatef(m_rotation[0], m_rotation[1], m_rotation[2], m_rotation[3]);
-			Gl.glMultMatrixd(m_modelview);
+			GL.GetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
+			GL.LoadIdentity();
+			GL.Rotatef(m_rotation[0], m_rotation[1], m_rotation[2], m_rotation[3]);
+			GL.MultMatrixd(m_modelview);
 		}
 
 		public void Translate()
 		{
-			Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
-			Gl.glLoadIdentity();
-			Gl.glTranslatef(m_translation[0], m_translation[1], m_translation[2]);
-			Gl.glMultMatrixd(m_modelview);
+			GL.GetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
+			GL.LoadIdentity();
+			GL.Translatef(m_translation[0], m_translation[1], m_translation[2]);
+			GL.MultMatrixd(m_modelview);
 		}
 
 		// http://www.cse.ohio-state.edu/~crawfis/Graphics/VirtualTrackball.html
@@ -103,12 +103,12 @@ namespace utilities
 
 			m_dZoomFactor -= (e.Delta / sysDelta) * .1;
 
-			Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
+			GL.GetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
 
 			GLResize();
 
-			Gl.glLoadIdentity();
-			Gl.glMultMatrixd(m_modelview);
+			GL.LoadIdentity();
+			GL.MultMatrixd(m_modelview);
 		}
 
 		public void MouseMove(Point point)
@@ -135,10 +135,10 @@ namespace utilities
 						//   3. Apply the trackball rotation.
 						//   4. Pre-multiply it by the saved matrix.
 						//
-						Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
-						Gl.glLoadIdentity();
-						Gl.glRotated(rot_angle, rotAxis.x, rotAxis.y, rotAxis.z);
-						Gl.glMultMatrixd(m_modelview);
+						GL.GetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
+						GL.LoadIdentity();
+						GL.Rotated(rot_angle, rotAxis.x, rotAxis.y, rotAxis.z);
+						GL.MultMatrixd(m_modelview);
 					}
 					break;
 				}
@@ -148,12 +148,12 @@ namespace utilities
 
 					m_dZoomFactor -= pixel_diff * .005;
 
-					Gl.glGetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
+					GL.GetDoublev(Gl.GL_MODELVIEW_MATRIX, m_modelview);
 
 					GLResize();
 
-					Gl.glLoadIdentity();
-					Gl.glMultMatrixd(m_modelview);
+					GL.LoadIdentity();
+					GL.MultMatrixd(m_modelview);
 
 					//
 					// Set the current point, so the lastPoint will be saved properly below.

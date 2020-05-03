@@ -14,8 +14,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using utilities;
-using Tao.OpenGl;
 using obsvr;
+using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {
@@ -91,27 +91,27 @@ namespace engine
 
 		private void MultiTextureDraw()
 		{
-			Gl.glActiveTexture(Gl.GL_TEXTURE0);
-			Gl.glEnable(Gl.GL_TEXTURE_2D);
-			m_lTextures[0].bindMe();
-
-			Gl.glActiveTexture(Gl.GL_TEXTURE1);
-			Gl.glEnable(Gl.GL_TEXTURE_2D);
+			GL.ActiveTexture(TextureUnit.Texture0); // the second texture in the list is the base texture. The first one is the lightmap.
+			GL.Enable(EnableCap.Texture2D);
 			m_lTextures[1].bindMe();
-		}
 
-		private void DrawSingleTexture()
+			GL.ActiveTexture(TextureUnit.Texture1);
+			GL.Enable(EnableCap.Texture2D);
+			m_lTextures[0].bindMe();
+        }
+
+        private void DrawSingleTexture()
 		{
 			if (m_TextureType == ETextureType.MULTI)
 			{
-                Gl.glActiveTexture(Gl.GL_TEXTURE0);
-                Gl.glEnable(Gl.GL_TEXTURE_2D);
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GL.Enable(EnableCap.Texture2D);
                 m_lTextures[1].bindMe();
 			}
 			else if (m_TextureType == ETextureType.SINGLE) 
 			{
-				Gl.glActiveTexture(Gl.GL_TEXTURE0);
-				Gl.glEnable(Gl.GL_TEXTURE_2D);
+				GL.ActiveTexture(TextureUnit.Texture0);
+				GL.Enable(EnableCap.Texture2D);
 				m_lTextures[0].bindMe();
 			}
 		}
@@ -161,6 +161,13 @@ namespace engine
 			return bFog;
 		}
 
+		public Texture GetMainTexture()
+		{
+			if (m_lTextures.Count == 1) return m_lTextures[0];
+			else if (m_lTextures.Count == 2) return m_lTextures[1];
+			else return null;
+		}
+
         public List<Texture> GetTextures() { return m_lTextures; }
 
 		/// <summary>
@@ -191,7 +198,7 @@ namespace engine
 			{
 				if (m_TextureType == ETextureType.MULTI)
 				{
-					MultiTextureDraw();
+                    MultiTextureDraw();
 					foreach(Face f in m_lFaces)
 					{
 						if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.MULTI_TEXTURE_WHITE, ref nNumFacesRendered);
@@ -199,8 +206,8 @@ namespace engine
 				}
 				else if (m_TextureType == ETextureType.SINGLE)
 				{
-					Gl.glActiveTexture(Gl.GL_TEXTURE0);
-					Gl.glEnable(Gl.GL_TEXTURE_2D);
+					GL.ActiveTexture(TextureUnit.Texture0);
+					GL.Enable(EnableCap.Texture2D);
 					m_lTextures[0].bindMe();
 
 					foreach (Face f in m_lFaces)
@@ -213,8 +220,8 @@ namespace engine
 			{
 				if (m_TextureType == ETextureType.MULTI)
 				{				
-					Gl.glActiveTexture(Gl.GL_TEXTURE0);
-					Gl.glEnable(Gl.GL_TEXTURE_2D);
+					GL.ActiveTexture(TextureUnit.Texture0);
+					GL.Enable(EnableCap.Texture2D);
 					m_lTextures[1].bindMe();
 
 					foreach (Face f in m_lFaces)
@@ -224,8 +231,8 @@ namespace engine
 				}
 				else if (m_TextureType == ETextureType.SINGLE)
 				{
-					Gl.glActiveTexture(Gl.GL_TEXTURE0);
-					Gl.glEnable(Gl.GL_TEXTURE_2D);
+					GL.ActiveTexture(TextureUnit.Texture0);
+					GL.Enable(EnableCap.Texture2D);
 					m_lTextures[0].bindMe();
 
 					foreach (Face f in m_lFaces)
@@ -236,8 +243,8 @@ namespace engine
 			}
 			else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
 			{
-				Gl.glActiveTexture(Gl.GL_TEXTURE0);
-				Gl.glEnable(Gl.GL_TEXTURE_2D);
+				GL.ActiveTexture(TextureUnit.Texture0);
+				GL.Enable(EnableCap.Texture2D);
 
                 if(m_lSFXTextures.Count > 0)
                 {

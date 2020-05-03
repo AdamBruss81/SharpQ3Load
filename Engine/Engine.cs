@@ -11,14 +11,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows.Forms;
 using gl_font;
-using Tao.OpenGl;
 using utilities;
-using Tao.Platform.Windows;
 using obsvr;
-using System.IO;
+using OpenTK.Graphics.OpenGL;
+using OpenTK;
 
 namespace engine
 {
@@ -191,28 +189,27 @@ namespace engine
 		/// <param m_DisplayName="window">the open gl window</param>
 		virtual public void showScene(Keys keys)
 		{
-			Gl.glClear(Gl.GL_COLOR_BUFFER_BIT | Gl.GL_DEPTH_BUFFER_BIT);
-			Gl.glLoadIdentity();
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GL.LoadIdentity();
 
 			m_cam.GetLookAtRef(m_d3LastMovableCameraLookAt);
-			Glu.gluLookAt(m_cam.Position[0], m_cam.Position[1], m_cam.Position[2],
-				m_d3LastMovableCameraLookAt[0], m_d3LastMovableCameraLookAt[1], m_d3LastMovableCameraLookAt[2], 0, 0, 1);
+            Matrix4 lookat = Matrix4.LookAt((float)m_cam.Position[0], (float)m_cam.Position[1], (float)m_cam.Position[2],
+				(float)m_d3LastMovableCameraLookAt[0], (float)m_d3LastMovableCameraLookAt[1], (float)m_d3LastMovableCameraLookAt[2], 0, 0, 1);
+            GL.LoadMatrix(ref lookat);         
 
 			int nNumFacesRendered = 0, nDynamicFaces = 0;
 
 			m_lStaticFigList.ShowAllFigures(m_GraphicsMode, ref nNumFacesRendered, m_lFrustrumPlanes, m_cam);
 			m_dynamicFigList.ShowAllFigures(m_GraphicsMode, ref nDynamicFaces, m_lFrustrumPlanes, m_cam); 
 
-			Draw(nNumFacesRendered);
-       
-			m_GControl.Draw();
+			Draw(nNumFacesRendered);			
 		}
 
 		public virtual void Delete()
 		{
 			m_lStaticFigList.DeleteAll();
 			m_dynamicFigList.DeleteAll();
-			Gl.glDeleteLists(m_nDrawAxisList, 1);
+			GL.DeleteLists(m_nDrawAxisList, 1);
 			if (m_fonter != null) m_fonter.Delete();
 		}
 
@@ -228,17 +225,17 @@ namespace engine
 
 		virtual protected void Draw(int nFaceCount)
 		{
-			sgl.PUSHATT(Gl.GL_CURRENT_BIT | Gl.GL_TEXTURE_BIT);
+			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.TextureBit);
 
 			if(STATE.AllowPrinting) 
 			{
-				Gl.glDisable(Gl.GL_TEXTURE_2D);
-				Gl.glColor3d(1.0, 1.0, 0.0);
+				GL.Disable(EnableCap.Texture2D);
+				GL.Color3(1.0, 1.0, 0.0);
 				m_fonter.PrintTopCenter(m_lStaticFigList[0].GetDisplayName, m_GControl.Width, m_GControl.Height, 0);
-				Gl.glColor3d(0.0, 0.93, 0.46);
+				GL.Color3(0.0, 0.93, 0.46);
 				string sModes = "Mode " + GetGameMode() + "\n" + "Style " + GetGraphicsMode;
 				m_fonter.PrintTopRight(sModes, m_GControl.Width, m_GControl.Height, 0);
-				Gl.glColor3ub(255, 255, 255);
+				GL.Color3(1.0f, 1.0f, 1.0f);
 				m_fonter.PrintLowerLeft("Faces Rendered: " + Convert.ToString(nFaceCount), m_GControl.Width, 0);
 			}
 
@@ -280,7 +277,7 @@ namespace engine
 
 			if (m_bDrawAxis)
 			{
-				Gl.glCallList(m_nDrawAxisList);
+				GL.CallList(m_nDrawAxisList);
 			}
 
 			sgl.POPATT(); 
@@ -293,12 +290,12 @@ namespace engine
 		/// </summary>
 		private void GenerateDrawAxesDisplayList()
 		{
-			m_nDrawAxisList = Gl.glGenLists(1);
-			Gl.glNewList(m_nDrawAxisList, Gl.GL_COMPILE);
+			m_nDrawAxisList = GL.GenLists(1);
+			GL.NewList(m_nDrawAxisList, ListMode.Compile);
 			{
 				Constructs.DrawAxis(true);
 			}
-			Gl.glEndList();
+			GL.EndList();
 		}
 
 		virtual public void MouseMove(MouseEventArgs e, ref bool bPostOpen) { }

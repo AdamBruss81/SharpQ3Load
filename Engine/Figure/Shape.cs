@@ -75,6 +75,11 @@ namespace engine
 			}
 		}
 
+		public int GetIndex(Face f)
+		{
+			return m_lFaces.IndexOf(f);
+		}
+
 		public void ReadMain(List<Texture> lTextures, List<Texture> lSFXTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
 		{
 			m_lTextures = new List<Texture>(lTextures);

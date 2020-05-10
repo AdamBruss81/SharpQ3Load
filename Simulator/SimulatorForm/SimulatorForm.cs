@@ -90,7 +90,7 @@ namespace simulator
 
 			m_openGLControl.ProcessKey += new KeyEventHandler(m_openGLControl_ProcessKey);
 
-			timerRedrawer.Interval = 10;
+			timerRedrawer.Interval = 15;
 
 			SetViewMode(true);
 		}

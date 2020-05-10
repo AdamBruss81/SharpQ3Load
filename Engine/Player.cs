@@ -201,7 +201,8 @@ namespace engine
                     else
                         sTextureInfo = i.Face.GetParentShape().GetTextures()[0].GetPath();
                 }
-                sRayIntersectedFaces += "Index " + i.Face.Index.ToString() + ", Normal " + i.Face.GetNewNormal.ToString();
+                sRayIntersectedFaces += "Map Index " + i.Face.Index.ToString() + ", Shape Index " + 
+					i.Face.GetParentShape().GetIndex(i.Face) + ", Normal " + i.Face.GetNewNormal.ToString();
                 if (!string.IsNullOrEmpty(sTextureInfo)) sRayIntersectedFaces += ", Path " + sTextureInfo; 
 				nCounter++;
 				if (nCounter < m_lRayIntersectionInfos.Count) 

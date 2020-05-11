@@ -248,8 +248,8 @@ namespace engine
 					for (int i = 0; i < m_lVertices.Count; i++)
 					{
 						GL.Color3(1.0, 1.0, 1.0);
-						GL.MultiTexCoord2(TextureUnit.Texture0, m_lTextureCoordinates[1][i].Vect); 
-                        GL.MultiTexCoord2(TextureUnit.Texture1, m_lTextureCoordinates[0][i].Vect);
+						GL.MultiTexCoord2(TextureUnit.Texture0, m_lTextureCoordinates[1][i].Vect); // base texture
+                        GL.MultiTexCoord2(TextureUnit.Texture1, m_lTextureCoordinates[0][i].Vect); // light map
                         GL.Vertex3(m_lVertices[i].Vect);
 					}
 				}

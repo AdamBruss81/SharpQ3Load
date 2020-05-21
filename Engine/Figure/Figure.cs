@@ -158,7 +158,7 @@ namespace engine
 		/// <summary>
 		/// Shows all m_lShapes within the figure.
 		/// </summary>
-		virtual public void Show(Engine.EGraphicsMode mode, ref int nNumFacesRendered, List<Plane> lFrustrum, MovableCamera cam)
+		virtual public void Show(Engine.EGraphicsMode mode, MovableCamera cam)
 		{
 			if (mode == Engine.EGraphicsMode.WIREFRAME)
 			{
@@ -167,41 +167,18 @@ namespace engine
 				GL.LineWidth(1.2f);
 				for (int i = 0; i < m_lbboxes.Count; i++)
 				{
-					if(m_lbboxes[i].InsideFrustrum(lFrustrum))
-						m_lbboxes[i].DrawMapFaces(mode, ref nNumFacesRendered);
+					m_lbboxes[i].DrawMapFaces(mode);
 				}
 				sgl.POPATT();
 			}
 			else
 			{
-				sgl.PUSHATT(AttribMask.AllAttribBits);
-
-				foreach(BoundingBox box in m_lbboxes)
-				{
-					if (!box.InsideFrustrum(lFrustrum))
-					{
-						List<Face> lMapFacesPerBox = box.GetMapFaces;
-						foreach(Face f in lMapFacesPerBox) {
-							f.NumberOfVisibleBoundingBoxes--;
-						}
-					}						
-				}				
+				sgl.PUSHATT(AttribMask.AllAttribBits);				
 
 				for (int i = 0; i < m_lShapes.Count; i++)
-					m_lShapes[i].Show(mode, ref nNumFacesRendered);
-
-				foreach(Face f in m_lMapFaceReferences)
-				{
-					f.RenderedThisPass = false;
-					f.NumberOfVisibleBoundingBoxes = f.NumberOfBoundingBoxHolders;
-				}
+					m_lShapes[i].Show();
 
 				sgl.POPATT();
-			}
-
-			foreach(Face f in m_lMapFaceReferences)
-			{
-				f.RenderedThisPass = false;
 			}
 		}
 
@@ -617,12 +594,6 @@ namespace engine
 			get { return m_SpawnPoints; }
 		}
 
-		public void TurnOffDebugging()
-		{
-			for (int i = 0; i < m_lMapFaceReferences.Count; i++)
-				m_lMapFaceReferences[i].DrawSolidColor = false;
-		}
-
 		public List<Viewpoint> ViewPoints
 		{
 			get
@@ -642,7 +613,7 @@ namespace engine
 		{
 			foreach(Face f in m_lMapFaceReferences) {
 				IntersectionInfo intersection = new IntersectionInfo();
-				if(!f.CanMove(ray.Vertice1, ray.Vertice2, intersection)) {
+				if(!f.CanMove(ray.Vertice1, ray.Vertice2, intersection, true)) {
 					lIntersections.Add(intersection);
 				}
 			}
@@ -695,9 +666,6 @@ namespace engine
 				m_ld3HeadLookAts.Add(m_ld3Head[i] + m_LookAtRay);
 			}
 
-			for (int i = 0; i < m_lLastBoxesInside.Count; i++)
-				m_lLastBoxesInside[i].SetMapFacesToDebugMode(false);
-
 			m_lLastBoxesInside.Clear();
 
 			bool bCollision = false;
@@ -717,8 +685,6 @@ namespace engine
 							if (!m_lLastBoxesInside.Contains(m_lbboxes[j]))
 							{
 								m_lLastBoxesInside.Add(m_lbboxes[j]);
-								if (STATE.ShowDebuggingFaces)
-									m_lbboxes[j].SetMapFacesToDebugMode(true);
 							}
 						}
 

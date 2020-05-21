@@ -55,7 +55,7 @@ namespace engine
 			m_translateAmt = cam.GetLookAtNew + shiftRightVector;
 		}
 
-		public override void Show(Engine.EGraphicsMode mode, ref int nNumFacesRendered, List<Plane> lFrustrum, MovableCamera cam)
+		public override void Show(Engine.EGraphicsMode mode, MovableCamera cam)
 		{
 			sgl.PUSHMAT();
 
@@ -68,7 +68,7 @@ namespace engine
 			if (m_SpinRotation > 360) m_SpinRotation -= 360;
 			GL.Rotate(m_SpinRotation, 1, 0, 0);
 
-			base.Show(mode, ref nNumFacesRendered, lFrustrum, cam);
+			base.Show(mode, cam);
 
 			sgl.POPMAT();
 		}

@@ -41,8 +41,6 @@ namespace engine
 		protected OpenGLControlModded.simpleOpenGlControlEx m_GControl = null;
 		protected D3Vect m_d3LastMovableCameraLookAt = new D3Vect();
 		protected double[] m_pdModelview = new double[16];
-		List<Plane> m_lFrustrumPlanes = new List<Plane>(6);
-
 		protected const float JUMP_OFFSET = 1.0f;
 
 		private EGraphicsMode m_GraphicsMode = EGraphicsMode.SINGLE_WHITE;
@@ -120,11 +118,6 @@ namespace engine
 			set { m_GraphicsMode = value; }
 		}
 
-		public void TurnOffDebugging()
-		{
-			m_lStaticFigList[0].TurnOffDebugging();
-		}
-
 		public string GetGraphicsMode
 		{
 			get 
@@ -197,12 +190,10 @@ namespace engine
 				(float)m_d3LastMovableCameraLookAt[0], (float)m_d3LastMovableCameraLookAt[1], (float)m_d3LastMovableCameraLookAt[2], 0, 0, 1);
             GL.LoadMatrix(ref lookat);         
 
-			int nNumFacesRendered = 0, nDynamicFaces = 0;
+			m_lStaticFigList.ShowAllFigures(m_GraphicsMode, m_cam);
+			m_dynamicFigList.ShowAllFigures(m_GraphicsMode, m_cam); 
 
-			m_lStaticFigList.ShowAllFigures(m_GraphicsMode, ref nNumFacesRendered, m_lFrustrumPlanes, m_cam);
-			m_dynamicFigList.ShowAllFigures(m_GraphicsMode, ref nDynamicFaces, m_lFrustrumPlanes, m_cam); 
-
-			Draw(nNumFacesRendered);			
+			Draw();			
 		}
 
 		public virtual void Delete()
@@ -223,7 +214,7 @@ namespace engine
 		virtual public void CacheMove(MovableCamera.DIRECTION direction) { }
 		virtual public double GetVelocity() { return 0.0; }
 
-		virtual protected void Draw(int nFaceCount)
+		virtual protected void Draw()
 		{
 			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.TextureBit);
 
@@ -236,43 +227,6 @@ namespace engine
 				string sModes = "Mode " + GetGameMode() + "\n" + "Style " + GetGraphicsMode;
 				m_fonter.PrintTopRight(sModes, m_GControl.Width, m_GControl.Height, 0);
 				GL.Color3(1.0f, 1.0f, 1.0f);
-				m_fonter.PrintLowerLeft("Faces Rendered: " + Convert.ToString(nFaceCount), m_GControl.Width, 0);
-			}
-
-			if (m_lFrustrumPlanes.Count == 0) {
-				for (int i = 0; i < 6; i++) m_lFrustrumPlanes.Add(new Plane());
-			}
-
-			Plane.ExtractFrustrum(m_lFrustrumPlanes);
-
-			if (STATE.DebuggingMode && STATE.AllowPrinting)
-			{
-				string sFrustrumOut = "";
-				for (int i = 0; i < m_lFrustrumPlanes.Count; i++)
-				{
-					switch (i)
-					{
-						case 0:
-							sFrustrumOut = sFrustrumOut + "Right Plane: " + m_lFrustrumPlanes[i].ToString() + "\n";
-							break;
-						case 1:
-							sFrustrumOut = sFrustrumOut + "Left Plane: " + m_lFrustrumPlanes[i].ToString() + "\n";
-							break;
-						case 2:
-							sFrustrumOut = sFrustrumOut + "Bottom Plane: " + m_lFrustrumPlanes[i].ToString() + "\n";
-							break;
-						case 3:
-							sFrustrumOut = sFrustrumOut + "Top Plane: " + m_lFrustrumPlanes[i].ToString() + "\n";
-							break;
-						case 4:
-							sFrustrumOut = sFrustrumOut + "Far Plane: " + m_lFrustrumPlanes[i].ToString() + "\n";
-							break;
-						case 5:
-							sFrustrumOut = sFrustrumOut + "Near Plane: " + m_lFrustrumPlanes[i].ToString();
-							break;
-					}
-				}
-				m_fonter.PrintLowerRight(sFrustrumOut, m_GControl.Width, 0);
 			}
 
 			if (m_bDrawAxis)

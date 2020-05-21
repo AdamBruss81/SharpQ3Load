@@ -33,24 +33,15 @@ namespace engine
 		D3Vect m_d3MidPoint = new D3Vect();
 
 		Color m_NormalCapColor = new Color(0, 255, 0);
-		Color m_SolidColor = new Color(140,140,140);
 		Color m_NormalStemColor = new Color(0, 100, 0);
-
-		bool m_bDrawSolidColor = false;
-		bool m_bRenderedThisPass = false;
 		
 		double m_nIntersectAdjuster;
 		double m_dVisualNormalScale = 1.0;
 
-		int m_nOneTextureFaceDrawList;
-		int m_nOneTextureFaceDrawListWhite;
-		int m_TwoTextureFaceDrawList;
 		int m_nWireframeDrawList;
-		int m_nSolidColorDrawList;
 		int m_nDrawNormalList;
 		int m_nIndex = -1;
 		int m_nNumberOfBoundingBoxHolders = 0;		
-		int m_nNumberOfVisibleBoundingBoxes = 0;
 	
 		Shape.ETextureType m_TextureType;
 
@@ -102,36 +93,12 @@ namespace engine
 			set 
 			{ 
 				m_nNumberOfBoundingBoxHolders = value;
-				m_nNumberOfVisibleBoundingBoxes = value; 
-			}
-		}
-
-		public int NumberOfVisibleBoundingBoxes
-		{
-			get { return m_nNumberOfVisibleBoundingBoxes; }
-			set 
-			{ 
-				m_nNumberOfVisibleBoundingBoxes = value;
-				if (m_nNumberOfVisibleBoundingBoxes < 0)
-					throw new Exception("Face cannot have negative number of visible bounding box holders");
-				else if (m_nNumberOfVisibleBoundingBoxes == 0)
-					RenderedThisPass = true;
 			}
 		}
 
         public void SetParentShape(Shape s)
         {
 			m_pParentShape = s;
-
-			/*if (m_pParentShape != null && m_pParentShape.GetMainTexture().GetPath().ToLower().Contains("metalsupport4b"))
-            {*/
-				/*foreach(D3Vect v in m_lVertColors)
-				{
-					v.x = v.x * 1.3;
-					v.y = v.y * 1.3;
-					v.z = v.z * 1.3;
-				}*/
-           /* }*/
 		}
 
         public Shape GetParentShape()
@@ -139,21 +106,9 @@ namespace engine
             return m_pParentShape;
         }
 
-		public bool DrawSolidColor
-		{
-			get { return m_bDrawSolidColor; }
-			set { m_bDrawSolidColor = value; }
-		}
-
 		public List<Edge> GetEdges { get { return m_edges.EdgeLines; } }
 		public List<D3Vect> GetEdgeVectors { get { return m_edges.EdgeVectors; } }
 		public List<D3Vect> GetVertices { get { return m_lVertices; }	}
-
-		public bool RenderedThisPass
-		{
-			get { return m_bRenderedThisPass; }
-			set { m_bRenderedThisPass = value; }
-		}
 
 		/// <summary>
 		/// Returns the vertice at the specified index 
@@ -179,9 +134,9 @@ namespace engine
 		/// Returns if a face is inbetween the position point and the destination point
 		/// http://www.gamespp.com/algorithms/collisionDetection.html
 		/// </summary>      
-		public bool CanMove(D3Vect position, D3Vect dest, IntersectionInfo intersection)
+		public bool CanMove(D3Vect position, D3Vect dest, IntersectionInfo intersection, bool bTestAll)
 		{
-			if (m_pParentShape != null && m_pParentShape.IsFog()) return true;
+			if (!bTestAll && m_pParentShape != null && m_pParentShape.NoClipping()) return true;
 
 			bool bCanMove = false;
 
@@ -236,32 +191,6 @@ namespace engine
 
 		public void InitializeLists()
 		{
-			GenDebugDrawList();
-
-			if (m_TextureType == Shape.ETextureType.MULTI)
-			{
-				// multitexture
-				m_TwoTextureFaceDrawList = GL.GenLists(1);
-				GL.NewList(m_TwoTextureFaceDrawList, ListMode.Compile);
-				GL.Begin(PrimitiveType.Polygon);
-				{
-					for (int i = 0; i < m_lVertices.Count; i++)
-					{
-						GL.Color3(1.0, 1.0, 1.0);
-						GL.MultiTexCoord2(TextureUnit.Texture0, m_lTextureCoordinates[1][i].Vect); // base texture
-                        GL.MultiTexCoord2(TextureUnit.Texture1, m_lTextureCoordinates[0][i].Vect); // light map
-                        GL.Vertex3(m_lVertices[i].Vect);
-					}
-				}
-				GL.End();
-				GL.EndList();
-
-				GenSingleTextureDisplayLists(1);
-			}
-			else if (m_TextureType == Shape.ETextureType.SINGLE)
-			{
-				GenSingleTextureDisplayLists(0);
-			}
 			if (m_TextureType != Shape.ETextureType.NONE)
 			{
 				// wireframe
@@ -311,101 +240,23 @@ namespace engine
 
 		public void Delete()
 		{
-			GL.DeleteLists(m_TwoTextureFaceDrawList, 1);
 			GL.DeleteLists(m_nWireframeDrawList, 1);
 			GL.DeleteLists(m_nDrawNormalList, 1);
-			GL.DeleteLists(m_nSolidColorDrawList, 1);
-			GL.DeleteLists(m_nOneTextureFaceDrawList, 1);
-			GL.DeleteLists(m_nOneTextureFaceDrawListWhite, 1);
-		}
-
-		private void GenDebugDrawList()
-		{
-			m_nSolidColorDrawList = GL.GenLists(1);
-			GL.NewList(m_nSolidColorDrawList, ListMode.Compile);
-			sgl.PUSHATT(AttribMask.AllAttribBits);
-			GL.Color3(m_SolidColor.GetColor);
-			GL.Begin(PrimitiveType.Polygon);
-			{
-				for (int i = 0; i < m_lVertices.Count; i++)
-				{
-					GL.Vertex3(m_lVertices[i].Vect);
-				}
-			}
-			GL.End();
-			sgl.POPATT();
-			GL.EndList();
-		}
-
-		private void GenSingleTextureDisplayLists(int TexCoordSetIndex)
-		{
-			m_nOneTextureFaceDrawList = GL.GenLists(1);
-			GL.NewList(m_nOneTextureFaceDrawList, ListMode.Compile);
-			GL.Begin(PrimitiveType.Polygon);
-			{
-				for (int i = 0; i < m_lVertices.Count; i++)
-				{
-					GL.Color3(m_lVertColors[i].Vect);
-					GL.TexCoord2(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
-					GL.Vertex3(m_lVertices[i].Vect);
-				}
-			}
-			GL.End();
-			GL.EndList();
-
-            m_nOneTextureFaceDrawListWhite = GL.GenLists(1);
-			GL.NewList(m_nOneTextureFaceDrawListWhite, ListMode.Compile);
-			GL.Begin(PrimitiveType.Polygon);
-			{
-				for (int i = 0; i < m_lVertices.Count; i++)
-				{
-                    GL.TexCoord2(m_lTextureCoordinates[TexCoordSetIndex][i].Vect);
-					GL.Vertex3(m_lVertices[i].Vect);
-				}
-			}
-			GL.End();
-			GL.EndList();
 		}
 
 		/// <summary>
 		/// Draw this face
 		/// </summary>
-		public void Draw(Engine.EGraphicsMode mode, ref int nRendered)
+		public void Draw(Engine.EGraphicsMode mode)
 		{
-            bool bDraw = true;
-            if(m_pParentShape.GetTextures().Count > 0 && m_pParentShape.GetTextures()[0].GetPath().Contains("fog")) // don't render fog for now.
+            if (mode == Engine.EGraphicsMode.WIREFRAME)
+                GL.CallList(m_nWireframeDrawList);
+
+            if (STATE.DebuggingMode && STATE.DrawFaceNormals)
             {
-                bDraw = false;
+                GL.CallList(m_nDrawNormalList);
             }
-
-            if (bDraw)
-            {
-                if (DrawSolidColor)
-                    GL.CallList(m_nSolidColorDrawList);
-                else if (mode == Engine.EGraphicsMode.WIREFRAME)
-                    GL.CallList(m_nWireframeDrawList);
-                else if (mode == Engine.EGraphicsMode.MULTI_TEXTURE_WHITE)
-                {
-                    if (m_TextureType == Shape.ETextureType.MULTI)
-                        GL.CallList(m_TwoTextureFaceDrawList);
-                    else if (m_TextureType == Shape.ETextureType.SINGLE)
-                        GL.CallList(m_nOneTextureFaceDrawList);
-                }
-                else if (mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR)
-                    GL.CallList(m_nOneTextureFaceDrawList);
-                else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
-                    GL.CallList(m_nOneTextureFaceDrawListWhite);
-
-                if (STATE.DebuggingMode && STATE.DrawFaceNormals)
-                {
-                    GL.CallList(m_nDrawNormalList);
-                }
-
-                nRendered++;
-            }
-
-            RenderedThisPass = true;            
-		}
+        }
 
 		/// <summary>
 		/// Draw normal from midpoint of face

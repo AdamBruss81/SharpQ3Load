@@ -112,7 +112,8 @@ namespace simulator
             GL.Enable(EnableCap.CullFace);
             GL.CullFace(CullFaceMode.Front);
 
-			GL.ClearColor(0.0f, 0.0f, 0.0f, .5f);
+			//GL.ClearColor(0.0f, 0.0f, 0.0f, .5f);
+			GL.ClearColor(System.Drawing.Color.Black);
 			GL.ClearDepth(1.0f);
 
 			GL.Enable(EnableCap.DepthTest);
@@ -263,7 +264,6 @@ namespace simulator
 			m_bRunning = true;
 			StartStopRedrawer(true);
 
-            //m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
             m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
             m_swDelayMusicStart.Reset(); // it could be going if you open a map right after opening a different one
             m_swDelayMusicStart.Start();
@@ -433,7 +433,6 @@ namespace simulator
 			if (STATE.DebuggingMode)
 			{
 				STATE.DebuggingMode = false;
-				m_Engine.TurnOffDebugging();
 			}
 		}
 

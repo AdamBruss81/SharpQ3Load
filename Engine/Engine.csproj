@@ -114,6 +114,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Figure\shader.frag" />
+    <None Include="Figure\shader.vert" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -126,8 +128,8 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>REM "$(TargetDir)nunit\dist\nunit-console-x86.exe" "$(SolutionDir)\References\Engine.dll"</PostBuildEvent>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+    <PreBuildEvent>xcopy $(ProjectDir)Figure\shader.* $(SolutionDir)$(SolutionName)\$(PlatformName)\$(ConfigurationName) /y</PreBuildEvent>
   </PropertyGroup>
 </Project>

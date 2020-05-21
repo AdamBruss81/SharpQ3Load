@@ -50,9 +50,9 @@ namespace engine
 			return "SPECTATOR";
 		}
 
-		protected override void Draw(int nNumFacesRendered)
+		protected override void Draw()
 		{
-			base.Draw(nNumFacesRendered);
+			base.Draw();
 
 			if (STATE.AllowPrinting)
 			{

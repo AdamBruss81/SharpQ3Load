@@ -80,6 +80,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup>
-    <PostBuildEvent>copy $(TargetDir)\* $(ProjectDir)\dist</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

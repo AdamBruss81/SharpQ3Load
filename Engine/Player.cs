@@ -24,7 +24,8 @@ namespace engine
 	public class Player:Engine
 	{
 		// ### MEMBER VARIABLES
-		const double mcd_Height = 0.8;
+		const double mcd_Height = 1.2;
+		const double mcd_HalfWidth = 0.8;
 		const double mcd_PadPowerInMS = 1050;
 		const double mdc_StairHeight = 0.1;
 
@@ -146,9 +147,9 @@ namespace engine
 			}
 		}
 
-		protected override void Draw(int nNumFaceCount)
+		protected override void Draw()
 		{
-			base.Draw(nNumFaceCount);
+			base.Draw();
 
 			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.TextureBit | AttribMask.LineBit);
 			GL.Disable(EnableCap.Texture2D);
@@ -256,10 +257,8 @@ namespace engine
 					m_ProjectileMode = EProjectiles.NINJASTAR;
 					break;
 				case Keys.F9:
-					STATE.DebuggingMode = !STATE.DebuggingMode;
-					if (!STATE.DebuggingMode)
-						TurnOffDebugging();
-					break;
+                    STATE.DebuggingMode = !STATE.DebuggingMode;
+                    break;
 				case Keys.F11:
 					m_bDrawBoundingBoxesDuringDebugging = !m_bDrawBoundingBoxesDuringDebugging;
 					break;
@@ -404,6 +403,8 @@ namespace engine
 			if (bDoTheMove && nMoveAttemptCount >= 3) 
 				return false;
 
+			double dExtraDistanceToCheck = eSourceMovement == MovableCamera.DIRECTION.DOWN ? mcd_Height : mcd_HalfWidth;
+
 			double dMoveScale;
 
 			dMoveScale = GetMoveScale(eSourceMovement);
@@ -411,7 +412,7 @@ namespace engine
 			d3MoveVec.Scale(dMoveScale);
 			d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
 
-			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, mcd_Height, eSourceMovement))
+			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, dExtraDistanceToCheck, eSourceMovement))
 			{
 				if (!bDoTheMove) return true;								
 				return InternalMove(eSourceMovement, d3MoveToPosition, nMoveAttemptCount, dMoveScale);
@@ -431,7 +432,7 @@ namespace engine
 						d3StepUpPos.z = d3StepUpPos.z + mdc_StairHeight;
 						d3StepUpMoveTo.z = d3StepUpMoveTo.z + mdc_StairHeight;
 
-						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, mcd_Height, eSourceMovement))
+						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, dExtraDistanceToCheck, eSourceMovement))
 						{
 							bool bNoWallCollides = InternalMove(eSourceMovement, d3StepUpMoveTo, nMoveAttemptCount, dMoveScale);
 							return bNoWallCollides;

@@ -20,7 +20,6 @@ namespace engine
     public class Texture
     {
         private uint[] m_pnTextures;
-		private int m_nBindTexture;
 		private string m_sInternalZipPath;
 
 		private const string g_sTexturePrefix = "Texture";
@@ -42,8 +41,8 @@ namespace engine
 
 		public void Delete()
 		{
-			GL.DeleteTextures(1, m_pnTextures);
-			GL.DeleteLists(m_nBindTexture, 1);
+            if(m_pnTextures != null)
+			    GL.DeleteTextures(1, m_pnTextures);
 		}
 
         private bool FindMissingTexture(ref string sFullPath, string sURL, string sSearchString, string sReplacer)
@@ -165,12 +164,12 @@ namespace engine
 				File.Delete(sFullPath);
         }
 
-        public void bindMe()
+        public void bindMeRaw()
         {
-		    GL.CallList(m_nBindTexture);
+            GL.BindTexture(TextureTarget.Texture2D, m_pnTextures[0]);
         }
 
-		public void InitializeLists()
+		public void Initialize()
 		{
 			m_pnTextures = new uint[1];
 			string[] tokens = m_sInternalZipPath.Split(new char[] { '.' }); // seperate filename around period
@@ -193,11 +192,6 @@ namespace engine
 				sFullTexturePath = g_sTexturePrefix + "/" + m_sInternalZipPath;
 				SetTexture(sFullTexturePath);
 			}
-
-			m_nBindTexture = GL.GenLists(1);
-			GL.NewList(m_nBindTexture, ListMode.Compile);
-				GL.BindTexture(TextureTarget.Texture2D, m_pnTextures[0]);
-			GL.EndList();
 		}
     }
 }

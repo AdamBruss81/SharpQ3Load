@@ -31,9 +31,18 @@ namespace engine
         List<Texture> m_lSFXTextures; // for example for flames 
         List<Face> m_lFaces = new List<Face>();
 		List<List<int>> m_lCoordinateIndexes = new List<List<int>>();
-        List<D3Vect> m_lMeshCoordinates = new List<D3Vect>();
+        List<D3Vect> m_lVertices = new List<D3Vect>();
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
+
+		// modern open gl constructs
+		double[] m_arVertices = null;
+		uint[] m_arIndices = null;
+        int ShaderProgram;
+        int VertexBufferObject;
+        int VertexArrayObject;
+        int ElementBufferObject;
+		// ===
 
         Stopwatch m_swRenderHelper = new Stopwatch();
 
@@ -47,10 +56,12 @@ namespace engine
 
 		ETextureType m_TextureType;
 
-		public Shape() {}
+        public Shape() {}
 
 		public void Delete()
 		{
+			ShaderHelper.CloseProgram(ShaderProgram);
+
 			foreach(Texture t in m_lTextures) {
 				t.Delete();
 			}
@@ -63,19 +74,93 @@ namespace engine
 		{
 			foreach (Texture t in m_lTextures)
 			{
-				t.InitializeLists();
+				t.Initialize();
 			}
             foreach (Texture t in m_lSFXTextures)
             {
-                t.InitializeLists();
+                t.Initialize();
             }
             foreach (Face f in m_lFaces)
 			{
 				f.InitializeLists();
 			}
+
+			// use modern open gl via vertex buffers, vertex array, element buffer and shaders
+			// setup vertices
+			int nNumValues = 10;
+            m_arVertices = new double[m_lVertices.Count * nNumValues]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap)
+			for(int i = 0; i < m_lVertices.Count; i++)
+			{
+				int nBase = i * nNumValues;
+
+				m_arVertices[nBase] = m_lVertices[i].x;
+				m_arVertices[nBase + 1] = m_lVertices[i].y;
+				m_arVertices[nBase + 2] = m_lVertices[i].z;
+				m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
+				m_arVertices[nBase + 4] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[1];
+				if(m_lTextures.Count == 2)
+				{
+                    m_arVertices[nBase + 5] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[0];
+                    m_arVertices[nBase + 6] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[1];
+                }
+				else
+				{
+					m_arVertices[nBase + 5] = -1.0;
+					m_arVertices[nBase + 6] = -1.0;
+                }
+				m_arVertices[nBase + 7] = m_lVerticeColors[i].x;
+				m_arVertices[nBase + 8] = m_lVerticeColors[i].y;
+				m_arVertices[nBase + 9] = m_lVerticeColors[i].z;
+			}
+            
+            m_arIndices = new uint[m_lCoordinateIndexes.Count * 3];
+			for(int i = 0; i < m_lCoordinateIndexes.Count; i++)
+			{
+				m_arIndices[i * 3] = (uint)m_lCoordinateIndexes[i][0];
+				m_arIndices[i * 3 + 1] = (uint)m_lCoordinateIndexes[i][1];
+				m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
+			}
+
+            // create buffers and shader program
+            ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "shader.frag"); 
+
+            VertexBufferObject = GL.GenBuffer();
+            VertexArrayObject = GL.GenVertexArray();
+            ElementBufferObject = GL.GenBuffer();
+
+			ShaderHelper.printOpenGLError();
+
+			// setup vertex array object
+			GL.BindVertexArray(VertexArrayObject);
+
+            // 2. copy our vertices array in a buffer for OpenGL to use
+            GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferObject);
+            GL.BufferData(BufferTarget.ArrayBuffer, m_arVertices.Length * sizeof(double), m_arVertices, BufferUsageHint.StaticDraw);
+
+			// 3. then set our vertex attributes pointers
+			GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 0);
+            GL.EnableVertexAttribArray(0);
+
+			GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 3 * sizeof(double));
+			GL.EnableVertexAttribArray(1);
+
+            GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 5 * sizeof(double));
+            GL.EnableVertexAttribArray(2);
+
+            GL.VertexAttribPointer(3, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 7 * sizeof(double));
+            GL.EnableVertexAttribArray(3);
+
+            ShaderHelper.printOpenGLError();
+
+			// setup element buffer for vertex indices
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, m_arIndices.Length * sizeof(uint), m_arIndices, BufferUsageHint.StaticDraw);
+			// ===
+
+			ShaderHelper.printOpenGLError();
 		}
 
-		public int GetIndex(Face f)
+        public int GetIndex(Face f)
 		{
 			return m_lFaces.IndexOf(f);
 		}
@@ -94,33 +179,6 @@ namespace engine
 				throw new Exception("Error in reading shape data from file");
 		}
 
-		private void MultiTextureDraw()
-		{
-			GL.ActiveTexture(TextureUnit.Texture0); // the second texture in the list is the base texture. The first one is the lightmap.
-			GL.Enable(EnableCap.Texture2D);
-			m_lTextures[1].bindMe();
-
-			GL.ActiveTexture(TextureUnit.Texture1);
-			GL.Enable(EnableCap.Texture2D);
-			m_lTextures[0].bindMe();
-        }
-
-        private void DrawSingleTexture()
-		{
-			if (m_TextureType == ETextureType.MULTI)
-			{
-                GL.ActiveTexture(TextureUnit.Texture0);
-                GL.Enable(EnableCap.Texture2D);
-                m_lTextures[1].bindMe();
-			}
-			else if (m_TextureType == ETextureType.SINGLE) 
-			{
-				GL.ActiveTexture(TextureUnit.Texture0);
-				GL.Enable(EnableCap.Texture2D);
-				m_lTextures[0].bindMe();
-			}
-		}
-
 		private void CreateFaces(List<Face> lFaceReferences)
 		{
 			List<D3Vect> faceVerts = new List<D3Vect>(); ;
@@ -134,7 +192,7 @@ namespace engine
 			{
 				for (int j = 0; j < m_lCoordinateIndexes[i].Count; j++)
 				{
-					faceVerts.Add(m_lMeshCoordinates[m_lCoordinateIndexes[i][j]]);
+					faceVerts.Add(m_lVertices[m_lCoordinateIndexes[i][j]]);
 					faceTexCoords[0].Add(m_lTexCoordinates[0][m_lCoordinateIndexes[i][j]]);
 					if(m_TextureType == ETextureType.MULTI) 
 						faceTexCoords[1].Add(m_lTexCoordinates[1][m_lCoordinateIndexes[i][j]]);
@@ -156,14 +214,31 @@ namespace engine
 			}
 		}
 
-		public bool IsFog()
+		public bool DontRender()
 		{
-			bool bFog = false;
-			Texture tex = null;
-			if (m_lTextures.Count == 1) tex = m_lTextures[0];
-			else if (m_lTextures.Count > 1) tex = m_lTextures[1]; 
-			if(tex != null) bFog = tex.GetPath().Contains("fog");
-			return bFog;
+			bool bRender = true;
+			if (GetMainTexture() != null) 
+			{
+				string sName = Path.GetFileName(GetMainTexture().GetPath());
+				if(sName.Contains("beam") || sName.Contains("fog"))
+					bRender = false;
+            }
+			return !bRender;
+        }
+
+		public bool NoClipping()
+		{
+			bool bNoClipping = false;
+
+			Texture tex = GetMainTexture();
+			if (tex != null)
+			{
+				string sName = Path.GetFileName(tex.GetPath());
+				bNoClipping = sName.Contains("fog") ||
+				sName.Contains("beam"); // walk through doors, fog and beams
+			}
+
+			return bNoClipping;
 		}
 
 		public Texture GetMainTexture()
@@ -173,124 +248,69 @@ namespace engine
 			else return null;
 		}
 
+        public int GetMainTextureIndex()
+        {
+            if (m_lTextures.Count == 1) return 0;
+            else if (m_lTextures.Count == 2) return 1;
+            else return -1;
+        }
+
+        public Texture GetLightmapTexture()
+        {
+            if (m_lTextures.Count == 2) return m_lTextures[0];
+            else return null;
+        }
+
+        public int GetLightmapTextureIndex()
+        {
+            if (m_lTextures.Count == 2) return 0;
+            else return -1;
+        }		
+
         public List<Texture> GetTextures() { return m_lTextures; }
 
 		/// <summary>
 		/// Shows this shape. Loop over texture objects and set same number
 		/// of texture units.
 		/// </summary>
-		public void Show(Engine.EGraphicsMode mode, ref int nNumFacesRendered)
+		public void Show()
         {
-			if (STATE.DebuggingMode)
+			if (DontRender()) return;			
+
+			ShaderHelper.UseProgram(ShaderProgram);
+        
+			GL.BindVertexArray(VertexArrayObject);
+
+			GL.ActiveTexture(TextureUnit.Texture0);
+			GetMainTexture().bindMeRaw();
+			GL.ActiveTexture(TextureUnit.Texture1);
+			if (m_lTextures.Count == 2)
 			{
-				if(mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR || mode == Engine.EGraphicsMode.SINGLE_WHITE) 
-				{
-					DrawSingleTexture();
-				}
-				else if(mode == Engine.EGraphicsMode.MULTI_TEXTURE_WHITE)
-				{
-					if (m_TextureType == ETextureType.MULTI)
-						MultiTextureDraw();
-					else if (m_TextureType == ETextureType.SINGLE)
-						DrawSingleTexture();
-				}
-
-				foreach(Face f in m_lFaces) {
-					if(!f.RenderedThisPass) f.Draw(mode, ref nNumFacesRendered);
-				}
+				GetLightmapTexture().bindMeRaw();
 			}
-			else if (mode == Engine.EGraphicsMode.MULTI_TEXTURE_WHITE)
+			else
 			{
-				if (m_TextureType == ETextureType.MULTI)
-				{
-                    MultiTextureDraw();
-					foreach(Face f in m_lFaces)
-					{
-						if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.MULTI_TEXTURE_WHITE, ref nNumFacesRendered);
-					}
-				}
-				else if (m_TextureType == ETextureType.SINGLE)
-				{
-					GL.ActiveTexture(TextureUnit.Texture0);
-					GL.Enable(EnableCap.Texture2D);
-					m_lTextures[0].bindMe();
-
-					foreach (Face f in m_lFaces)
-					{
-						if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR, ref nNumFacesRendered);
-					}
-				}
+				GetMainTexture().bindMeRaw(); // placeholder
 			}
-			else if (mode == Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR)
-			{
-				if (m_TextureType == ETextureType.MULTI)
-				{				
-					GL.ActiveTexture(TextureUnit.Texture0);
-					GL.Enable(EnableCap.Texture2D);
-					m_lTextures[1].bindMe();
 
-					foreach (Face f in m_lFaces)
-					{
-						if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR, ref nNumFacesRendered);
-					}
-				}
-				else if (m_TextureType == ETextureType.SINGLE)
-				{
-					GL.ActiveTexture(TextureUnit.Texture0);
-					GL.Enable(EnableCap.Texture2D);
-					m_lTextures[0].bindMe();
+			int nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
+			GL.Uniform1(nLoc, 0);
+            nLoc = GL.GetUniformLocation(ShaderProgram, "texture2");
+            GL.Uniform1(nLoc, 1);
 
-					foreach (Face f in m_lFaces)
-					{
-						if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR, ref nNumFacesRendered);
-					}
-				}
-			}
-			else if (mode == Engine.EGraphicsMode.SINGLE_WHITE)
-			{
-				GL.ActiveTexture(TextureUnit.Texture0);
-				GL.Enable(EnableCap.Texture2D);
+            float[] proj = new float[16];
+			float[] modelview = new float[16];
+			GL.GetFloat(GetPName.ProjectionMatrix, proj);
+			GL.GetFloat(GetPName.ModelviewMatrix, modelview);
 
-                if(m_lSFXTextures.Count > 0)
-                {
-                    if (m_nFlameCounter == -1)
-                    {
-                        m_nFlameCounter = 0;
-                        m_swRenderHelper.Start();
-                    }
-                    else
-                    {
-                        if(m_swRenderHelper.ElapsedMilliseconds >= 100)
-                        {
-                            m_nFlameCounter++;
-                            if (m_nFlameCounter == 8) m_nFlameCounter = 0;
-                            m_swRenderHelper.Restart();
-                        }
-                    }
+			nLoc = GL.GetUniformLocation(ShaderProgram, "modelview");
+			GL.UniformMatrix4(nLoc, 1, false, modelview);
+            nLoc = GL.GetUniformLocation(ShaderProgram, "proj");
+            GL.UniformMatrix4(nLoc, 1, false, proj);
 
-                    m_lSFXTextures[m_nFlameCounter].bindMe();                                                         
-                }
-				else if (m_TextureType == ETextureType.MULTI)
-				{					
-					m_lTextures[1].bindMe();
-				}
-				else if(m_TextureType == ETextureType.SINGLE)
-				{
-					m_lTextures[0].bindMe();
-				}
+			GL.DrawElements(PrimitiveType.Triangles, m_arIndices.Length, DrawElementsType.UnsignedInt, 0);
 
-				foreach (Face f in m_lFaces)
-				{
-					if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.SINGLE_WHITE, ref nNumFacesRendered);
-				}
-			}
-			else if (mode == Engine.EGraphicsMode.WIREFRAME)
-			{
-				foreach (Face f in m_lFaces)
-				{
-					if(!f.RenderedThisPass) f.Draw(Engine.EGraphicsMode.WIREFRAME, ref nNumFacesRendered);
-				}
-			}
+			GL.UseProgram(0); 
         }
 
 		/// <summary>
@@ -313,7 +333,7 @@ namespace engine
 		private bool Read(StreamReader sr, ref int nCounter)
 		{
 			if(!ReadCoordinateIndexes(sr, ref nCounter)) return false;
-			if(!ReadMeshCoordinates(sr, ref nCounter)) return false;
+			if(!ReadVertices(sr, ref nCounter)) return false;
 			m_lTexCoordinates.Add(new List<DPoint>());
 			if (!ReadTextureCoordinates(sr, m_lTexCoordinates[0], ref nCounter)) return false;
 			if (m_TextureType == ETextureType.MULTI)
@@ -422,7 +442,7 @@ namespace engine
 		/// </summary>
 		/// <param name="sr">StreamReader to use</param>
 		/// <returns></returns>
-		private bool ReadMeshCoordinates(StreamReader sr, ref int nCounter)
+		private bool ReadVertices(StreamReader sr, ref int nCounter)
 		{
 			if (!stringhelper.LookFor(sr, m_sMeshCoordinatesHeader, ref nCounter))
 			{
@@ -443,11 +463,11 @@ namespace engine
 						// Reflect X values over Y-Z plane because Q3BSP reflects them for some reason when it
 						// converts .bsp files into .vrmls. So here we reflect it back so the map matches what it looks like
 						// in GTKQ3Radiant.
-						vert[0] *= -1;
-						double tempY = vert[1];
-						vert[1] = vert[2];
-						vert[2] = tempY;
-						m_lMeshCoordinates.Add(vert);
+						vert[0] *= -1; // flip x
+						double tempY = vert[1]; 
+						vert[1] = vert[2]; // set y to z
+						vert[2] = tempY; // set z to y
+						m_lVertices.Add(vert);
 					}
 					inLine = sr.ReadLine();
 					nCounter++;
@@ -464,7 +484,7 @@ namespace engine
 					double tempY = vert[1];
 					vert[1] = vert[2];
 					vert[2] = tempY;
-					m_lMeshCoordinates.Add(vert);
+					m_lVertices.Add(vert);
 				}
 
 				return true;

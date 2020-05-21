@@ -124,6 +124,12 @@ namespace utilities
 			return nProgram;
 		}
 
+		public static void UseProgram(int nProgram)
+		{
+			GL.UseProgram(nProgram);
+			printProgramInfoLog(nProgram);
+		}
+
 		public static int GetOpenGLErrors(ref string sErrors)
 		{
             ErrorCode eCode;
@@ -192,7 +198,8 @@ namespace utilities
 			{
 				string infoLog;
 				GL.GetProgramInfoLog(nProgram, infologLength, out charsWritten, out infoLog);
-				Console.WriteLine("Program InfoLog:\n" + infoLog);
+				if(infoLog.Trim().Length > 0)
+					Console.WriteLine("Program InfoLog:\n" + infoLog);
 			}
 		}
 

@@ -156,13 +156,6 @@ namespace engine
 			}
 		}
 
-		public void SetMapFacesToDebugMode(bool bFlag)
-		{
-			for(int i = 0; i < m_lMapFaces.Count; i++) {
-				m_lMapFaces[i].DrawSolidColor = bFlag;
-			}
-		}
-
 		/// <summary>
 		/// Increase size of box by a small amount
 		/// </summary>
@@ -226,37 +219,6 @@ namespace engine
 			}
 		}
 
-		public bool InsideFrustrum(List<Plane> lFrustum)
-		{
-			if (lFrustum.Count == 0) return true;
-
-			double x = m_d3MidPoint.x;
-			double y = m_d3MidPoint.y;
-			double z = m_d3MidPoint.z;
-
-			for (int p = 0; p < 6; p++)
-			{
-				if (lFrustum[p].GetNormal[0] * (x - m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y - m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z - m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x + m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y - m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z - m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x - m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y + m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z - m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x + m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y + m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z - m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x - m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y - m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z + m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x + m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y - m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z + m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x - m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y + m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z + m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				if (lFrustum[p].GetNormal[0] * (x + m_d3HalfDimensions[0]) + lFrustum[p].GetNormal[1] * (y + m_d3HalfDimensions[1]) + lFrustum[p].GetNormal[2] * (z + m_d3HalfDimensions[2]) + lFrustum[p].DistanceToOriginAlongNormal > 0)
-					continue;
-				return false;
-			}
-			return true;
-		}
-
 		public void Draw()
 		{
 			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.LineBit);
@@ -272,11 +234,11 @@ namespace engine
 			sgl.POPATT();
 		}
 
-		public void DrawMapFaces(Engine.EGraphicsMode mode, ref int nNumRendered)
+		public void DrawMapFaces(Engine.EGraphicsMode mode)
 		{
 			foreach(Face f in m_lMapFaces) 
 			{
-				f.Draw(mode, ref nNumRendered);
+				f.Draw(mode);
 			}
 		}
 
@@ -326,7 +288,7 @@ namespace engine
 				// Intersect bounding box edges with face
 				while (nBoxEdgeIndex < m_lEdgeLines.Count && !bAddedFace)
 				{
-					if (!face.CanMove(m_lEdgeLines[nBoxEdgeIndex].Vertice1, m_lEdgeLines[nBoxEdgeIndex].Vertice2, null))
+					if (!face.CanMove(m_lEdgeLines[nBoxEdgeIndex].Vertice1, m_lEdgeLines[nBoxEdgeIndex].Vertice2, null, false))
 					{
 						if (m_lMapFaces.Contains(face))
 							throw new System.Exception("Attempted to add same face twice to a Bounding Box");
@@ -379,7 +341,7 @@ namespace engine
 			for (int i = 0; i < m_lMapFaces.Count; i++)
 			{
 				bCopy = false;
-				if (!m_lMapFaces[i].CanMove(line.Vertice1, line.Vertice2, intersection))
+				if (!m_lMapFaces[i].CanMove(line.Vertice1, line.Vertice2, intersection, false))
 				{
 					foreach(IntersectionInfo ii in lIntersections) 
 					{
@@ -410,7 +372,7 @@ namespace engine
         {
             for (int i = 0; i < m_lFaces.Count; i++)
             {
-				if (!m_lFaces[i].CanMove(line.Vertice1, line.Vertice2, null))
+				if (!m_lFaces[i].CanMove(line.Vertice1, line.Vertice2, null, false))
                 {
                     return true;
                 }

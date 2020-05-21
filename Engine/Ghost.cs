@@ -51,9 +51,9 @@ namespace engine
 			return "GHOST";
 		}
 
-		override protected void Draw(int nNumFaceCount)
+		override protected void Draw()
 		{
-			base.Draw(nNumFaceCount);
+			base.Draw();
 
 			if (STATE.AllowPrinting)
 			{

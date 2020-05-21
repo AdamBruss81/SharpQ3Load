@@ -69,11 +69,11 @@ namespace engine
             }  
         }
 
-        public void ShowAllFigures(Engine.EGraphicsMode mode, ref int nCount, List<Plane> lFrustrum, MovableCamera cam)
+        public void ShowAllFigures(Engine.EGraphicsMode mode, MovableCamera cam)
         {
             for( int i = 0; i < m_lFigures.Count; i++ )
             {
-				m_lFigures[i].Show(mode, ref nCount, lFrustrum, cam);
+				m_lFigures[i].Show(mode, cam);
             }
         }
 

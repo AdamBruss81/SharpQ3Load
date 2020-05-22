@@ -129,7 +129,7 @@ namespace utilities
 
 		private int m_nMouseX;
 		private int m_nMouseY;
-		private const int MOUSE_TURN_SENSITIVITY = 800;
+		private const int MOUSE_TURN_SENSITIVITY = 1500; // increase to make it slower
 
 		private double m_rho;
 

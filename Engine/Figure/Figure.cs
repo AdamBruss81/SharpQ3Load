@@ -28,6 +28,8 @@ namespace engine
 
 		private const int m_nNumSides = 6;
 		private const int m_nBoundingBoxVersion = 1;
+		const double mcd_HalfWidth = 3.0;
+		const double mcd_MaxEasyHopOverHeight = 0.3;
 
 		private const string m_sBoundingBoxHeader = "DEF BoundingBoxes {";
 		private const string m_sMultitextureHeader = "texture MultiTexture { materialColor TRUE texture [";
@@ -636,21 +638,21 @@ namespace engine
 			D3Vect d3RightDirection = cam.GetVector(MovableCamera.DIRECTION.RIGHT);
 
 			// scale them a bit to give player some size
-			d3UpDirection.Scale(3.0);
+			d3UpDirection.Scale(mcd_HalfWidth);
 			if (eSourceMovement != MovableCamera.DIRECTION.UP && eSourceMovement != MovableCamera.DIRECTION.DOWN)
 			{
 				// This is to extend the player's size down to near the ground to act as legs.
 				// This way the player is not floating 
 				// I determined 0.3 experimentally by testing going up stairs and being stopped by the low barrier in 
 				// q3dm17
-				d3DownDirection.Length = dPlayerHeight - 0.3;
+				d3DownDirection.Length = dPlayerHeight - mcd_MaxEasyHopOverHeight;
 			}
 			else
 			{
-				d3DownDirection.Scale(3.0);
+				d3DownDirection.Scale(mcd_HalfWidth);
 			}
-			d3LeftDirection.Scale(3.0);
-			d3RightDirection.Scale(3.0);
+			d3LeftDirection.Scale(mcd_HalfWidth);
+			d3RightDirection.Scale(mcd_HalfWidth);
 
 			m_ld3Head.Clear();
 			m_ld3HeadLookAts.Clear();

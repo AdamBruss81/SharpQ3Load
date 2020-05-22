@@ -210,7 +210,7 @@ namespace engine
 		virtual public void MoveRight() { }
 		virtual public void MoveUp() { }
 		virtual public void MoveDown() { }
-		virtual public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates) { }
+		virtual public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) { }
 		virtual public void CacheMove(MovableCamera.DIRECTION direction) { }
 		virtual public double GetVelocity() { return 0.0; }
 

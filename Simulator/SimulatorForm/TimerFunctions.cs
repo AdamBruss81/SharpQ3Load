@@ -1,23 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
 using utilities;
 
 namespace simulator
 {
     public partial class SimulatorForm
-    {  
+    {
+        long m_nLastFrameTimeMilli = 15 ;
+        System.Diagnostics.Stopwatch m_swFrameTimer = new System.Diagnostics.Stopwatch();
+
         private void timerRedrawer_Tick(object sender, EventArgs e)
         {
             resetMouseCursor();
 
             m_nFrameCounter++;
 
+            m_swFrameTimer.Start();
+
             // key game functions
             ProcessMouseButtons();
             MoveStates stoppedMovingStates = new MoveStates();
             MoveStates startedMovingStates = new MoveStates();
             ProcessKeyStates(stoppedMovingStates, startedMovingStates);
-            m_Engine.GameTick(stoppedMovingStates, startedMovingStates);
+            m_Engine.GameTick(stoppedMovingStates, startedMovingStates, m_nLastFrameTimeMilli);
             SetLastMoveStates();
             m_Engine.showScene(GetRecentKey);
             // ###            
@@ -27,6 +31,10 @@ namespace simulator
             m_fonter.PrintLowerRight(GetRecentKey.ToString(), m_openGLControl.Width, 0);
 
             m_openGLControl.SwapBuffers();
+
+            m_swFrameTimer.Stop();
+            m_nLastFrameTimeMilli = m_swFrameTimer.ElapsedMilliseconds;
+            m_swFrameTimer.Reset();
 
             if (m_swDelayMusicStart.IsRunning && m_swDelayMusicStart.ElapsedMilliseconds >= 5000)
             {

@@ -268,30 +268,7 @@ namespace utilities
 		/// <param name="dModifierScale"></param>
 		public void MoveToPosition(D3Vect d3Position)
 		{
-			D3Vect d3Vector = d3Position - m_vCamPos;
-
-			/*if (bAllowKeyBasedScaling) // this block is currently for normal movement(non fall/non decel)
-			{
-				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
-				{
-					// walking
-					dUsedScale = 0.4;
-					d3Vector.Scale(0.4);
-				}
-				else
-				{
-					// normal movement
-					dUsedScale = GetStandardMovementScale();
-					d3Vector.Scale(GetStandardMovementScale());
-				}
-			}
-			else
-			{
-				dUsedScale = dModifierScale;
-				d3Vector.Scale(dModifierScale);
-			}*/
-
-			m_vCamPos += d3Vector;
+			m_vCamPos += (d3Position - m_vCamPos);
 		}
 
 		// Move the camera to its look at point

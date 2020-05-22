@@ -31,7 +31,7 @@ namespace engine
         Player m_Player = null;
 
         const double mc_dDecelAccelTimeMS = 250.0;
-        const double mc_dDecelJumpMS = 250;
+        const double mc_dDecelJumpMS = 350;
 
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxDecelMS = new Dictionary<MovableCamera.DIRECTION, double>();
         Dictionary<MovableCamera.DIRECTION, double> m_dictMaxAccelMS = new Dictionary<MovableCamera.DIRECTION, double>();

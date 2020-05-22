@@ -26,8 +26,9 @@ namespace engine
 		// ### MEMBER VARIABLES
 		const double mcd_Height = 1.2;
 		const double mcd_HalfWidth = 0.8;
-		const double mcd_PadPowerInMS = 1050;
+		const double mcd_PadPowerInMS = 1200;
 		const double mdc_StairHeight = 0.1;
+		const int mnc_LastFrameTimeAdjuster = 55;
 
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
@@ -40,7 +41,8 @@ namespace engine
 		IntersectionInfo m_Intersection = new IntersectionInfo(); // this is for two reasons. so I don't have to recreate it all the time and also for use around the class.
 		double[] m_pvUtilMatrix = new double[16];
         SoundManager m_SoundManager = null;
-		
+		long m_nLastFrameTimeMilliFromForm;
+
 		MoveStates m_MovesForThisTick = new MoveStates();				
 
         EProjectiles m_ProjectileMode = EProjectiles.AXE;
@@ -372,7 +374,6 @@ namespace engine
 		{
 			PlaySteps();
 
-			// SCALE 
 			m_cam.MoveToPosition(d3MoveToPosition);
 
 			if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
@@ -407,7 +408,11 @@ namespace engine
 
 			double dMoveScale;
 
+			// calculate move scale ( player speed )
 			dMoveScale = GetMoveScale(eSourceMovement);
+			// scale the move scale by the time it took to do the last frame/tick so we have smooth movement always
+			dMoveScale *= ((double)(m_nLastFrameTimeMilliFromForm + mnc_LastFrameTimeAdjuster) / 100.0);
+
 			D3Vect d3MoveVec = d3MoveToPosition - m_cam.Position;
 			d3MoveVec.Scale(dMoveScale);
 			d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
@@ -620,9 +625,10 @@ namespace engine
 			m_swmgr.StopAccelTimers();
 		}
 
-		override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates) 
+		override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) 
 		{
 			m_dLastGameTickMoveScale = 0.0;
+			m_nLastFrameTimeMilliFromForm = nLastFrameTimeMilli;
 
 			// Handle cached moves here. The cached moves represent the movement keys the user pressed since the last game tick
 			// If they pressed left and forward we will move diagnolly once instead of left and then forward. This reduces

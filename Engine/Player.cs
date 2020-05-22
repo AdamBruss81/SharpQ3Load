@@ -370,8 +370,6 @@ namespace engine
 		/// <returns></returns>
 		private bool InternalMove(MovableCamera.DIRECTION eSourceMovement, D3Vect d3MoveToPosition, int nMoveAttemptCount, double dMoveScaleUsed)
 		{
-			bool bAllowKeyBasedScaling = !m_swmgr.IsRunning(eSourceMovement, true) && !m_swmgr.IsRunning(eSourceMovement, false);
-
 			PlaySteps();
 
 			// SCALE 
@@ -379,9 +377,11 @@ namespace engine
 
 			if (eSourceMovement != MovableCamera.DIRECTION.DOWN)
 			{
-				m_dLastGameTickMoveScale = dMoveScaleUsed; // revisit this double and the dict below. do we need? why the check on esourcemovement equaling DOWN?
-				m_dictLastMoveScales[eSourceMovement] = dMoveScaleUsed;
+				m_dictLastMoveScales[eSourceMovement] = dMoveScaleUsed; // do we need this dict?
 			}
+
+			LOGGER.Debug("Setting last move scale to " + dMoveScaleUsed + " from source movement " + eSourceMovement);
+			m_dLastGameTickMoveScale = dMoveScaleUsed;
 
 			if (nMoveAttemptCount > 1)
 				return false;
@@ -539,7 +539,7 @@ namespace engine
 				lookatToUse.y = lookatToUse.y + m_swmgr.GetCurrentJumpVector().y;
 				lookatToUse.z = lookatToUse.z + m_swmgr.GetCurrentJumpVector().z;
 			}
-			bool bSuccess = TryToMove(lookatToUse, m_cam.Position, ref nMoveAttemptCount, bMoveAlongWall, dir);
+			TryToMove(lookatToUse, m_cam.Position, ref nMoveAttemptCount, bMoveAlongWall, dir);
 
 			m_cam.RestoreOrientation();
 		}
@@ -622,6 +622,8 @@ namespace engine
 
 		override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates) 
 		{
+			m_dLastGameTickMoveScale = 0.0;
+
 			// Handle cached moves here. The cached moves represent the movement keys the user pressed since the last game tick
 			// If they pressed left and forward we will move diagnolly once instead of left and then forward. This reduces
 			// the number of collision detection tests and should provide smoother movement especially along walls
@@ -666,7 +668,6 @@ namespace engine
 
 			if (!m_swmgr.GetAnyRunning(StopWatchManager.AccelModes.DECEL) && !bUserMoved)
             {
-                m_dLastGameTickMoveScale = 0.0;
 				m_dictLastMoveScales[MovableCamera.DIRECTION.FORWARD] = 0.0;
 				m_dictLastMoveScales[MovableCamera.DIRECTION.BACK] = 0.0;
 				m_dictLastMoveScales[MovableCamera.DIRECTION.LEFT] = 0.0;

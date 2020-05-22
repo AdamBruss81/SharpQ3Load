@@ -94,7 +94,7 @@ namespace simulator
             // 
             // timerShowFPS
             // 
-            this.timerShowFPS.Interval = 1000;
+            this.timerShowFPS.Interval = 250;
             this.timerShowFPS.Tick += new System.EventHandler(this.timerShowFPS_Tick);
             // 
             // SimulatorForm

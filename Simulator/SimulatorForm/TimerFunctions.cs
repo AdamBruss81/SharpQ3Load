@@ -12,8 +12,6 @@ namespace simulator
 
             m_nFrameCounter++;
 
-            //m_swFramerate.Start();
-
             // key game functions
             ProcessMouseButtons();
             MoveStates stoppedMovingStates = new MoveStates();
@@ -40,7 +38,7 @@ namespace simulator
         private void timerShowFPS_Tick(object sender, EventArgs e)
         {
             m_dVelocity = m_Engine.GetVelocity();
-            m_dFPS = System.Convert.ToDouble(m_nFrameCounter);
+            m_dFPS = System.Convert.ToDouble(m_nFrameCounter * (1000 / timerShowFPS.Interval));
             m_nFrameCounter = 0;
         }
 

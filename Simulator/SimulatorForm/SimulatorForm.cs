@@ -99,12 +99,6 @@ namespace simulator
 		{
 			Glut.glutInit();
 
-			//m_mainDC = Wgl.Arb.GetCurrentReadDC();
-			//m_mainRC = m_openGLControl.make
-
-			//m_mainDC = Wgl.wglGetCurrentDC();
-			//m_mainRC = Wgl.wglGetCurrentContext();
-
 			m_fonter = new gl_font.BasicFont();
 
 			GL.ShadeModel(ShadingModel.Smooth);
@@ -112,19 +106,18 @@ namespace simulator
             GL.Enable(EnableCap.CullFace);
             GL.CullFace(CullFaceMode.Front);
 
-			//GL.ClearColor(0.0f, 0.0f, 0.0f, .5f);
 			GL.ClearColor(System.Drawing.Color.Black);
-			GL.ClearDepth(1.0f);
 
 			GL.Enable(EnableCap.DepthTest);
 			GL.MatrixMode(MatrixMode.Projection);
 
-			GL.DepthFunc(DepthFunction.Lequal);
+			GL.DepthFunc(DepthFunction.Less);
 			GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
+			GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Nicest);
+			GL.Hint(HintTarget.GenerateMipmapHint, HintMode.Nicest);
 
 			GL.LoadIdentity();
 			Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(70f * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .005f, 200.0f);
-			//Glu.gluPerspective(70, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .005f, 200.0f);
 			GL.LoadMatrix(ref persMat);
 
 			GL.MatrixMode(MatrixMode.Modelview);
@@ -212,14 +205,11 @@ namespace simulator
 
 			m_controlMapProgress.DoneCreatingBoundingBoxes();
 
-			//Wgl.Arb.MakeContextCurrent()
-			//Wgl.wglMakeCurrent(m_mainDC, m_mainRC); // there is no context in this worker thread so set it to cached one
 			m_openGLControl.MakeCurrent();
 
 			m_controlMapProgress.Details("Initializing lists"); // do open gl stuff
 			static_theEngine.InitializeLists();
 
-			//Wgl.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
 			m_openGLControl.Context.MakeCurrent(null);
 
 			m_controlMapProgress.Details("Cleaning up map");

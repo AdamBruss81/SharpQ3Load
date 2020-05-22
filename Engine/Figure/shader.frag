@@ -14,7 +14,6 @@ void main()
     if (texCoord2.x != -1.0) {        
         vec4 texel0 = texture(texture1, texCoord);
         vec4 texel1 = texture(texture2, texCoord2);
-        //outputColor = clamp(texel0 + texel1, 0.0, 1.0) * texel0;
         outputColor = clamp(texel0 * texel1 * 3.0, 0.0, 1.0);
 
         // just base texture

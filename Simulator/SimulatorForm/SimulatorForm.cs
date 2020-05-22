@@ -113,8 +113,6 @@ namespace simulator
 
 			GL.DepthFunc(DepthFunction.Less);
 			GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
-			GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Nicest);
-			GL.Hint(HintTarget.GenerateMipmapHint, HintMode.Nicest);
 
 			GL.LoadIdentity();
 			Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(70f * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .005f, 200.0f);

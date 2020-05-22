@@ -627,10 +627,8 @@ namespace engine
 		/// <param name="intersection">the closest intersection</param>
 		/// <returns>true if nothing in way</returns>
 		public bool CanMove(D3Vect dest, D3Vect position, IntersectionInfo intersection, MovableCamera cam, double dExtraDistanceToCheck,
-			MovableCamera.DIRECTION eSourceMovement)
+			MovableCamera.DIRECTION eSourceMovement, double dPlayerHeight)
 		{
-			bool bUpOrDown = eSourceMovement == MovableCamera.DIRECTION.UP || eSourceMovement == MovableCamera.DIRECTION.DOWN;
-
 			// get up, down, left and right vectors from current camera position
 			D3Vect d3UpDirection = cam.GetVector(MovableCamera.DIRECTION.UP);
 			D3Vect d3DownDirection = cam.GetVector(MovableCamera.DIRECTION.DOWN);
@@ -639,7 +637,18 @@ namespace engine
 
 			// scale them a bit to give player some size
 			d3UpDirection.Scale(3.0);
-			d3DownDirection.Scale(3.0);
+			if (eSourceMovement != MovableCamera.DIRECTION.UP && eSourceMovement != MovableCamera.DIRECTION.DOWN)
+			{
+				// This is to extend the player's size down to near the ground to act as legs.
+				// This way the player is not floating 
+				// I determined 0.3 experimentally by testing going up stairs and being stopped by the low barrier in 
+				// q3dm17
+				d3DownDirection.Length = dPlayerHeight - 0.3;
+			}
+			else
+			{
+				d3DownDirection.Scale(3.0);
+			}
 			d3LeftDirection.Scale(3.0);
 			d3RightDirection.Scale(3.0);
 
@@ -661,6 +670,7 @@ namespace engine
 			if (!m_LookAtRay.Empty)
 				m_LookAtRay.Length = m_LookAtRay.Length + dExtraDistanceToCheck;
 
+			// define set of five rays coming out of player in direction they are trying to move
             for (int i = 0; i < m_ld3Head.Count; i++)
 			{
 				m_ld3HeadLookAts.Add(m_ld3Head[i] + m_LookAtRay);

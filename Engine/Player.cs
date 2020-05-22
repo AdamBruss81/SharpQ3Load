@@ -412,7 +412,7 @@ namespace engine
 			d3MoveVec.Scale(dMoveScale);
 			d3MoveToPosition = m_cam.Position + d3MoveVec; // scaled move to
 
-			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, dExtraDistanceToCheck, eSourceMovement))
+			if (m_lStaticFigList[0].CanMove(d3MoveToPosition, d3Position, m_Intersection, m_cam, dExtraDistanceToCheck, eSourceMovement, mcd_Height))
 			{
 				if (!bDoTheMove) return true;								
 				return InternalMove(eSourceMovement, d3MoveToPosition, nMoveAttemptCount, dMoveScale);
@@ -432,7 +432,7 @@ namespace engine
 						d3StepUpPos.z = d3StepUpPos.z + mdc_StairHeight;
 						d3StepUpMoveTo.z = d3StepUpMoveTo.z + mdc_StairHeight;
 
-						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, dExtraDistanceToCheck, eSourceMovement))
+						if (m_lStaticFigList[0].CanMove(d3StepUpMoveTo, d3StepUpPos, null, m_cam, dExtraDistanceToCheck, eSourceMovement, mcd_Height))
 						{
 							bool bNoWallCollides = InternalMove(eSourceMovement, d3StepUpMoveTo, nMoveAttemptCount, dMoveScale);
 							return bNoWallCollides;

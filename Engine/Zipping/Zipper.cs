@@ -23,12 +23,22 @@ namespace engine
             return sPath;
 		}
 
+		public string ExtractLightmap(string sInternalPath)
+		{
+            string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
+            if (!File.Exists(sFullPathToExtractedFile))
+            {
+                zipper.ExtractZip(PATHS.GetLightmapPath, PATHS.GetTempDir, sInternalPath);
+            }
+            return sFullPathToExtractedFile;
+        }
+
         public string ExtractSoundTextureOther(string sInternalPath)
         {
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             if (!File.Exists(sFullPathToExtractedFile))
             {
-                zipper.ExtractZip(PATHS.GetSoundsTexturesOtherZipFile, PATHS.GetTempDir, sInternalPath);
+                zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, sInternalPath);
             }
 			return sFullPathToExtractedFile;
 		}

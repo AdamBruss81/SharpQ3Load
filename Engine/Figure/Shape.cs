@@ -28,7 +28,6 @@ namespace engine
 		public enum ETextureType { NONE, SINGLE, MULTI };
 
 		List<Texture> m_lTextures;
-        List<Texture> m_lSFXTextures; // for example for flames 
         List<Face> m_lFaces = new List<Face>();
 		List<List<int>> m_lCoordinateIndexes = new List<List<int>>();
         List<D3Vect> m_lVertices = new List<D3Vect>();
@@ -44,15 +43,11 @@ namespace engine
         int ElementBufferObject;
 		// ===
 
-        Stopwatch m_swRenderHelper = new Stopwatch();
-
 		const string m_sVerticeColorHeader = "color Color { color [";
 		const string m_sTextureCoordinatesHeader = "TextureCoordinate { point [";
 		const string m_sChannelOneTextureCoordinatesHeader = "texCoord  TextureCoordinate { point [";
 		const string m_sMeshCoordinatesHeader = "coord Coordinate { point [";
 		const string m_sCoordinateIndexHeader = "coordIndex [";
-
-        int m_nFlameCounter = -1;
 
 		ETextureType m_TextureType;
 
@@ -76,10 +71,6 @@ namespace engine
 			{
 				t.Initialize();
 			}
-            foreach (Texture t in m_lSFXTextures)
-            {
-                t.Initialize();
-            }
             foreach (Face f in m_lFaces)
 			{
 				f.InitializeLists();
@@ -87,8 +78,8 @@ namespace engine
 
 			// use modern open gl via vertex buffers, vertex array, element buffer and shaders
 			// setup vertices
-			int nNumValues = 10;
-            m_arVertices = new double[m_lVertices.Count * nNumValues]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap)
+			int nNumValues = 11;
+            m_arVertices = new double[m_lVertices.Count * nNumValues]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap), color
 			for(int i = 0; i < m_lVertices.Count; i++)
 			{
 				int nBase = i * nNumValues;
@@ -111,6 +102,7 @@ namespace engine
 				m_arVertices[nBase + 7] = m_lVerticeColors[i].x;
 				m_arVertices[nBase + 8] = m_lVerticeColors[i].y;
 				m_arVertices[nBase + 9] = m_lVerticeColors[i].z;
+				m_arVertices[nBase + 10] = 1.0;
 			}
             
             m_arIndices = new uint[m_lCoordinateIndexes.Count * 3];
@@ -147,7 +139,7 @@ namespace engine
             GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 5 * sizeof(double));
             GL.EnableVertexAttribArray(2);
 
-            GL.VertexAttribPointer(3, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 7 * sizeof(double));
+            GL.VertexAttribPointer(3, 4, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 7 * sizeof(double));
             GL.EnableVertexAttribArray(3);
 
             ShaderHelper.printOpenGLError();
@@ -165,10 +157,9 @@ namespace engine
 			return m_lFaces.IndexOf(f);
 		}
 
-		public void ReadMain(List<Texture> lTextures, List<Texture> lSFXTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
+		public void ReadMain(List<Texture> lTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
 		{
 			m_lTextures = new List<Texture>(lTextures);
-            m_lSFXTextures = new List<Texture>(lSFXTextures);
 			m_TextureType = lTextures.Count == 2 ? Shape.ETextureType.MULTI : Shape.ETextureType.SINGLE;
 
 			if (Read(sr, ref nCounter))
@@ -235,7 +226,7 @@ namespace engine
 			{
 				string sName = Path.GetFileName(tex.GetPath());
 				bNoClipping = sName.Contains("fog") ||
-				sName.Contains("beam"); // walk through doors, fog and beams
+				sName.Contains("beam") || sName.Contains("lava"); 
 			}
 
 			return bNoClipping;
@@ -275,7 +266,13 @@ namespace engine
 		/// </summary>
 		public void Show()
         {
-			if (DontRender()) return;			
+			if (DontRender()) return;	
+			
+			if(GetMainTexture().GetPath().Contains("models"))
+			{
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            }
 
 			ShaderHelper.UseProgram(ShaderProgram);
         
@@ -310,7 +307,12 @@ namespace engine
 
 			GL.DrawElements(PrimitiveType.Triangles, m_arIndices.Length, DrawElementsType.UnsignedInt, 0);
 
-			GL.UseProgram(0); 
+			GL.UseProgram(0);
+
+            if (GetMainTexture().GetPath().Contains("models"))
+            {
+                GL.Disable(EnableCap.Blend);
+            }
         }
 
 		/// <summary>

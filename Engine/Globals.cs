@@ -49,12 +49,6 @@ namespace engine
 			get { return m_bDrawFaceNormals; }
 			set { m_bDrawFaceNormals = value; }
 		}
-
-		public static bool UnitTesting
-		{
-			get { return m_bUnittesting; }
-			set { m_bUnittesting = value; }
-		}
 	}
 
 	public class LOGGER
@@ -100,13 +94,17 @@ namespace engine
 
 	public class NAMES
 	{
-		public static string GetSoundsTexturesOtherName
+		public static string GetPak0Name
 		{
-			get { return "sounds_textures_other.zip"; }
-			//get { return "new_textures.zip"; }
+			get { return "baseq3/pak0.pk3"; }
 		}
 
-		public static string GetMapsName
+        public static string GetLightmapName
+        {
+            get { return "sounds_textures_other.zip"; }
+        }
+
+        public static string GetMapsName
 		{
 			get { return "maps.zip"; }
 		}
@@ -143,21 +141,23 @@ namespace engine
 		{
 			get
 			{
-				if (STATE.UnitTesting)
-					return "..\\Resources\\" + NAMES.GetMapsName;
-				else
-					return Path.Combine(GetProgramDataDir, NAMES.GetMapsName);
+				return Path.Combine(GetProgramDataDir, NAMES.GetMapsName);
 			}
 		}
 
-		public static string GetSoundsTexturesOtherZipFile
+		public static string GetPak0Path
 		{
 			get
 			{
-				if (STATE.UnitTesting)
-					return "..\\Resources\\" + NAMES.GetSoundsTexturesOtherName;
-				else
-					return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), NAMES.GetSoundsTexturesOtherName);
+				return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), NAMES.GetPak0Name);
+			}
+		}
+
+		public static string GetLightmapPath
+		{
+			get
+			{
+				return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), NAMES.GetLightmapName);
 			}
 		}
 

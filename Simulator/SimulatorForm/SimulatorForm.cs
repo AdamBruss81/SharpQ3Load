@@ -103,15 +103,15 @@ namespace simulator
 
 			GL.ShadeModel(ShadingModel.Smooth);
 
-            GL.Enable(EnableCap.CullFace);
-            GL.CullFace(CullFaceMode.Front);
+			GL.Enable(EnableCap.CullFace);
+			GL.CullFace(CullFaceMode.Front);
 
-			GL.ClearColor(System.Drawing.Color.Black);
+			GL.ClearColor(System.Drawing.Color.Black);			
 
 			GL.Enable(EnableCap.DepthTest);
 			GL.MatrixMode(MatrixMode.Projection);
 
-			GL.DepthFunc(DepthFunction.Less);
+			GL.DepthFunc(DepthFunction.Lequal);
 			GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
 
 			GL.LoadIdentity();

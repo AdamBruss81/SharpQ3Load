@@ -8,9 +8,11 @@
 //*
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
-using System.Drawing;
+//using System.Drawing;
 using System.IO;
 using OpenTK.Graphics.OpenGL;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 
 namespace engine
 {
@@ -22,12 +24,15 @@ namespace engine
         private uint[] m_pnTextures;
 		private string m_sInternalZipPath;
 
-		private const string g_sTexturePrefix = "Texture";
+		private const string g_sTexturePrefix = "";
 		private const string g_sLightmapPrefix = "Texture/maps";
-		private const string g_sDefaultTexture = g_sTexturePrefix + "/textures/base_floor/clang_floor.jpg";
+		private const string g_sDefaultTexture = "textures/base_floor/clang_floor.jpg";
 
 		private Zipper m_zipper = new Zipper();
 		MapInfo m_map = null;
+        EFileType m_eFileType;
+        
+        public enum EFileType { PNG, TGA, JPG };
 
         // Form the complete path of the m_pnTextures filename and create the m_pnTextures with the filename
         // If the m_pnTextures cannot be found then create a m_pnTextures with a default file
@@ -38,6 +43,11 @@ namespace engine
         }
 
         public string GetPath() { return m_sInternalZipPath; }
+
+        public EFileType GetFileType()
+        {
+            return m_eFileType;
+        }
 
 		public void Delete()
 		{
@@ -65,12 +75,23 @@ namespace engine
             return false;
         }
 
-        public void SetTexture(string sURL)
+        public void SetTexture(string sURL, bool bLightmap)
         {
 			bool bExtracted = true;
 
-			string sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
-			if(!File.Exists(sFullPath)) {
+            string sFullPath;
+            if (!bLightmap)
+            {
+                sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
+                m_eFileType = EFileType.JPG;
+            }
+            else
+            {
+                sFullPath = m_zipper.ExtractLightmap(sURL);
+                m_eFileType = EFileType.PNG;
+            }
+
+            if (!File.Exists(sFullPath)) {
 				if (!m_map.ExtractedFromZip)
 				{
 					string sMapDir = Path.GetDirectoryName(m_map.GetMapPathOnDisk);
@@ -94,7 +115,7 @@ namespace engine
 
                     // original map that needed these fixes : 
                     // Fatal Instinct
-                    bool b = FindMissingTexture(ref sFullPath, sURL, "toxicsky", "toxicsky.jpg");
+                    /*bool b = FindMissingTexture(ref sFullPath, sURL, "toxicsky", "toxicsky.jpg");
                     if(!b) b = FindMissingTexture(ref sFullPath, sURL, "blacksky", "blacksky.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "killblock_i4", "killblock_i4.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "flame1side", "flame1side.jpg");
@@ -121,33 +142,54 @@ namespace engine
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "light5", "light5.jpg");
                     if (!b) b = FindMissingTexture(ref sFullPath, sURL, "lt2", "light2.jpg");
 
+                    // misc
+                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "lavahell", "lavahell.jpg");*/
+
+                    sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(m_sInternalZipPath, "tga"));
+
                     if (!File.Exists(sFullPath))
                     {
                         LOGGER.Warning("Missing texture " + sURL + ". Looked here " + sFullPath);
                         sFullPath = m_zipper.ExtractSoundTextureOther(g_sDefaultTexture);
                     }
+                    else m_eFileType = EFileType.TGA;
 				}
 			}
 
 			LOGGER.Debug("Set texture to " + sFullPath);
 
-			Bitmap image = new Bitmap(sFullPath);
-            image.RotateFlip(RotateFlipType.Rotate180FlipX);
+            System.Drawing.Bitmap image;
+            if (Path.GetExtension(sFullPath) == ".tga")
+            {
+                IImageFormat format;
+                using (var image2 = Image.Load(sFullPath, out format))
+                {                  
+                    MemoryStream memStr = new MemoryStream();
+                    image2.SaveAsPng(memStr);
+                    image = new System.Drawing.Bitmap(memStr);
+                    memStr.Dispose();
+                } 
+            }
+			else
+                image = new System.Drawing.Bitmap(sFullPath);
 
-            Rectangle rect = new Rectangle(0, 0, image.Width, image.Height);
+            image.RotateFlip(System.Drawing.RotateFlipType.Rotate180FlipX);
+
+            System.Drawing.Rectangle rect = new System.Drawing.Rectangle(0, 0, image.Width, image.Height);
 
             System.Drawing.Imaging.BitmapData bitmapdata;
+
             bitmapdata = image.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             GL.GenTextures(1, m_pnTextures);
             GL.BindTexture(TextureTarget.Texture2D, m_pnTextures[0]);
 
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, image.Width, 
-                image.Height, 0, PixelFormat.Bgr, PixelType.UnsignedByte, bitmapdata.Scan0);
+       
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width,
+                image.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, bitmapdata.Scan0);
 
             string sErrors = "";
             int nRet = utilities.ShaderHelper.GetOpenGLErrors(ref sErrors);
@@ -172,7 +214,7 @@ namespace engine
 		public void Initialize()
 		{
 			m_pnTextures = new uint[1];
-			string[] tokens = m_sInternalZipPath.Split(new char[] { '.' }); // seperate filename around period
+			string[] tokens = m_sInternalZipPath.Split(new char[] { '.' }); // separate filename around period
 			string filetype = tokens[tokens.Length - 1]; // get the file extension
 			string sFullTexturePath;
 
@@ -180,17 +222,11 @@ namespace engine
 			if (filetype == "png")
 			{
 				sFullTexturePath = g_sLightmapPrefix + "/" + m_sInternalZipPath;
-				SetTexture(sFullTexturePath);
+				SetTexture(sFullTexturePath, true);
 			}
 			else
 			{
-				if (filetype == "tga")
-				{
-					m_sInternalZipPath = tokens[0] + ".jpg";
-				}
-
-				sFullTexturePath = g_sTexturePrefix + "/" + m_sInternalZipPath;
-				SetTexture(sFullTexturePath);
+				SetTexture(m_sInternalZipPath, false);
 			}
 		}
     }

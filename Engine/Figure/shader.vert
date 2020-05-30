@@ -3,11 +3,11 @@
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in vec2 aTexCoord2;
-layout(location = 3) in vec3 aColor;
+layout(location = 3) in vec4 aColor;
 
 out vec2 texCoord;
 out vec2 texCoord2;
-out vec3 color;
+out vec4 color;
 
 uniform mat4 modelview;
 uniform mat4 proj;

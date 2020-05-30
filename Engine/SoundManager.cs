@@ -35,34 +35,34 @@ namespace engine
             outputDevice.Play();
 
             // effects
-            m_dictEffects[EEffects.SPAWN] = "Sounds/sound/world/telein.wav";
+            m_dictEffects[EEffects.SPAWN] = "sound/world/telein.wav";
 
-            m_dictEffects[EEffects.ROCKET_AWAY] = "Sounds/sound/weapons/rocket/rocklf1a.wav";
-            m_dictEffects[EEffects.PLASMA_AWAY] = "Sounds/sound/weapons/plasma/hyprbf1a.wav";
+            m_dictEffects[EEffects.ROCKET_AWAY] = "sound/weapons/rocket/rocklf1a.wav";
+            m_dictEffects[EEffects.PLASMA_AWAY] = "sound/weapons/plasma/hyprbf1a.wav";
 
-            m_dictEffects[EEffects.JUMPPAD] = "Sounds/sound/world/jumppad.wav";
-            m_dictEffects[EEffects.FALL] = "Sounds/sound/player/sarge/fall1.wav";
-            m_dictEffects[EEffects.FALL_MINOR] = "Sounds/sound/player/sarge/pain100_1.wav";
-            m_dictEffects[EEffects.JUMP] = "Sounds/sound/player/sarge/jump1.wav";
-            m_dictEffects[EEffects.LAND] = "Sounds/sound/player/land1.wav";
+            m_dictEffects[EEffects.JUMPPAD] = "sound/world/jumppad.wav";
+            m_dictEffects[EEffects.FALL] = "sound/player/sarge/fall1.wav";
+            m_dictEffects[EEffects.FALL_MINOR] = "sound/player/sarge/pain100_1.wav";
+            m_dictEffects[EEffects.JUMP] = "sound/player/sarge/jump1.wav";
+            m_dictEffects[EEffects.LAND] = "sound/player/land1.wav";
 
-            m_dictEffects[EEffects.FOOTSTEP1] = "Sounds/sound/player/footsteps/clank1.wav";
-            m_dictEffects[EEffects.FOOTSTEP2] = "Sounds/sound/player/footsteps/clank2.wav";
-            m_dictEffects[EEffects.FOOTSTEP3] = "Sounds/sound/player/footsteps/clank3.wav";
-            m_dictEffects[EEffects.FOOTSTEP4] = "Sounds/sound/player/footsteps/clank4.wav";
+            m_dictEffects[EEffects.FOOTSTEP1] = "sound/player/footsteps/clank1.wav";
+            m_dictEffects[EEffects.FOOTSTEP2] = "sound/player/footsteps/clank2.wav";
+            m_dictEffects[EEffects.FOOTSTEP3] = "sound/player/footsteps/clank3.wav";
+            m_dictEffects[EEffects.FOOTSTEP4] = "sound/player/footsteps/clank4.wav";
 
             // songs
-            m_dictSongs[ESongs.SONIC4] = "Sounds/music/sonic4.wav";
-            m_dictSongs[ESongs.SONIC3] = "Sounds/music/sonic3.wav";
-            m_dictSongs[ESongs.SONIC6] = "Sounds/music/sonic6.wav";
-            m_dictSongs[ESongs.SONIC5] = "Sounds/music/sonic5.wav";
-            m_dictSongs[ESongs.SONIC1] = "Sounds/music/sonic1.wav";
-            m_dictSongs[ESongs.SONIC2] = "Sounds/music/sonic2.wav";
-            m_dictSongs[ESongs.FLA22K_03] = "Sounds/music/fla22k_03.wav";
-            m_dictSongs[ESongs.FLA22K_06] = "Sounds/music/fla22k_06.wav";
-            m_dictSongs[ESongs.FLA22K_05] = "Sounds/music/fla22k_05.wav";
-            m_dictSongs[ESongs.FLA22K_04] = "Sounds/music/fla22k_04_loop.wav";
-            m_dictSongs[ESongs.FLA22K_02] = "Sounds/music/fla22k_02.wav";
+            m_dictSongs[ESongs.SONIC4] = "music/sonic4.wav";
+            m_dictSongs[ESongs.SONIC3] = "music/sonic3.wav";
+            m_dictSongs[ESongs.SONIC6] = "music/sonic6.wav";
+            m_dictSongs[ESongs.SONIC5] = "music/sonic5.wav";
+            m_dictSongs[ESongs.SONIC1] = "music/sonic1.wav";
+            m_dictSongs[ESongs.SONIC2] = "music/sonic2.wav";
+            m_dictSongs[ESongs.FLA22K_03] = "music/fla22k_03.wav";
+            m_dictSongs[ESongs.FLA22K_06] = "music/fla22k_06.wav";
+            m_dictSongs[ESongs.FLA22K_05] = "music/fla22k_05.wav";
+            m_dictSongs[ESongs.FLA22K_04] = "music/fla22k_04_loop.wav";
+            m_dictSongs[ESongs.FLA22K_02] = "music/fla22k_02.wav";
         }
 
         private void OutputDevice_PlaybackStopped(object sender, StoppedEventArgs e)

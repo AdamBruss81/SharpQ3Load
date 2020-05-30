@@ -241,7 +241,7 @@ namespace engine
 		/// <param name="sr">stream to map file</param>
 		/// <returns>true if successfully read texture data for a shape
 		/// false means there are no more valid shapes to read</returns>
-		bool Read(List<Texture> lTextureObjects, List<Texture> lSFXTextures)
+		bool Read(List<Texture> lTextureObjects)
 		{
 			string sKey, sURL, sDEForUSE = "";
 			string[] textureTokens = null;
@@ -274,19 +274,7 @@ namespace engine
 					{
 						m_textureObjects.Add(sKey, new Texture(sURL, m_map));
 						LOGGER.Debug("Add texture " + sKey);
-						lTextureObjects.Add(m_textureObjects[sKey]);
-
-                        // special case for flame texture. make this more modular later
-                        if(sURL.Contains("flame1side"))
-                        {
-                            for(int i = 1; i < 9; i++)
-                            {
-                                string sNewUrl = System.IO.Path.GetDirectoryName(sURL);
-                                sNewUrl += "/flame" + System.Convert.ToString(i) + ".jpg";
-                                sNewUrl = sNewUrl.Replace("\\", "/");
-                                lSFXTextures.Add(new Texture(sNewUrl, m_map));
-                            }
-                        }
+						lTextureObjects.Add(m_textureObjects[sKey]);                        
 					}
 					m_srMapReader.ReadLine(); // eat close bracket line
 					m_nMapFileLineCounter++;
@@ -345,12 +333,29 @@ namespace engine
 			if(m_fonter != null) m_fonter.Delete();
 		}
 
-		/// <summary>
-		/// Reads a VRML 2.0 compliant file and creates each shape
-		/// specified within the file.
-		/// </summary>
-		/// <param m_DisplayName="file">GetPath to a VRML 2.0 compliant file</param>
-		public void Read(MapInfo map)
+        // s1 less than s2 < 0
+        // s1 equal s2 = 0
+        // s1 greater than s2 > 0
+		// sort shapes so models render last because have blending
+        private static int CompareShapes(Shape s1, Shape s2)
+        {
+			if (s1 == null) return -1;
+			if (s2 == null) return 1;
+
+			bool bS1Models = s1.GetMainTexture().GetPath().Contains("models");
+			bool bS2Models = s2.GetMainTexture().GetPath().Contains("models");
+
+			if (bS1Models && !bS2Models) return 1;
+			else if (bS2Models && !bS1Models) return -1;
+			else return 0;
+        }
+
+        /// <summary>
+        /// Reads a VRML 2.0 compliant file and creates each shape
+        /// specified within the file.
+        /// </summary>
+        /// <param m_DisplayName="file">GetPath to a VRML 2.0 compliant file</param>
+        public void Read(MapInfo map)
 		{
 			m_map = map;
 
@@ -359,19 +364,19 @@ namespace engine
 			m_lMapFaceReferences = new List<Face>();
 
 			List<Texture> lShapeTextureObjects = new List<Texture>();
-            List<Texture> lShapeSFXTextures = new List<Texture>();
             m_srMapReader = new StreamReader(m_map.GetMapPathOnDisk);
-			while (Read(lShapeTextureObjects, lShapeSFXTextures))
+			while (Read(lShapeTextureObjects))
 			{
 				Shape s = new Shape();
 				LOGGER.Debug("Create shape");
 				Subscribe(s);
-				s.ReadMain(lShapeTextureObjects, lShapeSFXTextures, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
+				s.ReadMain(lShapeTextureObjects, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
 				Notify((int)ESignals.SHAPE_READ);
 				m_lShapes.Add(s);
-                lShapeSFXTextures.Clear();
 				lShapeTextureObjects.Clear();
 			}
+
+			m_lShapes.Sort(CompareShapes);
 
 			LOGGER.Info("Read in " + m_lShapes.Count.ToString() + " shapes for " + map.GetMapPathOnDisk);
 

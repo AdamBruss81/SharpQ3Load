@@ -149,6 +149,7 @@
   <PropertyGroup>
     <PostBuildEvent>
     </PostBuildEvent>
-    <PreBuildEvent>xcopy $(ProjectDir)Figure\shader.* $(SolutionDir)$(SolutionName)\$(PlatformName)\$(ConfigurationName) /y</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
 </Project>

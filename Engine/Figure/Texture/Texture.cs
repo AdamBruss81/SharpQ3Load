@@ -9,10 +9,12 @@
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
 //using System.Drawing;
+using System;
 using System.IO;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
+using System.Collections.Generic;
 
 namespace engine
 {
@@ -24,11 +26,9 @@ namespace engine
         private uint[] m_pnTextures;
 		private string m_sInternalZipPath;
 
-		private const string g_sTexturePrefix = "";
-		private const string g_sLightmapPrefix = "Texture/maps";
 		private const string g_sDefaultTexture = "textures/base_floor/clang_floor.jpg";
 
-		private Zipper m_zipper = new Zipper();
+        private Zipper m_zipper = new Zipper();
 		MapInfo m_map = null;
         EFileType m_eFileType;
         
@@ -75,6 +75,119 @@ namespace engine
             return false;
         }
 
+        private string GetTexturePathFromShaderScripts()
+        {
+            List<string> lsShaderFilenames = GetShaderFileName();
+            string sNewPath = "";
+
+            for (int i = 0; i < lsShaderFilenames.Count; i++)
+            {
+                string sShaderFilename = lsShaderFilenames[i];
+                string sInternalPathNoExtension = System.IO.Path.ChangeExtension(m_sInternalZipPath, null);
+
+                StreamReader sr = new StreamReader(m_zipper.ExtractShaderFile(sShaderFilename));
+                while (!sr.EndOfStream)
+                {
+                    string sLine = sr.ReadLine();
+                    if (sLine.Trim() == sInternalPathNoExtension) // found shader
+                    {
+                        int nCurlyCounter = 1;
+                        sr.ReadLine(); // eat open curly
+
+                        while (true) // read found shader to find what we need
+                        {
+                            string sInsideTargetShaderLine = sr.ReadLine();
+
+                            if (sInsideTargetShaderLine.Contains("{"))
+                            {
+                                nCurlyCounter++;
+
+                                string sMapLine = sr.ReadLine();
+                                string[] tokens = sMapLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (tokens.Length == 2)
+                                {
+                                    if (tokens[0].Trim(new char[] { '\t' }) == "map" && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
+                                    {
+                                        sNewPath = tokens[1];
+                                        break;
+                                    }
+                                }
+                            }
+                            else if (sInsideTargetShaderLine.Contains("}"))
+                            {
+                                nCurlyCounter--;
+
+                                if (nCurlyCounter == 0)
+                                    break; // get outta here
+                            }
+                        }
+                        break;
+                    }
+                }
+                sr.Close();
+
+                if (!string.IsNullOrEmpty(sNewPath)) break;
+            }
+
+            return sNewPath;
+        }
+
+        /// <summary>
+        /// Get the shader file that contains the shader based on the texture from the vrml map file
+        /// This is sort of a guessing game at the moment
+        /// </summary>
+        /// <returns></returns>
+        private List<string> GetShaderFileName()
+        {
+            string[] tokens = m_sInternalZipPath.Split('/');
+
+            if (tokens.Length > 0)
+            {
+                if (tokens[1].Contains("liquid"))
+                    return new List<string>() { "liquid" };
+                else if (tokens[1].Contains("skies"))
+                    return new List<string>() { "sky" };
+                else if (tokens[1].Contains("sfx"))
+                    return new List<string>() { "sfx" };
+                else if (tokens[1].Contains("skin"))
+                    return new List<string>() { "skin" };
+                else if (tokens[1].Contains("organics"))
+                    return new List<string>() { "organics", "skin" };
+                else if (tokens[1].Contains("base_wall"))
+                    return new List<string>() { "base_wall", "sfx" };
+                else if (tokens[1].Contains("base_button"))
+                    return new List<string>() { "base_button" };
+                else if (tokens[1].Contains("base_floor"))
+                    return new List<string>() { "base_floor" };
+                else if (tokens[1].Contains("base_light"))
+                    return new List<string>() { "base_light" };
+                else if (tokens[1].Contains("base_trim"))
+                    return new List<string>() { "base_trim" };
+                else if (tokens[1].Contains("gothic_floor"))
+                    return new List<string>() { "gothic_floor" };
+                else if (tokens[1].Contains("gothic_wall"))
+                    return new List<string>() { "gothic_wall" };
+                else if (tokens[1].Contains("gothic_block"))
+                    return new List<string>() { "gothic_block", "sfx", "gothic_trim" };
+                else if (tokens[1].Contains("gothic_light"))
+                    return new List<string>() { "gothic_light" };
+                else if (tokens[1].Contains("gothic_trim"))
+                    return new List<string>() { "gothic_trim" };
+                else if (tokens[1].Contains("common"))
+                    return new List<string>() { "common" };
+                else if (tokens[0].Contains("models"))
+                    return new List<string>() { "models" };
+                else if (tokens[1].Contains("ctf"))
+                    return new List<string>() { "ctf" };
+                else if (tokens[1].Contains("base_support"))
+                    return new List<string>() { "base_support" };
+                else
+                    return new List<string>();
+            }
+            else 
+                return new List<string>();
+        }
+
         public void SetTexture(string sURL, bool bLightmap)
         {
 			bool bExtracted = true;
@@ -92,64 +205,54 @@ namespace engine
             }
 
             if (!File.Exists(sFullPath)) {
-				if (!m_map.ExtractedFromZip)
-				{
-					string sMapDir = Path.GetDirectoryName(m_map.GetMapPathOnDisk);
-					string sFileName = Path.GetFileName(sURL);
-					string sTexturePath = Path.Combine(sMapDir, sFileName);
-					string sFullPathLocal = sTexturePath;
-					if (!File.Exists(sFullPathLocal))
-					{
-						LOGGER.Warning("Missing texture " + sURL + ".\n   Looked here " + sFullPath + " and\n   here " + sFullPathLocal);
-						sFullPath = m_zipper.ExtractSoundTextureOther(g_sDefaultTexture);
-					}
-					else
-					{
-						bExtracted = false;
-						sFullPath = sFullPathLocal;
-					}
-				}
-				else
-				{
-                    // try looking somewhere else
-
-                    // original map that needed these fixes : 
-                    // Fatal Instinct
-                    /*bool b = FindMissingTexture(ref sFullPath, sURL, "toxicsky", "toxicsky.jpg");
-                    if(!b) b = FindMissingTexture(ref sFullPath, sURL, "blacksky", "blacksky.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "killblock_i4", "killblock_i4.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "flame1side", "flame1side.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "ironcrosslt2", "ironcrosslt2.jpg");
-                     
-                    // Introduction
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "sphere", "spherex.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "patch10shiny", "patch10.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "mirror2", "mirror1.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "border11c", "base_trim/border11c.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "q3tourneyscreen", "q3tourney1.jpg"); // there are five of these q3tourney. they are supposed to cycle on this texture I believe
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "glass01", "glass_frame.jpg"); // not sure about this one. see how it looks.
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "proto_lightred2", "proto_lightred.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "teslacoil3", "tesla1.jpg"); // shot in the dark. wel'll see how it looks 
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "teslacoil", "tesla1b.jpg"); // shot in the dark. wel'll see how it looks. this line needs to be before previous for search purposes
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "gothic_light3_2K", "gothic_light3.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "comp3b_dark", "comp3b.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "bluemetal2_shiny_trans", "bluemetal2_shiny.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "proto_light_2k", "proto_light2.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "baslt4_1_4k", "baslt4_1.jpg");
-
-                    // q3dm17
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "diamond2cjumppad", "bouncepad01_diamond2cTGA.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "light5", "light5.jpg");
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "lt2", "light2.jpg");
-
-                    // misc
-                    if (!b) b = FindMissingTexture(ref sFullPath, sURL, "lavahell", "lavahell.jpg");*/
-
+                if (!m_map.ExtractedFromZip)
+                {
+                    // I think I can remove this entire block. Check to be sure.
+                    string sMapDir = Path.GetDirectoryName(m_map.GetMapPathOnDisk);
+                    string sFileName = Path.GetFileName(sURL);
+                    string sTexturePath = Path.Combine(sMapDir, sFileName);
+                    string sFullPathLocal = sTexturePath;
+                    if (!File.Exists(sFullPathLocal))
+                    {
+                        LOGGER.Warning("Missing texture " + sURL + ".\n   Looked here " + sFullPath + " and\n   here " + sFullPathLocal);
+                        sFullPath = m_zipper.ExtractSoundTextureOther(g_sDefaultTexture);
+                    }
+                    else
+                    {
+                        bExtracted = false;
+                        sFullPath = sFullPathLocal;
+                    }
+                }
+                else
+                {                
+                    // try to find texture as tga
                     sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(m_sInternalZipPath, "tga"));
+
+                    // try to find the texture from the shader scripts
+                    if (!File.Exists(sFullPath))
+                    {
+                        string sTemp = GetTexturePathFromShaderScripts();
+                        if (!string.IsNullOrEmpty(sTemp))
+                        {
+                            sFullPath = m_zipper.ExtractSoundTextureOther(sTemp);
+                            if (!File.Exists(sFullPath))
+                            {
+                                sTemp = System.IO.Path.ChangeExtension(sTemp, "jpg");
+                                sFullPath = m_zipper.ExtractSoundTextureOther(sTemp);
+                            }
+                        }
+                    }
+
+                    // custom finds
+                    if (!File.Exists(sFullPath))
+                    {
+                        if (sFullPath.Contains("nightsky_xian_dm1"))
+                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
+                    }                      
 
                     if (!File.Exists(sFullPath))
                     {
-                        LOGGER.Warning("Missing texture " + sURL + ". Looked here " + sFullPath);
+                        LOGGER.Warning("Missing texture " + sURL + ". Looked here " + sFullPath);                       
                         sFullPath = m_zipper.ExtractSoundTextureOther(g_sDefaultTexture);
                     }
                     else m_eFileType = EFileType.TGA;
@@ -221,8 +324,7 @@ namespace engine
 			// Try for creating lightmap m_pnTextures
 			if (filetype == "png")
 			{
-				sFullTexturePath = g_sLightmapPrefix + "/" + m_sInternalZipPath;
-				SetTexture(sFullTexturePath, true);
+				SetTexture(m_sInternalZipPath, true);
 			}
 			else
 			{

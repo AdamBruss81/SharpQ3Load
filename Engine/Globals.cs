@@ -101,7 +101,7 @@ namespace engine
 
         public static string GetLightmapName
         {
-            get { return "sounds_textures_other.zip"; }
+            get { return "lightmaps.zip"; }
         }
 
         public static string GetMapsName

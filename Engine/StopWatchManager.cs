@@ -207,6 +207,8 @@ namespace engine
             {
                 m_swPostMoveLeftDecelTimer.Reset();
 
+                // there's a bug here sometimes that causes a crash. a dictionary entry is not present and we assume it is.
+                // fix at some point
                 m_dictMaxAccelMS[MovableCamera.DIRECTION.LEFT] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.LEFT] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
 
                 m_swStartMoveLeftAccelTimer.Start();

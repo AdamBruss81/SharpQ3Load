@@ -205,7 +205,7 @@ namespace simulator
 
 			m_openGLControl.MakeCurrent();
 
-			m_controlMapProgress.Details("Initializing lists"); // do open gl stuff
+			m_controlMapProgress.Details("Initializing vertex buffers and display lists"); // do open gl stuff
 			static_theEngine.InitializeLists();
 
 			m_openGLControl.Context.MakeCurrent(null);

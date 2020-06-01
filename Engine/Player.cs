@@ -704,7 +704,7 @@ namespace engine
             {
 				D3Vect jumpDir = GetLaunchPadDirection(intersection.Face);
 				jumpDir.Length = m_cam.RHO;
-                m_swmgr.Jump(mcd_PadPowerInMS, jumpDir);
+                m_swmgr.Jump(mcd_PadPowerInMS, jumpDir); // this should also jump straight up a bit first
                 eEffect = SoundManager.EEffects.JUMPPAD;
             }
 

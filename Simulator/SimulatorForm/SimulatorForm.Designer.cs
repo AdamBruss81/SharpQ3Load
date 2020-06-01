@@ -64,7 +64,7 @@ namespace simulator
             this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 70F));
             this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.m_tlContainer.Size = new System.Drawing.Size(331, 231);
+            this.m_tlContainer.Size = new System.Drawing.Size(500, 231);
             this.m_tlContainer.TabIndex = 2;
             // 
             // m_controlMapProgress

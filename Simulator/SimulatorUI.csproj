@@ -226,9 +226,10 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)Resources\sounds_textures_other.zip" "$(TargetDir)" /Y
+    <PostBuildEvent>xcopy "$(SolutionDir)Resources\lightmaps.zip" "$(TargetDir)" /Y
 xcopy "$(SolutionDir)Resources\maps.zip" "$(TargetDir)" /Y
-xcopy "$(SolutionDir)References\tao\freeglut.dll" "$(TargetDir)" /Y</PostBuildEvent>
+xcopy "$(SolutionDir)References\tao\freeglut.dll" "$(TargetDir)" /Y
+xcopy $(SolutionDir)Engine\Figure\shader.* $(SolutionDir)$(SolutionName)\$(PlatformName)\$(ConfigurationName) /y</PostBuildEvent>
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>

@@ -43,7 +43,17 @@ namespace engine
 			return sFullPathToExtractedFile;
 		}
 
-		public void UpdateMap(string sMapPathOnDisk, string sInternalZipPath)
+        public string ExtractShaderFile(string sShaderName)
+        {
+            string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, "scripts/" + sShaderName + ".shader");
+            if (!File.Exists(sFullPathToExtractedFile))
+            {
+                zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, "scripts/" + sShaderName + ".shader");
+            }
+            return sFullPathToExtractedFile;
+        }
+
+        public void UpdateMap(string sMapPathOnDisk, string sInternalZipPath)
 		{
 			if (!File.Exists(PATHS.GetProgramDataMapsZipFile)) 
 				throw new Exception("Could not find map archive to update at " + PATHS.GetProgramDataMapsZipFile);

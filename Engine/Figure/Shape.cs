@@ -211,7 +211,7 @@ namespace engine
 			if (GetMainTexture() != null) 
 			{
 				string sName = Path.GetFileName(GetMainTexture().GetPath());
-				if(sName.Contains("beam") || sName.Contains("fog"))
+				if(sName.Contains("beam") || sName.Contains("fog") || sName.Contains("clip"))
 					bRender = false;
             }
 			return !bRender;

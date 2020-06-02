@@ -333,20 +333,29 @@ namespace engine
 			if(m_fonter != null) m_fonter.Delete();
 		}
 
+		private static bool TextureShouldRenderAtEnd(string sTexturePath)
+		{
+			return sTexturePath.Contains("models");
+		}
+
         // s1 less than s2 < 0
         // s1 equal s2 = 0
         // s1 greater than s2 > 0
 		// sort shapes so models render last because have blending
+		// also render jump pads at the end
         private static int CompareShapes(Shape s1, Shape s2)
         {
 			if (s1 == null) return -1;
 			if (s2 == null) return 1;
 
-			bool bS1Models = s1.GetMainTexture().GetPath().Contains("models");
-			bool bS2Models = s2.GetMainTexture().GetPath().Contains("models");
+			Texture t1 = s1.GetMainTexture();
+			Texture t2 = s2.GetMainTexture();
 
-			if (bS1Models && !bS2Models) return 1;
-			else if (bS2Models && !bS1Models) return -1;
+			bool bRenderAtEndStuff = TextureShouldRenderAtEnd(t1.GetPath());
+			bool bRenderAtEndStuff2 = TextureShouldRenderAtEnd(t2.GetPath());
+
+			if (bRenderAtEndStuff && !bRenderAtEndStuff2) return 1;
+			else if (bRenderAtEndStuff2 && !bRenderAtEndStuff) return -1;
 			else return 0;
         }
 

@@ -63,6 +63,8 @@ namespace utilities
 			vect = new double[] { v.x, v.y, v.z };
 		}
 
+		public void SetXYZ(double x, double y, double z) { vect[0] = x; vect[1] = y; vect[2] = z; }
+
 		public double x
 		{
 			get { return vect[0]; }

@@ -32,10 +32,13 @@ namespace engine
 		D3Vect m_d3Intersection = new D3Vect(); // memory placeholder
 		D3Vect m_d3MidPoint = new D3Vect();
 
-		Color m_NormalCapColor = new Color(0, 255, 0);
+        Color m_NormalCapColor = new Color(0, 255, 0);
 		Color m_NormalStemColor = new Color(0, 100, 0);
-		
-		double m_nIntersectAdjuster;
+
+        EPointClassification m_pointclass;
+        EPointClassification m_previousClass = EPointClassification.NONE;
+
+        double m_nIntersectAdjuster;
 		double m_dVisualNormalScale = 1.0;
 
 		int m_nWireframeDrawList;
@@ -140,10 +143,7 @@ namespace engine
 
 			bool bCanMove = false;
 
-			EPointClassification positionClass = ClassifyPoint(position, GetNormal, DistanceToOriginAlongNormal);
-			EPointClassification destinationClass = ClassifyPoint(dest, GetNormal, DistanceToOriginAlongNormal);
-
-			if (positionClass != destinationClass)
+			if (ClassifyPoint(position, GetNormal, DistanceToOriginAlongNormal) != ClassifyPoint(dest, GetNormal, DistanceToOriginAlongNormal))
 			{
 				m_d3IntersectRay[0] = dest[0] - position[0];
 				m_d3IntersectRay[1] = dest[1] - position[1];
@@ -164,17 +164,16 @@ namespace engine
 				m_d3Intersection[1] = position[1] + m_d3IntersectRay[1];
 				m_d3Intersection[2] = position[2] + m_d3IntersectRay[2];
 
-				EPointClassification pointclass;
-				EPointClassification previousClass = EPointClassification.NONE;
+				m_previousClass = EPointClassification.NONE;
 				for (int i = 0; i < Count; i++)
 				{
-					pointclass = ClassifyPoint(m_d3Intersection, m_edges.GetInwardNormal(i), m_edges.GetPlaneDistance(i));
-					if (previousClass != EPointClassification.NONE && pointclass != previousClass)
+					m_pointclass = ClassifyPoint(m_d3Intersection, m_edges.GetInwardNormal(i), m_edges.GetPlaneDistance(i));
+					if (m_previousClass != EPointClassification.NONE && m_pointclass != m_previousClass)
 					{
 						bCanMove = true;
 						break;
 					}
-					previousClass = pointclass;
+					m_previousClass = m_pointclass;
 				}
 
 				if (!bCanMove && (Object)intersection != null)

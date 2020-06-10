@@ -23,8 +23,7 @@ namespace engine
 		private static bool m_bDebuggingMode = false;
 		private static bool m_bShowDebuggingFaces = false;
 		private static bool m_bDrawFaceNormals = false;
-		private static bool m_bUnittesting = false;
-		private static bool m_bAllowPrinting = true;
+		private static bool m_bAllowPrinting = false;
 
 		public static bool AllowPrinting
 		{

@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using utilities;
 using System.IO;
 using OpenTK.Graphics.OpenGL;
+using System.Diagnostics;
 
 namespace engine
 {
@@ -26,6 +27,8 @@ namespace engine
 		List<Face> m_lFaces = new List<Face>();
         List<D3Vect> m_lVertices = new List<D3Vect>();
         List<Edge> m_lEdgeLines = new List<Edge>(); // pointers to 12 unique bbox directional lines
+		List<BoundingBox> m_lBSPBoxes = new List<BoundingBox>();
+		List<BoundingBox> m_lLeafBoxes = new List<BoundingBox>(); 
 		D3Vect m_MaxCorner;
 		D3Vect m_MinCorner;
 		D3Vect m_d3MidPoint = new D3Vect();
@@ -33,6 +36,7 @@ namespace engine
 		Color m_color;
 		int m_nIndex;
 		int m_nGlobalIndex;
+		BoundingBox m_pParent = null;
 
 		static double m_nBOXDRAWOFFSET = 0.01;
 		static D3Vect zeroAdj = new D3Vect(-m_nBOXDRAWOFFSET, -m_nBOXDRAWOFFSET, -m_nBOXDRAWOFFSET);
@@ -45,8 +49,6 @@ namespace engine
 		static D3Vect sevenAdj = new D3Vect(m_nBOXDRAWOFFSET, -m_nBOXDRAWOFFSET, m_nBOXDRAWOFFSET);
 
 		const double m_nEPSILON = 0.001;
-
-		int m_nDrawDisplayList;
 
 		/// <summary>
 		/// Initialize corners to default extremes
@@ -103,50 +105,15 @@ namespace engine
 			CreateFaces();
 		}
 
-		public void InitializeLists()
+		public void SetParent(BoundingBox b) { m_pParent = b; }
+
+		public void GetNumAncestors(ref int nNum)
 		{
-			m_nDrawDisplayList = GL.GenLists(1);
-			GL.NewList(m_nDrawDisplayList, ListMode.Compile);
+			if(m_pParent != null)
 			{
-				GL.Begin(PrimitiveType.Lines);
-				// MAX END
-				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
-				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
-				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
-				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
-				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
-				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
-				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
-				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
-
-				// BODY
-				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
-				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
-				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
-				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
-				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
-				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
-				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
-				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
-						 
-				// MIN END
-				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
-				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
-				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
-				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
-				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
-				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
-				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
-				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
-
-				GL.End();
+				nNum++;
+				m_pParent.GetNumAncestors(ref nNum);
 			}
-			GL.EndList();
-		}
-
-		public void Delete()
-		{
-			GL.DeleteLists(m_nDrawDisplayList, 1);
 		}
 
 		private void DrawFaceNormals()
@@ -155,6 +122,33 @@ namespace engine
 				face.DrawNormals();
 			}
 		}
+
+		public void DrawBoxesContainingLeafBoxes()
+		{
+			if(SizeLeafBoxes() > 0 || m_lBSPBoxes.Count == 0)
+			{
+				Draw();
+			}
+			else
+			{
+				Debug.Assert(m_lBSPBoxes.Count == 2);
+                m_lBSPBoxes[0].DrawBoxesContainingLeafBoxes();
+                m_lBSPBoxes[1].DrawBoxesContainingLeafBoxes();
+            }
+		}
+
+		public void Contract()
+		{
+            m_MinCorner[0] += m_nEPSILON;
+            m_MinCorner[1] += m_nEPSILON;
+            m_MinCorner[2] += m_nEPSILON;
+
+            m_MaxCorner[0] -= m_nEPSILON;
+            m_MaxCorner[1] -= m_nEPSILON;
+            m_MaxCorner[2] -= m_nEPSILON;
+
+            SetCenter();
+        }
 
 		/// <summary>
 		/// Increase size of box by a small amount
@@ -172,6 +166,50 @@ namespace engine
 			SetCenter();
 		}
 
+		public void AddBSPBox(BoundingBox b)
+		{
+			m_lBSPBoxes.Add(b);
+		}
+
+		public int SizeBSPBoxes() { return m_lBSPBoxes.Count; }
+
+		public List<BoundingBox> GetBSPBoxes() { return m_lBSPBoxes; }
+
+		public int SizeLeafBoxes() { return m_lLeafBoxes.Count; }
+
+		public List<BoundingBox> GetLeafBoxes() { return m_lLeafBoxes; }
+
+        public void AddLeafBox(BoundingBox b)
+        {
+            m_lLeafBoxes.Add(b);
+        }
+
+        /// <summary>
+        /// Returns if this bounding box intersects in anyway b
+        /// </summary>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public bool IntersectsOrContains(BoundingBox b)
+		{
+			bool bIntersection = false;
+
+			for(int i = 0; i < b.m_lEdgeLines.Count; i++)
+			{
+				if(LineInside(b.m_lEdgeLines[i]))
+				{
+					bIntersection = true;
+					break;
+				}
+			}
+
+			return bIntersection;
+		}
+
+		public double GetVolume
+		{
+			get { return (m_MaxCorner.x - m_MinCorner.x) * (m_MaxCorner.y - m_MinCorner.y) * (m_MaxCorner.z - m_MinCorner.z); }
+		}
+
 		public int GetNumMapFaces
 		{
 			get { return m_lMapFaces.Count; }
@@ -180,6 +218,11 @@ namespace engine
 		public List<Face> GetMapFaces
 		{
 			get { return m_lMapFaces; }
+		}
+
+		public List<Face> GetBoxFaces
+		{
+			get { return m_lFaces; }
 		}
 
 		public D3Vect GetMaxCorner
@@ -223,11 +266,57 @@ namespace engine
 		{
 			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.LineBit);
 
-			GL.Color3(m_color.GetColor);
-            GL.LineWidth(2.5f);
-			GL.CallList(m_nDrawDisplayList);
+			bool bAbort = false;
 
-			if(STATE.DrawFaceNormals) {
+			if (SizeLeafBoxes() > 0)
+			{
+                GL.Color3(System.Drawing.Color.HotPink);
+                GL.LineWidth(5.0f);
+            }
+			else
+			{
+				bAbort = true;
+				GL.Color3(m_color.GetColor);
+				GL.LineWidth(2.5f);
+			}
+
+			if (!bAbort)
+			{
+				GL.Begin(PrimitiveType.Lines);
+				// MAX END
+				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
+				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
+				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
+				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
+				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
+				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
+				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
+				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
+
+				// BODY
+				GL.Vertex3((m_lVertices[0] + zeroAdj).Vect);
+				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
+				GL.Vertex3((m_lVertices[1] + oneAdj).Vect);
+				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
+				GL.Vertex3((m_lVertices[3] + threeAdj).Vect);
+				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
+				GL.Vertex3((m_lVertices[2] + twoAdj).Vect);
+				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
+
+				// MIN END
+				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
+				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
+				GL.Vertex3((m_lVertices[5] + fiveAdj).Vect);
+				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
+				GL.Vertex3((m_lVertices[6] + sixAdj).Vect);
+				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
+				GL.Vertex3((m_lVertices[7] + sevenAdj).Vect);
+				GL.Vertex3((m_lVertices[4] + fourAdj).Vect);
+
+				GL.End();
+			}
+
+            if (STATE.DrawFaceNormals) {
 				DrawFaceNormals();
 			}
 

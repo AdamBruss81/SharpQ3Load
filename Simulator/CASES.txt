@@ -120,3 +120,24 @@ I got the brickshader up and running. The problem is some of the faces get rende
 Depthtets has some effect  but it doesn't fix the problem. I'm going to mess around with the shaders themselves for a bit and try to figure it out.
 
 Look into not reflecting the world when I read it in. This makes debugging faces and such confusing.
+
+-----------------------------------
+
+Improve collision detection speed
+
+1. Don't test collision with faces that are marked as noclip by the map. I can tell this by looking at the shader for each texture. For example models are 
+usually not clipped against. I think some other things are as well.
+
+2. Have more bounding boxes in the map
+
+3. Create super bounding boxes which encompass say four quadrants. First check if you are in a super box. Then check the super box's children to see
+if you are in them.
+
+----
+
+4. Use bsp level based on map volume. The bigger the volume, the more levels. For example q3dm17 needs more bsp boxes than fatal instinct.
+5. Test BigBox and make sure it works with all these bounding box changes.
+6. Parallelize the face containing bounding box definition process which updates the map file. It takes really long like 10 minutes or so for q3dm17.
+7. I think the face containing bounding box size is ok as is.
+8. I know face containing bboxes are removed if they have no faces. Also the skies faces aren't considered. But look into how bsp bounding boxes 
+are created to contain other bsp boxes or face boxes. Are these also culled if they are empty/useless?

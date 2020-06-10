@@ -28,7 +28,7 @@ namespace engine
 		const double mcd_HalfWidth = 0.8;
 		const double mcd_PadPowerInMS = 1200;
 		const double mdc_StairHeight = 0.1;
-		const int mnc_LastFrameTimeAdjuster = 55;
+		const int mnc_LastFrameTimeAdjuster = 60;
 
 		bool m_bDrawBoundingBoxesDuringDebugging = true;
 
@@ -183,6 +183,7 @@ namespace engine
 			if (STATE.AllowPrinting) m_fonter.PrintTopLeft(sFigureString, m_GControl.Width, m_GControl.Height, 0);
 			nLineCounter += 3;
 			nLineCounter += m_lStaticFigList[0].GetNumBBoxesLastInside;
+			nLineCounter++; // for showing how many leaf boxes you've checked
 
 			int nCounter = 0;
 			string sRayIntersectedFaces = "";

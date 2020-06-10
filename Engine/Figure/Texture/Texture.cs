@@ -319,7 +319,6 @@ namespace engine
 			m_pnTextures = new uint[1];
 			string[] tokens = m_sInternalZipPath.Split(new char[] { '.' }); // separate filename around period
 			string filetype = tokens[tokens.Length - 1]; // get the file extension
-			string sFullTexturePath;
 
 			// Try for creating lightmap m_pnTextures
 			if (filetype == "png")

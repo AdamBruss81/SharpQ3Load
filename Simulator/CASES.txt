@@ -140,4 +140,4 @@ if you are in them.
 6. Parallelize the face containing bounding box definition process which updates the map file. It takes really long like 10 minutes or so for q3dm17.
 7. I think the face containing bounding box size is ok as is.
 8. I know face containing bboxes are removed if they have no faces. Also the skies faces aren't considered. But look into how bsp bounding boxes 
-are created to contain other bsp boxes or face boxes. Are these also culled if they are empty/useless?
+are created to contain other bsp boxes or face boxes. Are these also removed if they are empty/useless?

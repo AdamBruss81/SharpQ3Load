@@ -235,9 +235,6 @@ namespace engine
 			set {
 				m_nIndex = value;
 			}
-			get {
-				return m_nIndex;
-			}
 		}
 
 		public int GlobalIndex
@@ -275,7 +272,7 @@ namespace engine
             }
 			else
 			{
-				bAbort = true;
+				//bAbort = true;
 				GL.Color3(m_color.GetColor);
 				GL.LineWidth(2.5f);
 			}

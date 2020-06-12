@@ -116,7 +116,7 @@ namespace simulator
 
 			GL.LoadIdentity();
 			// .07 for near was chosen so the depth test works well on faces close to eachother. Also, it is chosen so it's close to you.
-			Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(70f * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .07f, 200.0f);
+			Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(65f * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .07f, 200.0f);
 			GL.LoadMatrix(ref persMat);
 
 			GL.MatrixMode(MatrixMode.Modelview);

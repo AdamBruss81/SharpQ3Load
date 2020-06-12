@@ -205,6 +205,19 @@ namespace engine
 			}
 		}
 
+		public bool IsSky()
+		{
+            bool bSky = false;
+
+            Texture tex = GetMainTexture();
+            if (tex != null)
+            {
+				bSky = tex.GetPath().Contains("skies");
+            }
+
+            return bSky;
+        }
+
 		public bool DontRender()
 		{
 			bool bRender = true;

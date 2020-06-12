@@ -27,6 +27,7 @@ namespace engine
 		List<D3Vect> m_lVertColors;
 		FaceEdges m_edges = new FaceEdges();
         Shape m_pParentShape = null;
+		System.Threading.Mutex canMoveLock = new System.Threading.Mutex();
 
 		D3Vect m_d3IntersectRay = new D3Vect(); // memory placeholder
 		D3Vect m_d3Intersection = new D3Vect(); // memory placeholder
@@ -143,6 +144,8 @@ namespace engine
 
 			bool bCanMove = false;
 
+			canMoveLock.WaitOne();
+
 			if (ClassifyPoint(position, GetNormal, DistanceToOriginAlongNormal) != ClassifyPoint(dest, GetNormal, DistanceToOriginAlongNormal))
 			{
 				m_d3IntersectRay[0] = dest[0] - position[0];
@@ -151,8 +154,11 @@ namespace engine
 
 				double denom = D3Vect.DotProduct(GetNormal, m_d3IntersectRay);
 
-				if(denom == 0) 
+				if (denom == 0)
+				{
+					canMoveLock.ReleaseMutex();
 					return false; // means infinite number of points on plane
+				}
 
 				m_nIntersectAdjuster = -(D3Vect.DotProduct(GetNormal, position) + DistanceToOriginAlongNormal) / denom;
 
@@ -184,6 +190,8 @@ namespace engine
 			}
 			else
 				bCanMove = true;
+
+			canMoveLock.ReleaseMutex();
 
 			return bCanMove;
 		}

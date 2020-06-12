@@ -213,7 +213,7 @@ namespace simulator
 					{
 						if (m_nMaxBoundingBoxes == 0) m_nMaxBoundingBoxes = fig.GetNumBoundingBoxes;
 						if (m_nProgressiveProgressBarMin == 0) m_nProgressiveProgressBarMin = m_nProgressCutoffLoad;
-						SetProgressBar(m_nMaxBoundingBoxes, fig.GetInitializingBoundingBoxCounter, m_nProgressiveProgressBarMin, m_nProgressCutoffBoxes);
+						SetProgressBar(m_nMaxBoundingBoxes, 1, m_nProgressiveProgressBarMin, m_nProgressCutoffBoxes);
 					}
 					else if (!m_bDoneInitializingLists)
 					{

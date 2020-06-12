@@ -17,6 +17,8 @@ using gl_font;
 using obsvr;
 using OpenTK.Graphics.OpenGL;
 using System.Diagnostics;
+using System.ComponentModel;
+using System.Threading;
 
 namespace engine
 {
@@ -28,17 +30,17 @@ namespace engine
 		public enum ESignals { SHAPE_READ = SignalStarts.g_nFigureStart, BOUNDINGBOX_INITIALIZED };
 
 		const double m_dBoundingBoxDimension = 4.0;
-		private const int m_nBoundingBoxVersion = 3;
+		private const int m_nBoundingBoxVersion = 6;
 		const double mcd_HalfWidth = 3.0;
 		const double mcd_MaxEasyHopOverHeight = 0.3;
-		const int m_nNumBSPLevels = 12;
+		Mutex m_mutThreadShutdownChecker = new Mutex();
 
 		private const string m_sBoundingBoxHeader = "DEF BoundingBoxes {";
 		private const string m_sMultitextureHeader = "texture MultiTexture { materialColor TRUE texture [";
 		private const string m_sChannelOneTextureDef = "texture DEF";
 
 		protected List<Shape> m_lShapes = new List<Shape>();
-		private List<BoundingBox> m_lLeafBoundingBoxes = new List<BoundingBox>();
+		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
 		private List<Viewpoint> m_SpawnPoints = new List<Viewpoint>();
 		protected List<Face> m_lMapFaceReferences = null;
@@ -48,7 +50,7 @@ namespace engine
 		Dictionary<string, Texture> m_textureObjects = new Dictionary<string, Texture>();
 		protected StreamReader m_srMapReader = null;
 		BoundingBox m_BSPRootBoundingBox = new BoundingBox();
-		HashSet<BoundingBox> m_hCollidedLeafBoundingBoxesUtil = new HashSet<BoundingBox>();
+		HashSet<BoundingBox> m_hCollidedFaceContainingBoundingBoxesUtil = new HashSet<BoundingBox>();
 
 		private Edge m_RayCollider = new Edge();
 
@@ -57,9 +59,8 @@ namespace engine
 
 		private int m_figureID = -1;
 		private int m_nFaceCreationCounter = 0;
-		private int m_nInitializingBoundingBoxCounter = 0;
-		private int m_nMaxBoundingBoxes = 0;
 		private int m_nInitializeProgress = 0;
+		private int m_nThreadShutdownCounter = 0;
 
 		private bool m_bUpToDateBoundingBoxes = false;
 
@@ -116,19 +117,9 @@ namespace engine
 			get { return m_nFaceCreationCounter; }
 		}
 
-		public int GetInitializingBoundingBoxCounter
-		{
-			get { return m_nInitializingBoundingBoxCounter; }
-		}
-
 		public int GetNumShapes
 		{
 			get { return m_lShapes.Count; }
-		}
-
-		public int GetMaxBoundingBoxes
-		{
-			get { return m_nMaxBoundingBoxes; }
 		}
 
 		public int GetNumViewPoints 
@@ -190,15 +181,15 @@ namespace engine
 
 		public void DrawBoundingBoxes()
 		{
-			for (int j = 0; j < m_lLeafBoundingBoxes.Count; j++)
-				m_lLeafBoundingBoxes[j].Draw();
+			for (int j = 0; j < m_lFaceContainingBoundingBoxes.Count; j++)
+				m_lFaceContainingBoundingBoxes[j].Draw();
 
 			m_BSPRootBoundingBox.DrawBoxesContainingLeafBoxes();
 		}
 
 		public int GetNumBoundingBoxes
 		{
-			get { return m_lLeafBoundingBoxes.Count; }
+			get { return m_lFaceContainingBoundingBoxes.Count; }
 		}
 
 		/// <summary>
@@ -213,7 +204,7 @@ namespace engine
 			{
 				sOut = sOut + m_lLastBoxesInside[i].ToString() + "\n";
 			}
-			sOut = sOut + "Num Leaf Boxes Checked: " + m_hCollidedLeafBoundingBoxesUtil.Count + "\n";
+			sOut = sOut + "Num Face Containing Boxes Checked: " + m_hCollidedFaceContainingBoundingBoxesUtil.Count + "\n";
 
 			return sOut;
 		}
@@ -470,22 +461,22 @@ namespace engine
 				// Read in bounding box data
 				for(int i = 0; i < nReadCount; i++)
 				{
-					BoundingBox.Read(m_srMapReader, m_lLeafBoundingBoxes, m_lMapFaceReferences, ref m_nMapFileLineCounter);	
+					BoundingBox.Read(m_srMapReader, m_lFaceContainingBoundingBoxes, m_lMapFaceReferences, ref m_nMapFileLineCounter);	
 				}
 				bSuccessfullyRead = true;
 
 				// Filter out empty bounding boxes
-				int nMax = m_lLeafBoundingBoxes.Count;
+				int nMax = m_lFaceContainingBoundingBoxes.Count;
 				int nCurIndex = 0;
 				for(int i = 0; i < nMax; i++)
 				{
-					if (m_lLeafBoundingBoxes[nCurIndex].GetNumMapFaces == 0)
+					if (m_lFaceContainingBoundingBoxes[nCurIndex].GetNumMapFaces == 0)
 					{
-						m_lLeafBoundingBoxes.RemoveAt(nCurIndex);
+						m_lFaceContainingBoundingBoxes.RemoveAt(nCurIndex);
 					}
 					else
 					{
-						m_lLeafBoundingBoxes[nCurIndex].Index = nCurIndex;
+						m_lFaceContainingBoundingBoxes[nCurIndex].Index = nCurIndex;
 						Notify((int)ESignals.BOUNDINGBOX_INITIALIZED);
 						nCurIndex++;
 					}
@@ -551,7 +542,7 @@ namespace engine
 		{
 			m_srMapReader.Close();
 
-			if (m_lLeafBoundingBoxes.Count > 0 && m_map.ExtractedFromZip)
+			if (m_lFaceContainingBoundingBoxes.Count > 0 && m_map.ExtractedFromZip)
 			{
 				string sTempPath = "";
 				StreamReader sr = new StreamReader(m_map.GetMapPathOnDisk);
@@ -575,16 +566,16 @@ namespace engine
 				// Write header
 				sw.WriteLine(m_sBoundingBoxHeader);
 				sw.WriteLine("version " + Convert.ToString(m_nBoundingBoxVersion));
-				sw.WriteLine("count " + Convert.ToString(m_lLeafBoundingBoxes.Count));
+				sw.WriteLine("count " + Convert.ToString(m_lFaceContainingBoundingBoxes.Count));
 				sw.Write("dimension " + Convert.ToString(m_dBoundingBoxDimension));
 
 				// Write box data
 				int nCounter = 0;
-				int nMax = m_lLeafBoundingBoxes.Count;
+				int nMax = m_lFaceContainingBoundingBoxes.Count;
 				while (nCounter < nMax)
 				{
 					sw.WriteLine();
-					m_lLeafBoundingBoxes[nCounter].Write(sw);
+					m_lFaceContainingBoundingBoxes[nCounter].Write(sw);
 					nCounter++;
 				}
 				sw.Write("\n}");
@@ -732,10 +723,10 @@ namespace engine
 				// if this then check his bsp boxes and so on until there are no more bsp boxes and instead there are leaf boxes
 				// then loop those leaf boxes here 
 
-				m_hCollidedLeafBoundingBoxesUtil.Clear();
-				GatherLeafBoundingBoxesToTest(m_BSPRootBoundingBox, m_hCollidedLeafBoundingBoxesUtil);
+				m_hCollidedFaceContainingBoundingBoxesUtil.Clear();
+				GatherLeafBoundingBoxesToTest(m_BSPRootBoundingBox, m_hCollidedFaceContainingBoundingBoxesUtil);
 
-				foreach (BoundingBox b in m_hCollidedLeafBoundingBoxesUtil)
+				foreach (BoundingBox b in m_hCollidedFaceContainingBoundingBoxesUtil)
 				{
 					if (b.LineInside(m_RayCollider))
 					{
@@ -828,28 +819,39 @@ namespace engine
 		{
 			BoundingBox bFaces = new BoundingBox();
 
-            // Create bounding box around figure	
-			for(int j = 0; j < m_lMapFaceReferences.Count; j++)
-				for(int k = 0; k < m_lMapFaceReferences[j].Count; k++)
+			// Create bounding box around figure	
+			for (int j = 0; j < m_lMapFaceReferences.Count; j++)
+			{
+                // if face is a sky, continue
+                if (m_lMapFaceReferences[j].GetParentShape().IsSky()) continue;
+
+                for (int k = 0; k < m_lMapFaceReferences[j].Count; k++)
+				{
 					bFaces.Update(m_lMapFaceReferences[j][k]);
+				}
+			}
 
 			bFaces.Expand();
 
 			CreateSubBoxes(bFaces);
 
-			List<Face> lBoxFacesRef = null;
-			// Create bounding box around leaf bounding boxes	
-			for (int j = 0; j < m_lLeafBoundingBoxes.Count; j++)
+			List<Face> lBoxFacesRef;
+			// Create bounding box around face bounding boxes	
+			for (int j = 0; j < m_lFaceContainingBoundingBoxes.Count; j++)
 			{
-				lBoxFacesRef = m_lLeafBoundingBoxes[j].GetBoxFaces;
+				lBoxFacesRef = m_lFaceContainingBoundingBoxes[j].GetBoxFaces;
 				for (int k = 0; k < lBoxFacesRef.Count; k++)
+				{
 					for (int l = 0; l < lBoxFacesRef[k].Count; l++)
+					{
 						m_BSPRootBoundingBox.Update(lBoxFacesRef[k][l]);
+					}
+				}
 			}
         }
 
 		/// <summary>
-		/// Create sub bounding boxes
+		/// Create sub bounding boxes. 
 		/// </summary>
 		/// <param name="OuterBox">Outer bounding box</param>
 		private void CreateSubBoxes(BoundingBox OuterBox)
@@ -895,7 +897,7 @@ namespace engine
 						BoundingBox bbox = new BoundingBox(new D3Vect(altx, alty, altz), new D3Vect(submaxX, submaxY, submaxZ), m_lBoxColors[nColorIndexer]);
 						nColorIndexer++;
 						if (nColorIndexer >= m_lBoxColors.Count) nColorIndexer = 0;
-						m_lLeafBoundingBoxes.Add(bbox);
+						m_lFaceContainingBoundingBoxes.Add(bbox);
 					}
 				}
 			}
@@ -954,20 +956,21 @@ namespace engine
 			bContainer.AddBSPBox(b1);
 			bContainer.AddBSPBox(b2);
 
-			int nNumAncestors = 0;
-			b1.GetNumAncestors(ref nNumAncestors);
-			if(nNumAncestors == m_nNumBSPLevels - 1)
+			int nNumTest = 0;
+			b1.GetNumAncestors(ref nNumTest);
+
+			if(b1.GetVolume <= (9.0 * Math.Pow(m_dBoundingBoxDimension, 3.0)))
 			{
 				// put leaf bounding boxes in b1 and b2
-				for(int i = 0; i < m_lLeafBoundingBoxes.Count; i++)
+				for(int i = 0; i < m_lFaceContainingBoundingBoxes.Count; i++)
 				{
-					if(b1.IntersectsOrContains(m_lLeafBoundingBoxes[i]))
+					if(b1.IntersectsOrContains(m_lFaceContainingBoundingBoxes[i]))
 					{
-						b1.AddLeafBox(m_lLeafBoundingBoxes[i]);
+						b1.AddLeafBox(m_lFaceContainingBoundingBoxes[i]);
 					}
-					if(b2.IntersectsOrContains(m_lLeafBoundingBoxes[i]))
+					if(b2.IntersectsOrContains(m_lFaceContainingBoundingBoxes[i]))
 					{
-						b2.AddLeafBox(m_lLeafBoundingBoxes[i]);
+						b2.AddLeafBox(m_lFaceContainingBoundingBoxes[i]);
 					}
 				}
 			}
@@ -978,21 +981,87 @@ namespace engine
 			}
 		}
 
-		/// <summary>
-		/// Puts faces inside the bounding boxes. Remove bounding boxes with zero faces.
-		/// This is a very costly function. For each bounding box try to add every face.
-		/// </summary>
-		private void InitializeBoundingBoxes()
+		private void workerthread_AddFacesToBoundingBoxes(object sender, DoWorkEventArgs e)
 		{
-			m_nMaxBoundingBoxes = m_lLeafBoundingBoxes.Count;
-			int nCurIndex = 0;
-			for (m_nInitializingBoundingBoxCounter = 0; m_nInitializingBoundingBoxCounter < m_nMaxBoundingBoxes; m_nInitializingBoundingBoxCounter++)
+			KeyValuePair<int, int> kvp = (KeyValuePair<int, int>)e.Argument;
+			for (int i = kvp.Key; i < kvp.Value; i++)
 			{
 				// For each face in the map, try to add it to bbox[nCounter]
 				for (int j = 0; j < m_lMapFaceReferences.Count; j++)
 				{
+					// this is the function which when done many times is slow
+					m_lFaceContainingBoundingBoxes[i].AddFace(m_lMapFaceReferences[j], true);
+				}
+				m_lFaceContainingBoundingBoxes[i].GlobalIndex = i; // gotta do this somewhere
+			}
+		}
+
+        private void mainthread_FinishedAddingFacesToBoundingBoxes(object sender, RunWorkerCompletedEventArgs e)
+        {
+            m_mutThreadShutdownChecker.WaitOne();
+            m_nThreadShutdownCounter--;
+            m_mutThreadShutdownChecker.ReleaseMutex();
+        }
+
+        /// <summary>
+        /// Puts faces inside the bounding boxes. Remove bounding boxes with zero faces.
+        /// This is a very costly function. For each bounding box try to add every face.
+        /// 
+        /// Thread this function. 
+        /// </summary>
+        private void InitializeBoundingBoxes()
+		{
+			int nMaxBoxes = m_lFaceContainingBoundingBoxes.Count;
+			int nProcCount = Environment.ProcessorCount;
+			m_nThreadShutdownCounter = nProcCount;
+
+			int nBoxesPerThread = nMaxBoxes / nProcCount;
+			int nRemainder = nMaxBoxes % nProcCount;
+			List<int> lBoxCountsPerThread = new List<int>();
+			for(int i = 0; i < nProcCount; i++)
+			{
+				lBoxCountsPerThread.Add(nBoxesPerThread);
+			}
+			for(int i = 0; i < nRemainder; i++)
+			{
+				lBoxCountsPerThread[i] = lBoxCountsPerThread[i] + 1;
+			}
+
+			int nStartIndex = 0;
+			for(int i = 0; i < nProcCount; i++)
+			{
+				BackgroundWorker bw = new BackgroundWorker();
+				bw.DoWork += workerthread_AddFacesToBoundingBoxes;
+				bw.RunWorkerCompleted += mainthread_FinishedAddingFacesToBoundingBoxes;
+				bw.RunWorkerAsync(new KeyValuePair<int, int>(nStartIndex, nStartIndex + lBoxCountsPerThread[i]));
+				nStartIndex += lBoxCountsPerThread[i];
+			}
+			
+			while(true)
+			{
+				m_mutThreadShutdownChecker.WaitOne();
+				if(m_nThreadShutdownCounter == 0)
+				{
+					m_mutThreadShutdownChecker.ReleaseMutex();
+					break;
+				}
+				else
+				{
+					m_mutThreadShutdownChecker.ReleaseMutex();
+					Thread.Sleep(1000);
+				}
+			}
+			
+			/*int nCurIndex = 0;
+			for (int i = 0; i < nMaxBoxes; i++)
+			{
+				// For each face in the map, try to add it to bbox[nCounter]
+				for (int j = 0; j < m_lMapFaceReferences.Count; j++)
+				{
+					// this is the function which when done many times is slow
 					m_lLeafBoundingBoxes[nCurIndex].AddFace(m_lMapFaceReferences[j], true);
 				}
+
 				if (m_lLeafBoundingBoxes[nCurIndex].GetNumMapFaces == 0)
 				{
 					m_lLeafBoundingBoxes.RemoveAt(nCurIndex);
@@ -1000,11 +1069,25 @@ namespace engine
 				else {
 					Notify((int)ESignals.BOUNDINGBOX_INITIALIZED);
 					m_lLeafBoundingBoxes[nCurIndex].Index = nCurIndex;
-					m_lLeafBoundingBoxes[nCurIndex].GlobalIndex = m_nInitializingBoundingBoxCounter;
+					m_lLeafBoundingBoxes[nCurIndex].GlobalIndex = i;
 
 					nCurIndex++;
 				}
+			}*/
+
+			for(int i = 0; i < m_lFaceContainingBoundingBoxes.Count; i++)
+			{
+				if(m_lFaceContainingBoundingBoxes[i].GetNumMapFaces == 0)
+				{
+					m_lFaceContainingBoundingBoxes.RemoveAt(i);
+					i--;
+				}
 			}
-		}
+
+            for (int i = 0; i < m_lFaceContainingBoundingBoxes.Count; i++)
+            {
+				m_lFaceContainingBoundingBoxes[i].Index = i;
+            }
+        }		
 	}
 }

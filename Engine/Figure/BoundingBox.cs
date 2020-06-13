@@ -28,7 +28,7 @@ namespace engine
         List<D3Vect> m_lVertices = new List<D3Vect>();
         List<Edge> m_lEdgeLines = new List<Edge>(); // pointers to 12 unique bbox directional lines
 		List<BoundingBox> m_lBSPBoxes = new List<BoundingBox>();
-		List<BoundingBox> m_lLeafBoxes = new List<BoundingBox>(); 
+		List<BoundingBox> m_lFaceContainingBoxes = new List<BoundingBox>(); 
 		D3Vect m_MaxCorner;
 		D3Vect m_MinCorner;
 		D3Vect m_d3MidPoint = new D3Vect();
@@ -125,15 +125,14 @@ namespace engine
 
 		public void DrawBoxesContainingLeafBoxes()
 		{
-			if(SizeLeafBoxes() > 0 || m_lBSPBoxes.Count == 0)
+			if(SizeFaceContainingBoxes() > 0)
 			{
 				Draw();
 			}
 			else
 			{
-				Debug.Assert(m_lBSPBoxes.Count == 2);
-                m_lBSPBoxes[0].DrawBoxesContainingLeafBoxes();
-                m_lBSPBoxes[1].DrawBoxesContainingLeafBoxes();
+				if(m_lBSPBoxes.Count > 0) m_lBSPBoxes[0].DrawBoxesContainingLeafBoxes();
+                if(m_lBSPBoxes.Count > 1) m_lBSPBoxes[1].DrawBoxesContainingLeafBoxes();
             }
 		}
 
@@ -175,13 +174,13 @@ namespace engine
 
 		public List<BoundingBox> GetBSPBoxes() { return m_lBSPBoxes; }
 
-		public int SizeLeafBoxes() { return m_lLeafBoxes.Count; }
+		public int SizeFaceContainingBoxes() { return m_lFaceContainingBoxes.Count; }
 
-		public List<BoundingBox> GetLeafBoxes() { return m_lLeafBoxes; }
+		public List<BoundingBox> GetFaceContainingBoxes() { return m_lFaceContainingBoxes; }
 
-        public void AddLeafBox(BoundingBox b)
+        public void AddFaceContainingBox(BoundingBox b)
         {
-            m_lLeafBoxes.Add(b);
+            m_lFaceContainingBoxes.Add(b);
         }
 
         /// <summary>
@@ -265,7 +264,10 @@ namespace engine
 
 			bool bAbort = false;
 
-			if (SizeLeafBoxes() > 0)
+			// pink are bsp leaf boxes
+			// other are face containing boxes
+
+			if (SizeFaceContainingBoxes() > 0)
 			{
                 GL.Color3(System.Drawing.Color.HotPink);
                 GL.LineWidth(5.0f);

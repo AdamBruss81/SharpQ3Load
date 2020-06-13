@@ -141,3 +141,10 @@ if you are in them.
 7. I think the face containing bounding box size is ok as is.
 8. I know face containing bboxes are removed if they have no faces. Also the skies faces aren't considered. But look into how bsp bounding boxes 
 are created to contain other bsp boxes or face boxes. Are these also removed if they are empty/useless?
+
+------------
+
+1. increase max fps to 90
+2. determine if bsp traversal during game play is working as expected
+3. cache which face containing bounding boxes go into the bsp leaf boxes in map file 
+4. see if more boxes can be removed because they are "empty"

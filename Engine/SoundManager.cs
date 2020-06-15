@@ -10,7 +10,7 @@ namespace engine
     public class SoundManager : IDisposable
     {
         public enum EEffects { NONE, SPAWN, ROCKET_AWAY, PLASMA_AWAY, 
-            FALL, FALL_MINOR, LAND, FOOTSTEP1, FOOTSTEP2, FOOTSTEP3, FOOTSTEP4,
+            FALL, FALL_MINOR, LAND, CLANK1, CLANK2, CLANK3, CLANK4, STEP1, STEP2, STEP3, STEP4,
             JUMPPAD, JUMP };
         public enum ESongs { SONIC4, SONIC3, SONIC6, SONIC5, SONIC1, SONIC2, FLA22K_03, FLA22K_06, FLA22K_05, FLA22K_04, FLA22K_02 };
 
@@ -46,10 +46,15 @@ namespace engine
             m_dictEffects[EEffects.JUMP] = "sound/player/sarge/jump1.wav";
             m_dictEffects[EEffects.LAND] = "sound/player/land1.wav";
 
-            m_dictEffects[EEffects.FOOTSTEP1] = "sound/player/footsteps/clank1.wav";
-            m_dictEffects[EEffects.FOOTSTEP2] = "sound/player/footsteps/clank2.wav";
-            m_dictEffects[EEffects.FOOTSTEP3] = "sound/player/footsteps/clank3.wav";
-            m_dictEffects[EEffects.FOOTSTEP4] = "sound/player/footsteps/clank4.wav";
+            m_dictEffects[EEffects.CLANK1] = "sound/player/footsteps/clank1.wav";
+            m_dictEffects[EEffects.CLANK2] = "sound/player/footsteps/clank2.wav";
+            m_dictEffects[EEffects.CLANK3] = "sound/player/footsteps/clank3.wav";
+            m_dictEffects[EEffects.CLANK4] = "sound/player/footsteps/clank4.wav";
+
+            m_dictEffects[EEffects.STEP1] = "sound/player/footsteps/step1.wav";
+            m_dictEffects[EEffects.STEP2] = "sound/player/footsteps/step2.wav";
+            m_dictEffects[EEffects.STEP3] = "sound/player/footsteps/step3.wav";
+            m_dictEffects[EEffects.STEP4] = "sound/player/footsteps/step4.wav";
 
             // songs
             m_dictSongs[ESongs.SONIC4] = "music/sonic4.wav";

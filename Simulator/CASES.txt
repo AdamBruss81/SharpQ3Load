@@ -148,3 +148,7 @@ are created to contain other bsp boxes or face boxes. Are these also removed if 
 2. determine if bsp traversal during game play is working as expected
 3. cache which face containing bounding boxes go into the bsp leaf boxes in map file 
 4. see if more boxes can be removed because they are "empty"
+
+--------------
+
+Fix bug where you get a crash when pressing directions buttons in the air when falling.

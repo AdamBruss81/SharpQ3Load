@@ -88,6 +88,8 @@
   <ItemGroup>
     <Compile Include="Engine.cs" />
     <Compile Include="Figure\Plane.cs" />
+    <Compile Include="Figure\Q3Shader.cs" />
+    <Compile Include="Figure\Q3ShaderStage.cs" />
     <Compile Include="SoundManager.cs" />
     <Compile Include="StopWatchManager.cs" />
     <Compile Include="Zipping\Zipper.cs" />

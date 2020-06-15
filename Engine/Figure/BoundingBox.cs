@@ -37,6 +37,7 @@ namespace engine
 		int m_nIndex;
 		int m_nGlobalIndex;
 		BoundingBox m_pParent = null;
+		Figure m_pFigure = null;
 
 		static double m_nBOXDRAWOFFSET = 0.01;
 		static D3Vect zeroAdj = new D3Vect(-m_nBOXDRAWOFFSET, -m_nBOXDRAWOFFSET, -m_nBOXDRAWOFFSET);
@@ -53,8 +54,10 @@ namespace engine
 		/// <summary>
 		/// Initialize corners to default extremes
 		/// </summary>
-		public BoundingBox()
+		public BoundingBox(Figure f)
 		{
+			m_pFigure = f;
+
 			m_MaxCorner = new D3Vect(-1000000000, -1000000000, -1000000000);
 			m_MinCorner = new D3Vect(1000000000, 1000000000, 1000000000);
 
@@ -67,8 +70,10 @@ namespace engine
 		/// <param name="min">minimum corner</param>
 		/// <param name="max">maximum corner</param>
 		/// <param name="col">color for bbox draw lines</param>
-		public BoundingBox(D3Vect min, D3Vect max, Color col)
+		public BoundingBox(D3Vect min, D3Vect max, Color col, Figure f)
 		{
+			m_pFigure = f;
+
 			m_MinCorner = min;
 			m_MaxCorner = max;
 
@@ -104,6 +109,8 @@ namespace engine
 
 			CreateFaces();
 		}
+
+		public Figure GetFigure() { return m_pFigure; }
 
 		public void SetParent(BoundingBox b) { m_pParent = b; }
 
@@ -233,6 +240,10 @@ namespace engine
 		{
 			set {
 				m_nIndex = value;
+			}
+			get
+			{
+				return m_nIndex;
 			}
 		}
 
@@ -601,43 +612,96 @@ namespace engine
 
 		public void Write(StreamWriter sw)
 		{
-			int nCounter = 0;
-			sw.Write("[" + Convert.ToString(m_nGlobalIndex) + "\n");
-			int nNumMapFaces = GetNumMapFaces;
-			while(nCounter < nNumMapFaces) 
+			if (m_lMapFaces.Count > 0)
 			{
-				sw.Write(Convert.ToString(m_lMapFaces[nCounter].Index));
-				if (nCounter % 50 == 0 && nCounter != 0 && nCounter + 1 < nNumMapFaces)
-					sw.Write("\n");
-				else if(nCounter + 1 < nNumMapFaces) 
-					sw.Write(",");
+				int nCounter = 0;
+				sw.Write("[" + Convert.ToString(m_nGlobalIndex) + "\n");
+				int nNumMapFaces = GetNumMapFaces;
+				while (nCounter < nNumMapFaces)
+				{
+					sw.Write(Convert.ToString(m_lMapFaces[nCounter].Index));
+					if (nCounter % 50 == 0 && nCounter != 0 && nCounter + 1 < nNumMapFaces)
+						sw.Write("\n");
+					else if (nCounter + 1 < nNumMapFaces)
+						sw.Write(",");
 
-				nCounter++;
+					nCounter++;
+				}
+
+				sw.Write("\n]");
 			}
-			
-			sw.Write("\n]");
+			else
+			{
+                int nCounter = 0;
+                sw.Write("[\n");
+                int nNumFaceContainingBoxes = m_lFaceContainingBoxes.Count;
+                while (nCounter < nNumFaceContainingBoxes)
+                {
+                    sw.Write(Convert.ToString(m_lFaceContainingBoxes[nCounter].Index));
+                    if (nCounter % 50 == 0 && nCounter != 0 && nCounter + 1 < nNumFaceContainingBoxes)
+                        sw.Write("\n");
+                    else if (nCounter + 1 < nNumFaceContainingBoxes)
+                        sw.Write(",");
+
+                    nCounter++;
+                }
+
+                sw.Write("\n]");
+            }
 		}
 
-		public static void Read(StreamReader sr, List<BoundingBox> lBoxes, List<Face> lMapFaces, ref int nLineCounter)
+		public static void Read(StreamReader sr, List<BoundingBox> lBoxes, List<Face> lMapFaces, ref int nLineCounter, int nIndex)
 		{
-			string sLine = sr.ReadLine(); // ex. "[34"
-			nLineCounter++;
-			int nGlobalIndex = Convert.ToInt32(sLine.Substring(1));
-			int i;
-			int nFaceIndex;
+			bool bBSPLeaf = false;
+			if (lBoxes.Count > 0) {
+				int nNum = 0;
+				lBoxes[0].GetNumAncestors(ref nNum);
+				if (nNum > 0) bBSPLeaf = true;
+			}
 
-			sLine = sr.ReadLine();
-			nLineCounter++;
-			while(sLine != "]")
+			if (bBSPLeaf)
 			{
-				string[] psFaceIndexes = sLine.Split(new Char[] {','});
-				for(i = 0; i < psFaceIndexes.Length; i++) 
-				{
-					nFaceIndex = Convert.ToInt32(psFaceIndexes[i]);
-					lBoxes[nGlobalIndex].AddFace(lMapFaces[nFaceIndex], false);
-				}
+                string sLine = sr.ReadLine(); // ex. "["
+                nLineCounter++;
+                int i;
+                int nBoxIndex;
+
+                sLine = sr.ReadLine();
+                nLineCounter++;
+                while (sLine != "]")
+                {
+                    string[] psFaceBoxIndices = sLine.Split(new Char[] { ',' });
+
+                    for (i = 0; i < psFaceBoxIndices.Length; i++)
+                    {
+                        nBoxIndex = Convert.ToInt32(psFaceBoxIndices[i]);
+						lBoxes[nIndex].AddFaceContainingBox(lBoxes[nIndex].GetFigure().GetFaceContainingBoundingBoxes()[nBoxIndex]);
+                    }
+                    sLine = sr.ReadLine();
+                    nLineCounter++;
+                }
+            }
+			else
+			{
+				string sLine = sr.ReadLine(); // ex. "[34"
+				nLineCounter++;
+				int nGlobalIndex = Convert.ToInt32(sLine.Substring(1));
+				int i;
+				int nFaceIndex;
+
 				sLine = sr.ReadLine();
 				nLineCounter++;
+				while (sLine != "]")
+				{
+					string[] psFaceIndexes = sLine.Split(new Char[] { ',' });
+					for (i = 0; i < psFaceIndexes.Length; i++)
+					{
+						nFaceIndex = Convert.ToInt32(psFaceIndexes[i]);
+						lBoxes[nGlobalIndex].AddFace(lMapFaces[nFaceIndex], false);
+					}
+					sLine = sr.ReadLine();
+					nLineCounter++;
+				}
 			}
 		}
 	}

@@ -794,7 +794,7 @@ namespace engine
 				{
 					eEffectToPlay = SoundManager.EEffects.LAND;
 				}
-				else eEffectToPlay = SoundManager.EEffects.FOOTSTEP2;
+				else eEffectToPlay = SoundManager.EEffects.CLANK2;
 
                 m_swmgr.Command(MovableCamera.DIRECTION.DOWN, true, StopWatchManager.SWCommand.RESET);
             }
@@ -831,7 +831,7 @@ namespace engine
 
 				if (bPlayStep)
 				{
-					m_SoundManager.PlayEffect(SoundManager.EEffects.FOOTSTEP3);
+					m_SoundManager.PlayEffect(SoundManager.EEffects.CLANK3);
 				}
             }
             // ===

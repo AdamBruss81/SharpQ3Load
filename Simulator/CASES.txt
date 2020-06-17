@@ -152,3 +152,12 @@ are created to contain other bsp boxes or face boxes. Are these also removed if 
 --------------
 
 Fix bug where you get a crash when pressing directions buttons in the air when falling.
+
+--------
+
+Process of reading shader content and texture path.
+
+1. Try to read texture using url directly from vrml
+2. Try to read shader content
+3. If texture exists from step 1, just use that
+4. If texture doesn't exist from step 1, then get it from shader content

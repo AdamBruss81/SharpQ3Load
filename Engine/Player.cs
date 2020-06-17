@@ -794,7 +794,13 @@ namespace engine
 				{
 					eEffectToPlay = SoundManager.EEffects.LAND;
 				}
-				else eEffectToPlay = SoundManager.EEffects.CLANK2;
+				else
+				{
+					if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.DEFAULT)
+						eEffectToPlay = SoundManager.EEffects.STEP2;
+					else 
+						eEffectToPlay = SoundManager.EEffects.CLANK2;
+				}
 
                 m_swmgr.Command(MovableCamera.DIRECTION.DOWN, true, StopWatchManager.SWCommand.RESET);
             }
@@ -831,7 +837,10 @@ namespace engine
 
 				if (bPlayStep)
 				{
-					m_SoundManager.PlayEffect(SoundManager.EEffects.CLANK3);
+					if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.DEFAULT)
+						m_SoundManager.PlayEffect(SoundManager.EEffects.STEP3);
+					else
+						m_SoundManager.PlayEffect(SoundManager.EEffects.CLANK3);
 				}
             }
             // ===

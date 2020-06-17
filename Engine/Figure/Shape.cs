@@ -34,6 +34,7 @@ namespace engine
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
 		private Zipper m_zipper = new Zipper();
+		Q3Shader m_q3Shader = new Q3Shader();
 
 		// modern open gl constructs
 		double[] m_arVertices = null;
@@ -49,6 +50,7 @@ namespace engine
 		const string m_sChannelOneTextureCoordinatesHeader = "texCoord  TextureCoordinate { point [";
 		const string m_sMeshCoordinatesHeader = "coord Coordinate { point [";
 		const string m_sCoordinateIndexHeader = "coordIndex [";
+		private const string g_sDefaultTexture = "textures/base_floor/clang_floor.jpg";
 
 		ETextureType m_TextureType;
 
@@ -66,11 +68,53 @@ namespace engine
 			}
 		}
 
+		public Q3Shader GetQ3Shader()
+		{
+			return m_q3Shader;
+		}
+
+		private string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL)
+		{
+            string sFullPath;
+
+			if(bLightmap)
+			{
+				sFullPath = m_zipper.ExtractLightmap(sURL);
+			}
+			else
+			{
+				sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
+				
+				if(!File.Exists(sFullPath))
+				{
+                    // try to find texture as tga
+                    sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
+
+                    if (!File.Exists(sFullPath))
+                    {
+                        if (sFullPath.Contains("nightsky_xian_dm1"))
+                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
+                    }
+                }				
+            }   
+			
+			return sFullPath;
+        }
+
 		public void InitializeLists()
 		{
+			m_q3Shader.ReadShader(GetMainTexture().GetPath());
+
 			foreach (Texture t in m_lTextures)
 			{
-				t.Initialize();
+				if (GetMainTexture() == t) {
+					string sNonShaderTexture = GetPathToTextureNoShaderLookup(false, t.GetPath());
+					if(File.Exists(sNonShaderTexture))
+						t.SetTexture(sNonShaderTexture);
+					else
+						t.SetTexture(m_q3Shader.GetShaderBasedMainTextureFullPath());
+				} 
+				else t.SetTexture(GetPathToTextureNoShaderLookup(true, t.GetPath()));
 			}
             foreach (Face f in m_lFaces)
 			{
@@ -161,7 +205,6 @@ namespace engine
 		public void ReadMain(List<Texture> lTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
 		{
 			m_lTextures = new List<Texture>(lTextures);
-			foreach (Texture t in m_lTextures) t.SetParent(this);
 			m_TextureType = lTextures.Count == 2 ? Shape.ETextureType.MULTI : Shape.ETextureType.SINGLE;
 
 			if (Read(sr, ref nCounter))
@@ -507,124 +550,5 @@ namespace engine
 				return true;
 			}
 		}
-
-		#region Q3ShaderAccess
-		/// <summary>
-		/// Get the shader file that contains the shader based on the texture from the vrml map file
-		/// This is sort of a guessing game at the moment
-		/// </summary>
-		/// <returns></returns>
-		public List<string> GetShaderFileName(string sPathFromVRML)
-        {
-            string[] tokens = sPathFromVRML.Split('/');
-
-            if (tokens.Length > 0)
-            {
-                if (tokens[1].Contains("liquid"))
-                    return new List<string>() { "liquid" };
-                else if (tokens[1].Contains("skies"))
-                    return new List<string>() { "sky" };
-                else if (tokens[1].Contains("sfx"))
-                    return new List<string>() { "sfx" };
-                else if (tokens[1].Contains("skin"))
-                    return new List<string>() { "skin" };
-                else if (tokens[1].Contains("organics"))
-                    return new List<string>() { "organics", "skin" };
-                else if (tokens[1].Contains("base_wall"))
-                    return new List<string>() { "base_wall", "sfx" };
-                else if (tokens[1].Contains("base_button"))
-                    return new List<string>() { "base_button" };
-                else if (tokens[1].Contains("base_floor"))
-                    return new List<string>() { "base_floor" };
-                else if (tokens[1].Contains("base_light"))
-                    return new List<string>() { "base_light" };
-                else if (tokens[1].Contains("base_trim"))
-                    return new List<string>() { "base_trim" };
-                else if (tokens[1].Contains("gothic_floor"))
-                    return new List<string>() { "gothic_floor" };
-                else if (tokens[1].Contains("gothic_wall"))
-                    return new List<string>() { "gothic_wall" };
-                else if (tokens[1].Contains("gothic_block"))
-                    return new List<string>() { "gothic_block", "sfx", "gothic_trim" };
-                else if (tokens[1].Contains("gothic_light"))
-                    return new List<string>() { "gothic_light" };
-                else if (tokens[1].Contains("gothic_trim"))
-                    return new List<string>() { "gothic_trim" };
-                else if (tokens[1].Contains("common"))
-                    return new List<string>() { "common" };
-                else if (tokens[0].Contains("models"))
-                    return new List<string>() { "models" };
-                else if (tokens[1].Contains("ctf"))
-                    return new List<string>() { "ctf" };
-                else if (tokens[1].Contains("base_support"))
-                    return new List<string>() { "base_support" };
-                else
-                    return new List<string>();
-            }
-            else
-                return new List<string>();
-        }
-
-        /// <summary>
-        /// Reads the shader files and finds the right texture
-        /// </summary>
-        /// <returns></returns>
-        public string GetTexturePathFromShaderScripts(string sPathFromVRML)
-        {
-            List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
-            string sNewPath = "";
-
-            for (int i = 0; i < lsShaderFilenames.Count; i++)
-            {
-                string sShaderFilename = lsShaderFilenames[i];
-                string sInternalPathNoExtension = System.IO.Path.ChangeExtension(sPathFromVRML, null);
-
-                StreamReader sr = new StreamReader(m_zipper.ExtractShaderFile(sShaderFilename));
-                while (!sr.EndOfStream)
-                {
-                    string sLine = sr.ReadLine();
-                    if (sLine.Trim() == sInternalPathNoExtension) // found shader
-                    {
-                        int nCurlyCounter = 1;
-                        sr.ReadLine(); // eat open curly
-
-                        while (true) // read found shader to find what we need
-                        {
-                            string sInsideTargetShaderLine = sr.ReadLine();
-
-                            if (sInsideTargetShaderLine.Contains("{"))
-                            {
-                                nCurlyCounter++;
-
-                                string sMapLine = sr.ReadLine();
-                                string[] tokens = sMapLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                                if (tokens.Length == 2)
-                                {
-                                    if (tokens[0].Trim(new char[] { '\t' }) == "map" && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
-                                    {
-                                        sNewPath = tokens[1];
-                                        break;
-                                    }
-                                }
-                            }
-                            else if (sInsideTargetShaderLine.Contains("}"))
-                            {
-                                nCurlyCounter--;
-
-                                if (nCurlyCounter == 0)
-                                    break; // get outta here
-                            }
-                        }
-                        break;
-                    }
-                }
-                sr.Close();
-
-                if (!string.IsNullOrEmpty(sNewPath)) break;
-            }
-
-            return sNewPath;
-        }
-        #endregion
     }
 }

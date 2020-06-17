@@ -102,11 +102,6 @@ namespace engine
 			m_BSPRootBoundingBox = new BoundingBox(this);
 		}
 
-		public List<IntersectionInfo> GetLastIntersections
-		{
-			get { return m_lAllIntersections; }
-		}
-
 		public int GetFigureID 
 		{ 
 			get { return m_figureID; }
@@ -275,7 +270,7 @@ namespace engine
 					m_nMapFileLineCounter++;
 					if (sURL != "null.png")
 					{
-						m_textureObjects.Add(sKey, new Texture(sURL, m_map));
+						m_textureObjects.Add(sKey, new Texture(sURL));
 						LOGGER.Debug("Add texture " + sKey);
 						lTextureObjects.Add(m_textureObjects[sKey]);                        
 					}
@@ -297,7 +292,7 @@ namespace engine
 					sURL = stringhelper.Tokenize(m_srMapReader.ReadLine(), '"')[1];
 					LOGGER.Debug("Add texture " + sKey);
 					m_nMapFileLineCounter++;
-					m_textureObjects.Add(sKey, new Texture(sURL, m_map));
+					m_textureObjects.Add(sKey, new Texture(sURL));
 					lTextureObjects.Add(m_textureObjects[sKey]);
 				}
 				else if (sDEForUSE.Contains("USE"))
@@ -851,7 +846,10 @@ namespace engine
 						}
 					}
 				}
-				if (bCollision) break;
+				// I wish I could get out of here when one collision happened but if I do things get screwed up on stairs at the least.
+				// I'm not sure why... It must somehow have to deal with sorting the intersections below but I can't find anyone
+				// who cares much about that sorted list. 
+				//if (eSourceMovement == MovableCamera.DIRECTION.DOWN && bCollision) break;
 			}
 
 			if (bCollision)

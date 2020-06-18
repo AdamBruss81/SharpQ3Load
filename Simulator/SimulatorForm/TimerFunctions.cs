@@ -26,9 +26,8 @@ namespace simulator
             m_Engine.showScene(GetRecentKey);
             // ###            
 
-            m_fonter.PrintLowerRight(Math.Round(m_dVelocity, 2).ToString(), m_openGLControl.Width, 2);
-            m_fonter.PrintLowerRight(m_dFPS.ToString(), m_openGLControl.Width, 1);
-            m_fonter.PrintLowerRight(GetRecentKey.ToString(), m_openGLControl.Width, 0);
+            m_fonter.PrintLowerRight(Math.Round(m_dVelocity, 2).ToString(), m_openGLControl.Width, 1);
+            m_fonter.PrintLowerRight(m_dFPS.ToString(), m_openGLControl.Width, 0);
 
             m_openGLControl.SwapBuffers();
 

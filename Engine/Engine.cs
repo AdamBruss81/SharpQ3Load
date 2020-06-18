@@ -32,7 +32,7 @@ namespace engine
 		int m_nDrawAxisList;
 
 		public enum EEngineType { GHOST, PLAYER, SPECTATOR };
-		public enum EGraphicsMode { SINGLE_TEXTURE_VERTICE_COLOR, MULTI_TEXTURE_WHITE, WIREFRAME, SINGLE_WHITE };
+		public enum EGraphicsMode { WIREFRAME, TEXTURED_SHADED };
 
 		protected FigureList m_dynamicFigList = null;
 		protected FigureList m_lStaticFigList = null;
@@ -43,7 +43,7 @@ namespace engine
 		protected double[] m_pdModelview = new double[16];
 		protected const float JUMP_OFFSET = 1.0f;
 
-		private EGraphicsMode m_GraphicsMode = EGraphicsMode.SINGLE_WHITE;
+		private EGraphicsMode m_GraphicsMode = EGraphicsMode.TEXTURED_SHADED;
 
 		public Engine(OpenGLControlModded.simpleOpenGlControlEx window)
 		{
@@ -124,14 +124,10 @@ namespace engine
 			{
 				switch (m_GraphicsMode)
 				{
-					case EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR:
-						return "SINGLE TEXTURE VERT COLOR";
-					case EGraphicsMode.MULTI_TEXTURE_WHITE:
-						return "MULTI-TEXTURE WHITE";
+					case EGraphicsMode.TEXTURED_SHADED:
+						return "TEXTURED_SHADED";
 					case EGraphicsMode.WIREFRAME:
 						return "WIREFRAME";
-					case EGraphicsMode.SINGLE_WHITE:
-						return "SINGLE TEXTURE WHITE";
 				}
 				throw new Exception("Invalid graphics mode " + m_GraphicsMode.ToString());
 			}

@@ -183,16 +183,8 @@ namespace simulator
                     }
                     else if (e.KeyData == Keys.F6)
                     {
-                        m_Engine.GraphicsMode = Engine.EGraphicsMode.SINGLE_WHITE;
-                    }
-                    else if (e.KeyData == Keys.F7)
-                    {
-                        m_Engine.GraphicsMode = Engine.EGraphicsMode.SINGLE_TEXTURE_VERTICE_COLOR;
-                    }
-                    else if (e.KeyData == Keys.F8)
-                    {
-                        m_Engine.GraphicsMode = Engine.EGraphicsMode.MULTI_TEXTURE_WHITE;
-                    }
+                        m_Engine.GraphicsMode = Engine.EGraphicsMode.TEXTURED_SHADED;
+                    }                
                 }
 
                 if (e.KeyData == Keys.O)

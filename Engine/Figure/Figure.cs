@@ -161,14 +161,14 @@ namespace engine
 		{
 			if (mode == Engine.EGraphicsMode.WIREFRAME)
 			{
-				/*sgl.PUSHATT(AttribMask.TextureBit | AttribMask.LineBit);
+				sgl.PUSHATT(AttribMask.TextureBit | AttribMask.LineBit);
 				GL.Disable(EnableCap.Texture2D);
 				GL.LineWidth(1.2f);
-				for (int i = 0; i < m_lLeafBoundingBoxes.Count; i++)
+				for (int i = 0; i < m_lFaceContainingBoundingBoxes.Count; i++)
 				{
-					m_lLeafBoundingBoxes[i].DrawMapFaces(mode);
+					m_lFaceContainingBoundingBoxes[i].DrawMapFaces(mode);
 				}
-				sgl.POPATT();*/
+				sgl.POPATT();
 			}
 			else
 			{

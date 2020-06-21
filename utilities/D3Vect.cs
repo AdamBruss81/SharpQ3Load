@@ -41,6 +41,8 @@ namespace utilities
 				vect[i] = Convert.ToDouble(tokens[i]);
 		}
 
+		public void SetAll(double dVal) { vect[0] = dVal; vect[1] = dVal; vect[2] = dVal; }
+
 		/// <summary>
 		/// Creates a D3Vect and initializes the doubles to zero.
 		/// </summary>

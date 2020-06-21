@@ -6,22 +6,30 @@ namespace engine
 {
     public class Q3Shader
     {
-        public enum EStepType { DEFAULT, METAL };
+        public enum EStepType { DEFAULT, METAL, NONE };
 
         List<Q3ShaderStage> m_lStages = new List<Q3ShaderStage>();
         EStepType m_eStepType = EStepType.DEFAULT;
         string m_sMainTextureFullPath = "";
         private Zipper m_zipper = new Zipper();
+        string m_sShaderName = "";
+        string m_sCull = "";
 
         public Q3Shader()
         {
 
         }
 
+        public string GetShaderName() { return m_sShaderName; }
+
         public string GetShaderBasedMainTextureFullPath()
         {
             return m_sMainTextureFullPath;
         }
+
+        public string GetCull() { return m_sCull; }
+
+        public List<Q3ShaderStage> GetStages() { return m_lStages; }
 
         public EStepType GetStepType() { return m_eStepType; }
 
@@ -81,12 +89,28 @@ namespace engine
                 return new List<string>();
         }
 
+        private string GetTokensAfterFirst(string[] tokens)
+        {
+            string s = "";
+            for(int i = 1; i < tokens.Length; i++)
+            {
+                s += tokens[i];
+                if (i < tokens.Length - 1) s += " ";
+            }
+            return s;
+        }
+
+        private bool IsMapTexture(string s)
+        {
+            return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures")) && !s.Contains("clampmap");
+        }
+
         /// <summary>
         /// Reads the shader files and finds the right texture
         /// </summary>
         /// <returns></returns>
         public void ReadShader(string sPathFromVRML)
-        {
+        {            
             List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
             string sNewPath = "";
 
@@ -99,9 +123,11 @@ namespace engine
                 while (!sr.EndOfStream)
                 {
                     int nCurlyCounter = 0;
-                    string sLine = sr.ReadLine();
+                    string sLine = sr.ReadLine().ToLower();
                     if (sLine.Trim() == sInternalPathNoExtension) // found shader
                     {
+                        m_sShaderName = sPathFromVRML;
+
                         // read until we eat open curly
                         sLine = sr.ReadLine();
                         while(!sLine.Contains("{"))
@@ -111,40 +137,76 @@ namespace engine
 
                         nCurlyCounter++;
 
-                        while (true) // read found shader to find what we need
+                        while (true) // read found shader surface params and stages
                         {
-                            string sInsideTargetShaderLine = sr.ReadLine();
+                            string sInsideTargetShaderLine = sr.ReadLine().ToLower();
 
-                            if (sInsideTargetShaderLine.Contains("{"))
-                            {
-                                nCurlyCounter++;
-
-                                if (string.IsNullOrEmpty(sNewPath))
-                                {
-                                    string sMapLine = sr.ReadLine();
-                                    string[] tokens = sMapLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                                    if (tokens.Length == 2)
-                                    {
-                                        if (tokens[0].Trim(new char[] { '\t' }) == "map" && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
-                                        {
-                                            sNewPath = tokens[1];
-                                        }
-                                    }
-                                }
-                            }
-                            else if (sInsideTargetShaderLine.Contains("surfaceparm"))
+                            // read shader properties
+                            if (sInsideTargetShaderLine.Contains("surfaceparm"))
                             {
                                 if (sInsideTargetShaderLine.Contains("metalsteps"))
                                 {
                                     m_eStepType = EStepType.METAL;
                                 }
+                                if(sInsideTargetShaderLine.Contains("nosteps"))
+                                {
+                                    m_eStepType = EStepType.NONE;
+                                }
                             }
-                            else if (sInsideTargetShaderLine.Contains("}"))
+                            else if (sInsideTargetShaderLine.Contains("cull"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_sCull = GetTokensAfterFirst(tokens);
+                            }
+                            // begin stage found
+                            else if (sInsideTargetShaderLine.Contains("{"))
+                            {
+                                m_lStages.Add(new Q3ShaderStage());
+                                nCurlyCounter++;
+                            }
+                            // read stage items
+                            else if(IsMapTexture(sInsideTargetShaderLine))  
+                            {
+                                string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (tokens.Length == 2)
+                                {
+                                    if (tokens[0].Trim(new char[] { '\t' }) == "map" && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
+                                    {
+                                        if (string.IsNullOrEmpty(sNewPath)) sNewPath = tokens[1];
+                                        m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
+                                    }
+                                }
+                            }
+                            else if(sInsideTargetShaderLine.Contains("rgbgen"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetRGBGEN(GetTokensAfterFirst(tokens));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("blendfunc"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("animmap"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));
+                            }
+                            else if(sInsideTargetShaderLine.Contains("$lightmap"))
+                            {
+                                m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                            }
+                            // end stage reading                            
+                            else if (sInsideTargetShaderLine.Contains("}")) // end of stage
                             {
                                 nCurlyCounter--;
 
                                 if (nCurlyCounter == 0)
-                                    break; // get outta here
+                                    break; // end of shader
                             }
                         }
                         break;

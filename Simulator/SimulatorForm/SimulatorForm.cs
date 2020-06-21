@@ -86,6 +86,9 @@ namespace simulator
 		{
 			InitializeComponent();
 
+			// start game clock and let it run. it will never max out the int64
+			engine.GameClock.m_SW.Start();
+
 			m_menu = new MapChooserForm();
 
 			m_openGLControl.ProcessKey += new KeyEventHandler(m_openGLControl_ProcessKey);

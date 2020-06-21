@@ -172,4 +172,10 @@ namespace engine
 		public const int g_nShapeStart = 200;
 		public const int g_nEngineStart = 300;
 	}
+
+	public class GameClock
+	{
+		public static System.Diagnostics.Stopwatch m_SW = new System.Diagnostics.Stopwatch();
+		public static long GetElapsedMS() { return m_SW.ElapsedMilliseconds; }
+	}
 }

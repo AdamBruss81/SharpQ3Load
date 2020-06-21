@@ -14,6 +14,8 @@ namespace engine
 
 		public string ExtractMap(string sInternalPath)
 		{
+            if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
+
             string sPath = Path.Combine(PATHS.GetTempDir, sInternalPath);
 
             if (!File.Exists(sPath))
@@ -25,6 +27,8 @@ namespace engine
 
 		public string ExtractLightmap(string sInternalPath)
 		{
+            if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
+
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             if (!File.Exists(sFullPathToExtractedFile))
             {
@@ -35,6 +39,8 @@ namespace engine
 
         public string ExtractSoundTextureOther(string sInternalPath)
         {
+            if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
+
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             if (!File.Exists(sFullPathToExtractedFile))
             {
@@ -45,6 +51,8 @@ namespace engine
 
         public string ExtractShaderFile(string sShaderName)
         {
+            if (string.IsNullOrEmpty(sShaderName)) throw new Exception("Invalid path to extract");
+
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, "scripts/" + sShaderName + ".shader");
             if (!File.Exists(sFullPathToExtractedFile))
             {

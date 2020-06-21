@@ -161,3 +161,10 @@ Process of reading shader content and texture path.
 2. Try to read shader content
 3. If texture exists from step 1, just use that
 4. If texture doesn't exist from step 1, then get it from shader content
+
+----
+
+Getting the skel model to look right. 
+
+Sort his faces so the one farthest from the map center renders first. This means I have to calculate the distance from the face
+center to the map center. I have some functions that do stuff like this but I don't think I have the exact one.

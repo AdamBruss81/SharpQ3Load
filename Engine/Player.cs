@@ -200,10 +200,7 @@ namespace engine
                 string sTextureInfo = "";
                 if(i.Face.GetParentShape().GetTextures().Count > 0)
                 {
-                    if(i.Face.GetParentShape().GetTextures().Count > 1)
-                        sTextureInfo = i.Face.GetParentShape().GetTextures()[1].GetPath();
-                    else
-                        sTextureInfo = i.Face.GetParentShape().GetTextures()[0].GetPath();
+					sTextureInfo = i.Face.GetParentShape().GetMainTexture().GetPath();
                 }
                 sRayIntersectedFaces += "Map Index " + i.Face.Index.ToString() + ", Shape Index " + 
 					i.Face.GetParentShape().GetIndex(i.Face) + ", Normal " + i.Face.GetNewNormal.ToString();
@@ -740,10 +737,7 @@ namespace engine
 			string sTextureInfo = "";
 			if (m_Intersection.Face.GetParentShape().GetTextures().Count > 0)
 			{
-				if (m_Intersection.Face.GetParentShape().GetTextures().Count > 1)
-					sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[1].GetPath();
-				else
-					sTextureInfo = m_Intersection.Face.GetParentShape().GetTextures()[0].GetPath();
+				sTextureInfo = m_Intersection.Face.GetParentShape().GetMainTexture().GetPath();
 			}
 
 			SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
@@ -798,7 +792,7 @@ namespace engine
 				{
 					if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.DEFAULT)
 						eEffectToPlay = SoundManager.EEffects.STEP2;
-					else 
+					else if(m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.METAL)
 						eEffectToPlay = SoundManager.EEffects.CLANK2;
 				}
 
@@ -839,7 +833,7 @@ namespace engine
 				{
 					if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.DEFAULT)
 						m_SoundManager.PlayEffect(SoundManager.EEffects.STEP3);
-					else
+					else if(m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.METAL)
 						m_SoundManager.PlayEffect(SoundManager.EEffects.CLANK3);
 				}
             }

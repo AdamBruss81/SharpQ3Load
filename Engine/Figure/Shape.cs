@@ -54,7 +54,7 @@ namespace engine
 
 		ETextureType m_TextureType;
 
-        public Shape() {}
+        public Shape() { }
 
 		public void Delete()
 		{
@@ -87,10 +87,14 @@ namespace engine
 				
 				if(!File.Exists(sFullPath))
 				{
-                    // try to find texture as tga
-                    sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
+                    // try to find texture as tga or jpg
+					// when quake 3 was near shipping, id had to convert some tgas to jpg to reduce pak0 size					
+					if(Path.GetExtension(sFullPath) == ".jpg")
+						sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
+					else
+						sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"));
 
-                    if (!File.Exists(sFullPath))
+					if (!File.Exists(sFullPath))
                     {
                         if (sFullPath.Contains("nightsky_xian_dm1"))
                             sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
@@ -103,7 +107,7 @@ namespace engine
 
 		public void InitializeLists()
 		{
-			m_q3Shader.ReadShader(GetMainTexture().GetPath());
+			m_q3Shader.ReadShader(GetMainTexture().GetPath());			
 
 			foreach (Texture t in m_lTextures)
 			{
@@ -116,6 +120,17 @@ namespace engine
 				} 
 				else t.SetTexture(GetPathToTextureNoShaderLookup(true, t.GetPath()));
 			}
+
+            // hardcode something for killblock_i4b shader for now to test
+            if (m_q3Shader.GetShaderName().Contains("killblock_i4b"))
+            {
+                if (m_q3Shader.GetStages().Count == 3)
+                {
+                    m_lTextures.Add(new Texture(m_q3Shader.GetStages()[2].GetTexturePath()));
+					m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
+                }
+            }
+
             foreach (Face f in m_lFaces)
 			{
 				f.InitializeLists();
@@ -129,21 +144,29 @@ namespace engine
 			{
 				int nBase = i * nNumValues;
 
+				// vertices
 				m_arVertices[nBase] = m_lVertices[i].x;
 				m_arVertices[nBase + 1] = m_lVertices[i].y;
 				m_arVertices[nBase + 2] = m_lVertices[i].z;
+
+				// main texture coordinates
 				m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
 				m_arVertices[nBase + 4] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[1];
-				if(m_lTextures.Count == 2)
+
+				if(m_lTextures.Count > 1)
 				{
+					// lightmap texture coordinates
                     m_arVertices[nBase + 5] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[0];
                     m_arVertices[nBase + 6] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[1];
                 }
 				else
 				{
+					// dummy texture coordinates for lightmap
 					m_arVertices[nBase + 5] = -1.0;
 					m_arVertices[nBase + 6] = -1.0;
                 }
+
+				// vertice colors
 				m_arVertices[nBase + 7] = m_lVerticeColors[i].x;
 				m_arVertices[nBase + 8] = m_lVerticeColors[i].y;
 				m_arVertices[nBase + 9] = m_lVerticeColors[i].z;
@@ -206,6 +229,14 @@ namespace engine
 		{
 			m_lTextures = new List<Texture>(lTextures);
 			m_TextureType = lTextures.Count == 2 ? Shape.ETextureType.MULTI : Shape.ETextureType.SINGLE;
+
+			if(m_lTextures.Count == 2)
+			{
+				// put main texture first and lightmap second to match what it is in q3 shaders
+				Texture tLM = m_lTextures[0];
+				m_lTextures.RemoveAt(0);
+				m_lTextures.Add(tLM);
+			}
 
 			if (Read(sr, ref nCounter))
 			{
@@ -292,27 +323,25 @@ namespace engine
 
 		public Texture GetMainTexture()
 		{
-			if (m_lTextures.Count == 1) return m_lTextures[0];
-			else if (m_lTextures.Count == 2) return m_lTextures[1];
+			if (m_lTextures.Count > 0) return m_lTextures[0];
 			else return null;
-		}
+        }
 
         public int GetMainTextureIndex()
         {
-            if (m_lTextures.Count == 1) return 0;
-            else if (m_lTextures.Count == 2) return 1;
-            else return -1;
+			if (m_lTextures.Count > 0) return 0;
+			else return -1;
         }
 
         public Texture GetLightmapTexture()
         {
-            if (m_lTextures.Count == 2) return m_lTextures[0];
+            if (m_lTextures.Count > 1) return m_lTextures[1];
             else return null;
         }
 
         public int GetLightmapTextureIndex()
         {
-            if (m_lTextures.Count == 2) return 0;
+            if (m_lTextures.Count > 1) return 1;
             else return -1;
         }		
 
@@ -332,6 +361,17 @@ namespace engine
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             }
 
+			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
+			{
+				GL.PushAttrib(AttribMask.EnableBit);
+				GL.Disable(EnableCap.CullFace);
+			}
+			else if(m_q3Shader.GetCull() == "back")
+			{
+                GL.PushAttrib(AttribMask.EnableBit);
+                GL.CullFace(CullFaceMode.Back);
+            }
+
 			ShaderHelper.UseProgram(ShaderProgram);
         
 			GL.BindVertexArray(VertexArrayObject);
@@ -339,22 +379,48 @@ namespace engine
 			GL.ActiveTexture(TextureUnit.Texture0);
 			GetMainTexture().bindMeRaw();
 			GL.ActiveTexture(TextureUnit.Texture1);
-			if (m_lTextures.Count == 2)
+			if (m_lTextures.Count >= 2)
 			{
-				GetLightmapTexture().bindMeRaw();
+				GetLightmapTexture().bindMeRaw();				
 			}
 			else
 			{
 				GetMainTexture().bindMeRaw(); // placeholder
+			}
+			GL.ActiveTexture(TextureUnit.Texture2);
+			if (m_q3Shader.GetShaderName().Contains("killblock_i4b"))
+			{
+				m_lTextures[2].bindMeRaw();
+			}
+			else
+			{
+				GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
 			}
 
 			int nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
 			GL.Uniform1(nLoc, 0);
             nLoc = GL.GetUniformLocation(ShaderProgram, "texture2");
             GL.Uniform1(nLoc, 1);
+            nLoc = GL.GetUniformLocation(ShaderProgram, "texture3");
+            GL.Uniform1(nLoc, 2);
+
+            nLoc = GL.GetUniformLocation(ShaderProgram, "thirdtex");
+			bool bKillBlock = m_q3Shader.GetShaderName().Contains("killblock_i4b");
+			GL.Uniform1(nLoc, bKillBlock ? 2 : 1);
+			ShaderHelper.printOpenGLError();
+
+			nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen");
+			ShaderHelper.printOpenGLError();
+			D3Vect dRGBGen = new D3Vect(1.0, 1.0, 1.0);
+			if(bKillBlock)
+			{
+				dRGBGen = m_q3Shader.GetStages()[2].GetRGBGenValue();
+			}
+			GL.Uniform3(nLoc, Convert.ToSingle(dRGBGen.x), Convert.ToSingle(dRGBGen.y), Convert.ToSingle(dRGBGen.z));
+			ShaderHelper.printOpenGLError();
 
             float[] proj = new float[16];
-			float[] modelview = new float[16];
+			float[] modelview = new float[16]; 
 			GL.GetFloat(GetPName.ProjectionMatrix, proj);
 			GL.GetFloat(GetPName.ModelviewMatrix, modelview);
 
@@ -370,6 +436,10 @@ namespace engine
             if (GetMainTexture().GetPath().Contains("models"))
             {
                 GL.Disable(EnableCap.Blend);
+            }
+            if (m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none" || m_q3Shader.GetCull() == "back")
+            {
+				GL.PopAttrib();
             }
         }
 
@@ -394,13 +464,19 @@ namespace engine
 		{
 			if(!ReadCoordinateIndexes(sr, ref nCounter)) return false;
 			if(!ReadVertices(sr, ref nCounter)) return false;
+
 			m_lTexCoordinates.Add(new List<DPoint>());
 			if (!ReadTextureCoordinates(sr, m_lTexCoordinates[0], ref nCounter)) return false;
 			if (m_TextureType == ETextureType.MULTI)
 			{
 				m_lTexCoordinates.Add(new List<DPoint>());
 				if (!ReadTextureCoordinates(sr, m_lTexCoordinates[1], ref nCounter)) return false;
+
+				List<DPoint> lLM = m_lTexCoordinates[0];
+				m_lTexCoordinates.RemoveAt(0);
+				m_lTexCoordinates.Add(lLM);
 			}
+
 			if (!ReadVerticeColors(sr, ref nCounter)) return false;
 			return true;
 		}

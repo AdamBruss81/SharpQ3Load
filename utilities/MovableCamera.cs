@@ -138,7 +138,7 @@ namespace utilities
 
 		private Stack<double> m_UtilityStack = new Stack<double>();
 
-		private const float PHI_EPSILON = .0001F;
+		private const float PHI_EPSILON = .1f;
 
 		private D3Vect m_vCamPos;
 
@@ -319,6 +319,13 @@ namespace utilities
 			m_dPhi = Math.PI / 2;
 		}
 
+		public void TurnOpposite()
+		{
+			PushOrientation();
+			m_dTheta = Math.PI + m_dTheta;
+			m_dPhi = Math.PI - m_dPhi;
+		}
+
         // Move backwards:
         // Store calculation angles m_dPhi and m_theta on a stack.
         // Adjust m_dPhi and m_theta to point camera directly behind where it was just pointing
@@ -401,10 +408,8 @@ namespace utilities
 		// Adjust m_dPhi
 		public void changeVerticalLookDirection(double deltaPhi)
 		{
-			if (m_dPhi + deltaPhi < 0)
-				m_dPhi = PHI_EPSILON;
-			else if (m_dPhi + deltaPhi > Math.PI)
-				m_dPhi = Math.PI - PHI_EPSILON;
+			if (m_dPhi + deltaPhi < GLB.DegToRad * 1) { }
+			else if (m_dPhi + deltaPhi > Math.PI - GLB.DegToRad * 1) { }
 			else
 				m_dPhi = m_dPhi + deltaPhi;
 		}

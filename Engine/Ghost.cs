@@ -76,7 +76,8 @@ namespace engine
 
 		override public void MoveBackward()
 		{
-			m_cam.TurnBack();
+			//m_cam.TurnBack();
+			m_cam.TurnOpposite();
 			m_cam.MoveForward(1.0);
 			m_cam.RestoreOrientation();
 		}

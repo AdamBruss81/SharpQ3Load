@@ -84,10 +84,7 @@ namespace simulator
 		/// </summary>
 		public SimulatorForm()
 		{
-			InitializeComponent();
-
-			// start game clock and let it run. it will never max out the int64
-			engine.GameClock.m_SW.Start();
+			InitializeComponent();			
 
 			m_menu = new MapChooserForm();
 
@@ -253,12 +250,24 @@ namespace simulator
 
 			resetMouseCursor();
 
-			m_bRunning = true;
+			SetGameClock(true, true);
+
 			StartStopRedrawer(true);
 
             m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
             m_swDelayMusicStart.Reset(); // it could be going if you open a map right after opening a different one
             m_swDelayMusicStart.Start();
+		}
+
+		private void SetGameClock(bool bOnOff, bool bRestart)
+		{
+			m_bRunning = bOnOff;
+			if (!m_bRunning) GameClock.m_SW.Stop();
+			else
+			{
+				if (!bRestart) GameClock.m_SW.Start();
+				else GameClock.m_SW.Restart();
+			}
 		}
 
 		/// <summary>
@@ -267,7 +276,7 @@ namespace simulator
 		public void Halt()
 		{
 			// disable timer to stop opengl refreshing and mouse cursor resetting
-			m_bRunning = false;
+			SetGameClock(false, false);
 			StopAllTimers();
 
 			SetCursor(true, true);
@@ -278,7 +287,7 @@ namespace simulator
 			m_bOpeningMap = true;
 
 			// disable timer to stop opengl refreshing and mouse cursor resetting
-			m_bRunning = false;
+			SetGameClock(false, false);
 			StopAllTimers();
 
 			SetCursor(true, false);
@@ -303,7 +312,7 @@ namespace simulator
 			m_bOpeningMap = true;
 
 			// disable timer to stop opengl refreshing and mouse cursor resetting
-			m_bRunning = false;
+			SetGameClock(false, false);
 			StopAllTimers();
 
 			SetCursor(true, false);
@@ -326,7 +335,7 @@ namespace simulator
 			{
 				m_bClosed = true;
 
-				m_bRunning = false;
+				SetGameClock(false, false);
 
 				StopAllTimers();
 
@@ -372,7 +381,6 @@ namespace simulator
 				m_controlMapProgress.Visible = true;
 
 				m_openGLControl.Context.MakeCurrent(null);
-				//Wgl.wglMakeCurrent(IntPtr.Zero, IntPtr.Zero);
 				bw.RunWorkerAsync();
 
 				SetViewMode(false);
@@ -390,7 +398,7 @@ namespace simulator
 				resetMouseCursor();
 
 				// start timer for opengl refreshing
-				m_bRunning = true;
+				SetGameClock(true, false);
 				StartStopRedrawer(true);
                 m_swDelayMusicStart.Start();
 			}
@@ -451,7 +459,7 @@ namespace simulator
 			if (!m_bOpeningMap && m_bPaused && !m_bLoadingMap && !m_bClosed && m_Engine != null)
 			{
 				m_bPaused = false;
-				m_bRunning = true;
+				SetGameClock(true, false);
 
 				StartStopRedrawer(true);
 			}
@@ -466,7 +474,7 @@ namespace simulator
 			if (!m_bOpeningMap && !m_bPaused && !m_bLoadingMap && !m_bClosed && m_Engine != null)
 			{
 				m_bPaused = true;
-				m_bRunning = false;
+				SetGameClock(false, false);
 				StopAllTimers();
 			}
 		}

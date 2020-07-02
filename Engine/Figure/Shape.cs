@@ -36,6 +36,10 @@ namespace engine
 		private Zipper m_zipper = new Zipper();
 		Q3Shader m_q3Shader = new Q3Shader();
 
+		// shader utility members for performance
+		float[] m_uniformFloat3 = { 0f, 0f, 0f };
+		float[] m_uniformFloat2 = { 0f, 0f };
+
 		// modern open gl constructs
 		double[] m_arVertices = null;
 		uint[] m_arIndices = null;
@@ -107,7 +111,12 @@ namespace engine
 
 		public void InitializeLists()
 		{
-			m_q3Shader.ReadShader(GetMainTexture().GetPath());			
+			m_q3Shader.ReadShader(GetMainTexture().GetPath());	
+
+			if(GetMainTexture().GetPath().Contains("toxicskydim"))
+			{
+				int stop = 0;
+			}
 
 			foreach (Texture t in m_lTextures)
 			{
@@ -122,12 +131,28 @@ namespace engine
 			}
 
             // hardcode something for killblock_i4b shader for now to test
-            if (m_q3Shader.GetShaderName().Contains("killblock_i4b"))
-            {
+            if (m_q3Shader.GetShaderName().Contains("killblock_i4b") || m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000"))
+			{
                 if (m_q3Shader.GetStages().Count == 3)
                 {
                     m_lTextures.Add(new Texture(m_q3Shader.GetStages()[2].GetTexturePath()));
 					m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
+                }
+            }
+			else if(m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
+			{
+                if (m_q3Shader.GetStages().Count == 3)
+                {
+                    m_lTextures.Add(new Texture(m_q3Shader.GetStages()[0].GetTexturePath()));
+                    m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
+                }
+            }
+            else if (m_q3Shader.GetShaderName().Contains("toxicskydim"))
+            {
+                if (m_q3Shader.GetStages().Count == 2)
+                {
+                    m_lTextures.Add(new Texture(m_q3Shader.GetStages()[1].GetTexturePath()));
+                    m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
                 }
             }
 
@@ -153,7 +178,7 @@ namespace engine
 				m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
 				m_arVertices[nBase + 4] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[1];
 
-				if(m_lTextures.Count > 1)
+				if(m_lTextures.Count > 1 && !GetMainTexture().GetPath().Contains("toxicskydim"))
 				{
 					// lightmap texture coordinates
                     m_arVertices[nBase + 5] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[0];
@@ -182,7 +207,12 @@ namespace engine
 			}
 
             // create buffers and shader program
-            ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "shader.frag"); 
+			if(GetMainTexture().GetPath().Contains("toxicskydim"))
+			{
+				ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "skies_shader.frag");
+			}
+			else
+				ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "shader.frag"); 
 
             VertexBufferObject = GL.GenBuffer();
             VertexArrayObject = GL.GenVertexArray();
@@ -353,8 +383,8 @@ namespace engine
 		/// </summary>
 		public void Show()
         {
-			if (DontRender()) return;	
-			
+			if (DontRender()) return;
+
 			if(GetMainTexture().GetPath().Contains("models"))
 			{
                 GL.Enable(EnableCap.Blend);
@@ -376,26 +406,39 @@ namespace engine
         
 			GL.BindVertexArray(VertexArrayObject);
 
-			GL.ActiveTexture(TextureUnit.Texture0);
-			GetMainTexture().bindMeRaw();
-			GL.ActiveTexture(TextureUnit.Texture1);
-			if (m_lTextures.Count >= 2)
+			if (GetMainTexture().GetPath().Contains("toxicskydim"))
 			{
-				GetLightmapTexture().bindMeRaw();				
+                GL.ActiveTexture(TextureUnit.Texture0);
+				m_lTextures[0].bindMeRaw(); // not sure I need this
+				GL.ActiveTexture(TextureUnit.Texture1);
+                m_lTextures[1].bindMeRaw();
 			}
 			else
 			{
-				GetMainTexture().bindMeRaw(); // placeholder
+				GL.ActiveTexture(TextureUnit.Texture0);
+				GetMainTexture().bindMeRaw();
+				GL.ActiveTexture(TextureUnit.Texture1);
+				if (m_lTextures.Count >= 2)
+				{
+					GetLightmapTexture().bindMeRaw();
+				}
+				else
+				{
+					GetMainTexture().bindMeRaw(); // placeholder
+				}
+				GL.ActiveTexture(TextureUnit.Texture2);
+				if (m_q3Shader.GetShaderName().Contains("killblock_i4b") || m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000") ||
+					m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
+				{
+					m_lTextures[2].bindMeRaw();
+				}
+				else
+				{
+					GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
+				}
 			}
-			GL.ActiveTexture(TextureUnit.Texture2);
-			if (m_q3Shader.GetShaderName().Contains("killblock_i4b"))
-			{
-				m_lTextures[2].bindMeRaw();
-			}
-			else
-			{
-				GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
-			}
+
+			// SET UNIFORMS ***
 
 			int nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
 			GL.Uniform1(nLoc, 0);
@@ -404,19 +447,67 @@ namespace engine
             nLoc = GL.GetUniformLocation(ShaderProgram, "texture3");
             GL.Uniform1(nLoc, 2);
 
-            nLoc = GL.GetUniformLocation(ShaderProgram, "thirdtex");
-			bool bKillBlock = m_q3Shader.GetShaderName().Contains("killblock_i4b");
-			GL.Uniform1(nLoc, bKillBlock ? 2 : 1);
+            nLoc = GL.GetUniformLocation(ShaderProgram, "custom_shader_controller");
+			int nCustomShaderValue = 1;
+			bool bCustom = m_q3Shader.GetShaderName().Contains("killblock_i4b") || m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000");
+			if (bCustom) nCustomShaderValue = 2;
+			if (m_q3Shader.GetShaderName().Contains("largerblock3b_ow")) nCustomShaderValue = 3;
+			GL.Uniform1(nLoc, nCustomShaderValue);
 			ShaderHelper.printOpenGLError();
+
+			nLoc = GL.GetUniformLocation(ShaderProgram, "tcturb");
+			if (nCustomShaderValue == 3)
+			{
+				m_q3Shader.GetStages()[0].GetTurbValues(ref m_uniformFloat3);
+			}
+			GL.Uniform3(nLoc, 1, m_uniformFloat3);
 
 			nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen");
 			ShaderHelper.printOpenGLError();
-			D3Vect dRGBGen = new D3Vect(1.0, 1.0, 1.0);
-			if(bKillBlock)
+			m_uniformFloat3[0] = 1.0f; m_uniformFloat3[1] = 1.0f; m_uniformFloat3[2] = 1.0f;
+			if(nCustomShaderValue == 2)
 			{
-				dRGBGen = m_q3Shader.GetStages()[2].GetRGBGenValue();
+				m_q3Shader.GetStages()[2].GetRGBGenValue(ref m_uniformFloat3);
 			}
-			GL.Uniform3(nLoc, Convert.ToSingle(dRGBGen.x), Convert.ToSingle(dRGBGen.y), Convert.ToSingle(dRGBGen.z));
+			GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
+
+			if (m_q3Shader.GetShaderName().Contains("toxicskydim"))
+			{
+                nLoc = GL.GetUniformLocation(ShaderProgram, "tcscroll");
+				m_q3Shader.GetStages()[0].GetScrollValues(ref m_uniformFloat2);						
+				GL.Uniform2(nLoc, 1, m_uniformFloat2);
+
+                nLoc = GL.GetUniformLocation(ShaderProgram, "tcscale");
+				m_q3Shader.GetStages()[0].GetScaleValues(ref m_uniformFloat2);
+				GL.Uniform2(nLoc, 1, m_uniformFloat2);
+
+                nLoc = GL.GetUniformLocation(ShaderProgram, "tcscroll2");
+                m_q3Shader.GetStages()[1].GetScrollValues(ref m_uniformFloat2);
+                GL.Uniform2(nLoc, 1, m_uniformFloat2);
+
+                nLoc = GL.GetUniformLocation(ShaderProgram, "tcscale2");
+                m_q3Shader.GetStages()[1].GetScaleValues(ref m_uniformFloat2);
+                GL.Uniform2(nLoc, 1, m_uniformFloat2);
+            }
+			else
+			{
+				if (m_q3Shader.GetStages().Count > 0)
+				{
+					nLoc = GL.GetUniformLocation(ShaderProgram, "tcscroll");
+					m_q3Shader.GetStages()[0].GetScrollValues(ref m_uniformFloat2);
+					GL.Uniform2(nLoc, 1, m_uniformFloat2);
+
+					nLoc = GL.GetUniformLocation(ShaderProgram, "tcscale");
+					m_q3Shader.GetStages()[0].GetScaleValues(ref m_uniformFloat2);
+					GL.Uniform2(nLoc, 1, m_uniformFloat2);
+				}
+            }
+
+			nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
+			GL.Uniform1(nLoc, GameClock.GetElapsedS());
+
+			// END SET UNIFORMS ***
+
 			ShaderHelper.printOpenGLError();
 
             float[] proj = new float[16];

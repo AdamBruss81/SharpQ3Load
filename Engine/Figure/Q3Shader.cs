@@ -100,6 +100,17 @@ namespace engine
             return s;
         }
 
+        private string GetTokensAfterSecond(string[] tokens)
+        {
+            string s = "";
+            for (int i = 2; i < tokens.Length; i++)
+            {
+                s += tokens[i];
+                if (i < tokens.Length - 1) s += " ";
+            }
+            return s;
+        }
+
         private bool IsMapTexture(string s)
         {
             return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures")) && !s.Contains("clampmap");
@@ -162,7 +173,7 @@ namespace engine
                             // begin stage found
                             else if (sInsideTargetShaderLine.Contains("{"))
                             {
-                                m_lStages.Add(new Q3ShaderStage());
+                                m_lStages.Add(new Q3ShaderStage(this));
                                 nCurlyCounter++;
                             }
                             // read stage items
@@ -195,6 +206,24 @@ namespace engine
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("tcmod scroll"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetTCModScroll(GetTokensAfterSecond(tokens));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("tcmod turb"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetTCModTurb(GetTokensAfterSecond(tokens));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("tcmod scale"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetTCModeScale(GetTokensAfterSecond(tokens));
                             }
                             else if(sInsideTargetShaderLine.Contains("$lightmap"))
                             {

@@ -813,6 +813,11 @@ namespace engine
 			bool bCollision = false;
 
 			m_lAllIntersections.Clear();
+
+			// thread this loop. it's very slow i think. when moving forward you do 10 reps of this loop
+			// when just standing still you do 5
+			// so for moving forward that's 10 you have to wait for. if i thread on my 4 proc laptop that goes
+			// down to 3 reps to wait for
 			for (int i = 0; i < m_ld3Head.Count; i++)
 			{
 				m_RayCollider.Vertice1 = m_ld3Head[i];
@@ -825,6 +830,7 @@ namespace engine
 
 				m_hCollidedFaceContainingBoundingBoxesUtil.Clear();
 				m_nTraversalCounter = 0;
+
 				GatherLeafBoundingBoxesToTest(m_BSPRootBoundingBox, m_hCollidedFaceContainingBoundingBoxesUtil);
 
 				foreach (BoundingBox b in m_hCollidedFaceContainingBoundingBoxesUtil)
@@ -846,7 +852,7 @@ namespace engine
 						}
 					}
 				}
-				// I wish I could get out of here when one collision happened but if I do things get screwed up on stairs at the least.
+				// I wish I could get out of here when one collision happened but if I do, things get screwed up on stairs at the least.
 				// I'm not sure why... It must somehow have to deal with sorting the intersections below but I can't find anyone
 				// who cares much about that sorted list. 
 				//if (eSourceMovement == MovableCamera.DIRECTION.DOWN && bCollision) break;

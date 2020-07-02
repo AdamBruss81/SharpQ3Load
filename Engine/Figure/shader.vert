@@ -5,27 +5,20 @@ layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in vec2 aTexCoord2;
 layout(location = 3) in vec4 aColor;
 
-out vec2 texCoord;
-out vec2 texCoord2;
+out vec2 mainTexCoord;
+out vec2 lightmapTexCoord;
 out vec4 color;
-
-// q3 shader variables
-flat out int test;
+out vec3 vertice;
 
 uniform mat4 modelview;
 uniform mat4 proj;
 
-// q3 shader variables
-uniform int thirdtex;
-
 void main(void)
 {
-    texCoord = aTexCoord;
-    texCoord2 = aTexCoord2;
+    mainTexCoord = aTexCoord;
+    lightmapTexCoord = aTexCoord2;
     color = aColor;
-
-    // q3 shader variables
-    test = thirdtex;
+    vertice = aPosition;
 
     gl_Position = proj * modelview * vec4(aPosition, 1.0);
 }

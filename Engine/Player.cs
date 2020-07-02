@@ -831,10 +831,13 @@ namespace engine
 
 				if (bPlayStep)
 				{
-					if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.DEFAULT)
-						m_SoundManager.PlayEffect(SoundManager.EEffects.STEP3);
-					else if(m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.METAL)
-						m_SoundManager.PlayEffect(SoundManager.EEffects.CLANK3);
+					if (m_Intersection.Face != null)
+					{
+						if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.DEFAULT)
+							m_SoundManager.PlayEffect(SoundManager.EEffects.STEP3);
+						else if (m_Intersection.Face.GetParentShape().GetQ3Shader().GetStepType() == Q3Shader.EStepType.METAL)
+							m_SoundManager.PlayEffect(SoundManager.EEffects.CLANK3);
+					}
 				}
             }
             // ===

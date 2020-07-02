@@ -155,7 +155,7 @@ namespace simulator
                     LOGGER.Debug("key down: " + e.KeyCode);
 
                     if (e.KeyData == Keys.F1 && m_Engine.GetClass() != Engine.EEngineType.PLAYER)
-                    {
+                    {                                          
                         m_Engine.PreSwitchModes();
                         Player p = new Player(m_Engine);
                         p.SetSoundManager(m_SoundManager);

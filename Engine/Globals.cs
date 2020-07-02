@@ -177,5 +177,6 @@ namespace engine
 	{
 		public static System.Diagnostics.Stopwatch m_SW = new System.Diagnostics.Stopwatch();
 		public static long GetElapsedMS() { return m_SW.ElapsedMilliseconds; }
+		public static float GetElapsedS() { return (float)m_SW.ElapsedMilliseconds / 1000.0f; }
 	}
 }

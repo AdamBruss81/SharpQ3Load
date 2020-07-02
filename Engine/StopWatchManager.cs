@@ -61,11 +61,15 @@ namespace engine
         {
             if(bAccel)
             {
-                return m_dictMaxAccelMS[dir];
+                if (m_dictMaxAccelMS.ContainsKey(dir))
+                    return m_dictMaxAccelMS[dir];
+                else return 0;
             }
             else
             {
-                return m_dictMaxDecelMS[dir];
+                if (m_dictMaxDecelMS.ContainsKey(dir))
+                    return m_dictMaxDecelMS[dir];
+                else return 0;
             }
         }
 
@@ -186,12 +190,13 @@ namespace engine
         }
 
         public void HandleStartedMoving(MoveStates startedMovingStates, Dictionary<MovableCamera.DIRECTION, double> dictLastMoveScales)
-        {
+        {        
             if (startedMovingStates.GetState(MovableCamera.DIRECTION.FORWARD))
             {
                 m_swPostMoveForwardDecelTimer.Reset();
 
-                m_dictMaxAccelMS[MovableCamera.DIRECTION.FORWARD] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.FORWARD] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
+                if (dictLastMoveScales.ContainsKey(MovableCamera.DIRECTION.FORWARD))
+                    m_dictMaxAccelMS[MovableCamera.DIRECTION.FORWARD] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.FORWARD] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
 
                 m_swStartMoveForwardAccelTimer.Start();
             }
@@ -199,7 +204,8 @@ namespace engine
             {
                 m_swPostMoveBackDecelTimer.Reset();
 
-                m_dictMaxAccelMS[MovableCamera.DIRECTION.BACK] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.BACK] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
+                if (dictLastMoveScales.ContainsKey(MovableCamera.DIRECTION.BACK))
+                    m_dictMaxAccelMS[MovableCamera.DIRECTION.BACK] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.BACK] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
 
                 m_swStartMoveBackAccelTimer.Start();
             }
@@ -209,7 +215,8 @@ namespace engine
 
                 // there's a bug here sometimes that causes a crash. a dictionary entry is not present and we assume it is.
                 // fix at some point
-                m_dictMaxAccelMS[MovableCamera.DIRECTION.LEFT] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.LEFT] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
+                if(dictLastMoveScales.ContainsKey(MovableCamera.DIRECTION.LEFT))
+                    m_dictMaxAccelMS[MovableCamera.DIRECTION.LEFT] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.LEFT] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
 
                 m_swStartMoveLeftAccelTimer.Start();
             }
@@ -217,10 +224,12 @@ namespace engine
             {
                 m_swPostMoveRightDecelTimer.Reset();
 
-                m_dictMaxAccelMS[MovableCamera.DIRECTION.RIGHT] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.RIGHT] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
+                if(dictLastMoveScales.ContainsKey(MovableCamera.DIRECTION.RIGHT))
+                    m_dictMaxAccelMS[MovableCamera.DIRECTION.RIGHT] = (mc_dDecelAccelTimeMS - (dictLastMoveScales[MovableCamera.DIRECTION.RIGHT] / m_cam.GetStandardMovementScale() * mc_dDecelAccelTimeMS));
 
                 m_swStartMoveRightAccelTimer.Start();
             }
+            
             if(startedMovingStates.GetState(MovableCamera.DIRECTION.UP))
             {
                 if (!m_swJumpTimer.IsRunning && !m_swFallTimer.IsRunning) {

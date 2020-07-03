@@ -123,7 +123,6 @@ namespace engine
             vals[1] = m_scroll.t;
         }
 
-        // pre calculate rgbgen double inputs once instead of doing it every time in here
         public void GetRGBGenValue(ref float[] rgb)
         {
             if (m_rgbgen.type == "wave")

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 
 namespace engine
 {
@@ -14,13 +15,22 @@ namespace engine
         private Zipper m_zipper = new Zipper();
         string m_sShaderName = "";
         string m_sCull = "";
+        List<Texture> m_lStageTextures = new List<Texture>(); // ordered to match stages in q3 shader top to bottom. 
+        // this list will change after init for effects like animmap
+        Shape m_pParent = null;
 
-        public Q3Shader()
+        // static methods
+        public static string GetSampler2DName() { return "sampler2D"; }
+        // ***
+
+        public Q3Shader(Shape parent)
         {
-
-        }
+            m_pParent = parent;
+        }        
 
         public string GetShaderName() { return m_sShaderName; }
+
+        public List<Texture> GetStageTexturesPerFrame() { return m_lStageTextures; }
 
         public string GetShaderBasedMainTextureFullPath()
         {
@@ -114,6 +124,207 @@ namespace engine
         private bool IsMapTexture(string s)
         {
             return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures")) && !s.Contains("clampmap");
+        }
+
+        public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL)
+        {
+            string sFullPath;
+
+            if (bLightmap)
+            {
+                sFullPath = m_zipper.ExtractLightmap(sURL);
+            }
+            else
+            {
+                sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
+
+                if (!File.Exists(sFullPath))
+                {
+                    // try to find texture as tga or jpg
+                    // when quake 3 was near shipping, id had to convert some tgas to jpg to reduce pak0 size					
+                    if (Path.GetExtension(sFullPath) == ".jpg")
+                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
+                    else
+                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"));
+
+                    if (!File.Exists(sFullPath))
+                    {
+                        if (sFullPath.Contains("nightsky_xian_dm1"))
+                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
+                    }
+                }
+            }
+
+            return sFullPath;
+        }
+
+        /// <summary>
+        /// Convert quake3 shader into GLSL code. There is already some content in the glsl shader in the stringbuilder. See who calls this function.
+        /// This functions puts in the q3 shader specific content.
+        /// </summary>
+        /// <param name="sb"></param>
+        public void GenerateGLSL(System.Text.StringBuilder sb)
+        {
+            // add samplers to frag shader based on stage count
+            for(int i = 0; i < m_lStages.Count; i++)
+            {
+                sb.AppendLine("uniform " + GetSampler2DName() + " texture" + Convert.ToString(i) + ";");
+            }
+
+            bool bAddTime = false;
+
+            // add uniforms
+            for(int i = 0; i < m_lStages.Count; i++)
+            {
+                Q3ShaderStage stage = m_lStages[i];
+                string sIndex = Convert.ToString(i);
+
+                // rgbgen
+                if(!stage.IsRGBGENIdentity())
+                {
+                    sb.AppendLine("uniform vec3 rgbgen" + sIndex + ";");
+                }
+
+                // tcmod
+                if(stage.GetTCMODS().Count > 0) // there are tcmods
+                {
+                    bAddTime = true;
+                    for(int j = 0; j < stage.GetTCMODS().Count; j++) // this order doesn't matter for the uniform declarations
+                    {
+                        switch(stage.GetTCMODS()[j].GetModType())
+                        {
+                            case TCMOD.ETYPE.SCALE: sb.AppendLine("uniform vec2 scale" + sIndex + ";"); break;
+                            case TCMOD.ETYPE.SCROLL: sb.AppendLine("uniform vec2 scroll" + sIndex + ";"); break;
+                            case TCMOD.ETYPE.TURB: sb.AppendLine("uniform vec3 turb" + sIndex + ";"); break;
+                        }
+                    }                    
+                }
+            }
+
+            // I'm trying to make these auto generated glsl shaders as minimal as possible to make debugging and reading them easier. So
+            // only add this time uniform if it's actually used.
+            if(bAddTime) sb.AppendLine("uniform float timeS;");
+
+            // create main function
+            sb.AppendLine("");
+            sb.AppendLine("void main()");
+            sb.AppendLine("{");
+
+            // define tcmods
+            for (int i = 0; i < m_lStages.Count; i++)
+            {
+                Q3ShaderStage stage = m_lStages[i];
+                string sIndex = Convert.ToString(i);
+                string sTexmod = "texmod" + sIndex;
+
+                if (stage.GetTCMODS().Count > 0)
+                {
+                    sb.AppendLine("vec2 " + sTexmod + " = mainTexCoord;");
+                }
+
+                for (int j = 0; j < stage.GetTCMODS().Count; j++)
+                {
+                    switch (stage.GetTCMODS()[j].GetModType())
+                    {
+                        case TCMOD.ETYPE.SCROLL:
+                            {
+                                sb.AppendLine(sTexmod + ".x += scroll" + sIndex + "[0] * timeS;");
+                                sb.AppendLine(sTexmod + ".y += scroll" + sIndex + "[1] * timeS;");
+                                break;
+                            }
+                        case TCMOD.ETYPE.SCALE:
+                            {
+                                sb.AppendLine(sTexmod + ".x *= scale" + sIndex + "[0];");
+                                sb.AppendLine(sTexmod + ".y *= scale" + sIndex + "[1];");
+                                break;
+                            }
+                        case TCMOD.ETYPE.TURB:
+                            {
+                                sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
+                                sb.AppendLine(sTexmod + ".x += sin( ( (vertice.x + vertice.z) * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
+                                sb.AppendLine(sTexmod + ".x += sin( (vertice.y * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
+                                break;
+                            }
+                    }
+                }
+            }
+
+            // define texture texels
+            for (int i = 0; i < m_lStages.Count; i++)
+            {
+                Q3ShaderStage stage = m_lStages[i];
+                string sIndex = Convert.ToString(i);
+
+                if (stage.GetLightmap())
+                {
+                    Debug.Assert(m_pParent.GetLightmapTexture() != null);
+
+                    m_lStageTextures.Add(m_pParent.GetLightmapTexture());
+
+                    sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", lightmapTexCoord);");
+                }
+                else if (!string.IsNullOrEmpty(stage.GetTexturePath())) 
+                {
+                    m_lStageTextures.Add(new Texture(stage.GetTexturePath()));
+                    m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, stage.GetTexturePath()));
+
+                    string sTexCoordName = "mainTexCoord";
+                    if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
+
+                    sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
+                }
+            }
+
+            // define rgbgen vec4s to use in outputColor below
+            for(int i = 0; i < m_lStages.Count; i++)
+            {
+                if(!m_lStages[i].IsRGBGENIdentity())
+                {
+                    sb.AppendLine("vec4 rgbmod" + Convert.ToString(i) + " = vec4(rgbgen" + Convert.ToString(i) + ", 1.0);");
+                }
+            }        
+
+            // define outputColor line
+            sb.Append("outputColor = clamp(");
+            for(int i = 0; i < m_lStages.Count; i++)
+            {
+                Q3ShaderStage stage = m_lStages[i];
+                string sIndex = Convert.ToString(i);
+
+                if (m_lStages.Count == 1 || i == 0)
+                {
+                    if(!stage.IsRGBGENIdentity())
+                    {
+                        sb.Append("(texel" + sIndex + " * rgbmod" + sIndex + ")");
+                    }
+                    else sb.Append("texel" + sIndex);
+                }
+                else
+                {
+                    Debug.Assert(m_lStages.Count > 1);
+
+                    string sub = "texel" + sIndex;
+                    if (!stage.IsRGBGENIdentity()) sub = "(texel" + sIndex + " * rgbmod" + sIndex + ")";
+
+                    if (stage.GetBlendFunc() == "gl_dst_color gl_zero") // src * dest
+                    {
+                        sb.Append(" * " + sub);
+                    }
+                    else if(stage.GetBlendFunc() == "gl_one gl_one") // src + dest
+                    {
+                        sb.Append(" + " + sub);
+                    }
+                }
+
+                if(stage.GetLightmap())
+                {
+                    sb.Append(" * 3.0");
+                }
+            }
+            sb.Append(", 0.0, 1.0);\r\n");
+
+            // end main
+            sb.AppendLine("}");
         }
 
         /// <summary>

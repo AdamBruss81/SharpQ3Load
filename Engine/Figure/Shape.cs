@@ -34,8 +34,7 @@ namespace engine
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
 		private Zipper m_zipper = new Zipper();
-		Q3Shader m_q3Shader = new Q3Shader();
-		string m_sGLSLFragShader = "";
+		Q3Shader m_q3Shader = null;
 
 		// shader utility members for performance
 		float[] m_uniformFloat3 = { 0f, 0f, 0f };
@@ -59,7 +58,7 @@ namespace engine
 
 		ETextureType m_TextureType;
 
-        public Shape() { }
+        public Shape() { m_q3Shader = new Q3Shader(this); }
 
 		public void Delete()
 		{
@@ -77,38 +76,6 @@ namespace engine
 		{
 			return m_q3Shader;
 		}
-
-		private string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL)
-		{
-            string sFullPath;
-
-			if(bLightmap)
-			{
-				sFullPath = m_zipper.ExtractLightmap(sURL);
-			}
-			else
-			{
-				sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
-				
-				if(!File.Exists(sFullPath))
-				{
-                    // try to find texture as tga or jpg
-					// when quake 3 was near shipping, id had to convert some tgas to jpg to reduce pak0 size					
-					if(Path.GetExtension(sFullPath) == ".jpg")
-						sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
-					else
-						sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"));
-
-					if (!File.Exists(sFullPath))
-                    {
-                        if (sFullPath.Contains("nightsky_xian_dm1"))
-                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
-                    }
-                }				
-            }   
-			
-			return sFullPath;
-        }
 
 		public string CreateGLSLFragShader()
 		{			
@@ -134,24 +101,26 @@ namespace engine
 				// helper variables like the game time
 
 				// texture uniform samplers
+
+				m_q3Shader.GenerateGLSL(sb);
 			}
 			else
 			{
 				// default shader for lightmapped or vert colored faces
 
 				// texture uniform samplers
-				sb.AppendLine("uniform sampler2D texture1;"); // main texture
-				if(m_lTextures.Count > 0) sb.AppendLine("uniform sampler2D texture2;");
+				sb.AppendLine("uniform " + Q3Shader.GetSampler2DName() + " texture0;"); // main texture
+				if(m_lTextures.Count > 0) sb.AppendLine("uniform " + Q3Shader.GetSampler2DName() + " texture1;");
 
 				sb.AppendLine("void main()");
 				sb.AppendLine("{");
 				sb.AppendLine("if (lightmapTexCoord.x != -1.0) {");
-				sb.AppendLine("vec4 main_tex_texel = texture(texture1, mainTexCoord);");
-				sb.AppendLine("vec4 lightmap_texel = texture(texture2, lightmapTexCoord);");
+				sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
+				sb.AppendLine("vec4 lightmap_texel = texture(texture1, lightmapTexCoord);");
 				sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * 3.0, 0.0, 1.0);");
 				sb.AppendLine("}");
 				sb.AppendLine("else {");
-				sb.AppendLine("vec4 texel0 = texture(texture1, mainTexCoord);");
+				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");
 				sb.AppendLine("outputColor = texel0 * color * 2.0;");
 				sb.AppendLine("}");
 				sb.AppendLine("}");
@@ -167,38 +136,21 @@ namespace engine
 			foreach (Texture t in m_lTextures)
 			{
 				if (GetMainTexture() == t) {
-					string sNonShaderTexture = GetPathToTextureNoShaderLookup(false, t.GetPath());
+					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath());
 					if(File.Exists(sNonShaderTexture))
 						t.SetTexture(sNonShaderTexture);
 					else
 						t.SetTexture(m_q3Shader.GetShaderBasedMainTextureFullPath());
 				} 
-				else t.SetTexture(GetPathToTextureNoShaderLookup(true, t.GetPath()));
+				else t.SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath()));
 			}
-
-            // hardcode something for killblock_i4b shader for now to test
-            if (m_q3Shader.GetShaderName().Contains("killblock_i4b") || m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000"))
-			{
-                if (m_q3Shader.GetStages().Count == 3)
-                {
-                    m_lTextures.Add(new Texture(m_q3Shader.GetStages()[2].GetTexturePath()));
-					m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
-                }
-            }
-			else if(m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
-			{
-                if (m_q3Shader.GetStages().Count == 3)
-                {
-                    m_lTextures.Add(new Texture(m_q3Shader.GetStages()[0].GetTexturePath()));
-                    m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
-                }
-            }
-            else if (m_q3Shader.GetShaderName().Contains("toxicskydim"))
+         
+            if (m_q3Shader.GetShaderName().Contains("toxicskydim"))
             {
                 if (m_q3Shader.GetStages().Count == 2)
                 {
                     m_lTextures.Add(new Texture(m_q3Shader.GetStages()[1].GetTexturePath()));
-                    m_lTextures[m_lTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
+                    m_lTextures[m_lTextures.Count - 1].SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(false, m_lTextures[m_lTextures.Count - 1].GetPath()));
                 }
             }
 
@@ -252,6 +204,8 @@ namespace engine
 				m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
 			}
 
+			string autoGenereatedGLSL = "";
+
 			// create shape specific shaders here to use instead of ones on file
 			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
@@ -265,8 +219,20 @@ namespace engine
 					ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "skies_shader.frag");
 				}
 				else
-					ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "shader.frag");
+				{
+					if (m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000") || m_q3Shader.GetShaderName().Contains("killblock_i4b") ||
+						m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
+					{	
+						autoGenereatedGLSL = CreateGLSLFragShader();
+						ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL);
+					}
+					else 
+						ShaderProgram = ShaderHelper.CreateProgram("shader.vert", "shader.frag");
+				}
 			}
+
+			if(!string.IsNullOrEmpty(autoGenereatedGLSL))
+				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".txt", autoGenereatedGLSL);
 
             VertexBufferObject = GL.GenBuffer();
             VertexArrayObject = GL.GenVertexArray();
@@ -436,7 +402,7 @@ namespace engine
 		/// of texture units.
 		/// </summary>
 		public void Show()
-        {
+         {
 			if (DontRender()) return;
 
 			// old school open gl functions ***
@@ -469,6 +435,23 @@ namespace engine
 				GL.ActiveTexture(TextureUnit.Texture1);
                 m_lTextures[1].bindMeRaw();
 			}
+			else if(m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000") || m_q3Shader.GetShaderName().Contains("killblock_i4b") ||
+				m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
+			{
+				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
+				{
+					switch(i)
+					{
+						case 0: GL.ActiveTexture(TextureUnit.Texture0); break;
+						case 1: GL.ActiveTexture(TextureUnit.Texture1); break;
+						case 2: GL.ActiveTexture(TextureUnit.Texture2); break;
+					}
+					m_q3Shader.GetStageTexturesPerFrame()[i].bindMeRaw(); // assuming every stage has a texture but may not be true always. not sure.
+
+					int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
+					GL.Uniform1(nLocation, i);
+                }
+			}
 			else
 			{
 				GL.ActiveTexture(TextureUnit.Texture0);
@@ -483,15 +466,8 @@ namespace engine
 					GetMainTexture().bindMeRaw(); // placeholder
 				}
 				GL.ActiveTexture(TextureUnit.Texture2);
-				if (m_q3Shader.GetShaderName().Contains("killblock_i4b") || m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000") ||
-					m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
-				{
-					m_lTextures[2].bindMeRaw();
-				}
-				else
-				{
-					GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
-				}
+				GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
+
 			}
 
 			// SET UNIFORMS ***
@@ -499,28 +475,38 @@ namespace engine
 
 			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-                nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
+                nLoc = GL.GetUniformLocation(ShaderProgram, "texture0");
                 GL.Uniform1(nLoc, 0);
 				if(m_lTextures.Count > 1)
 				{
-                    nLoc = GL.GetUniformLocation(ShaderProgram, "texture2");
+                    nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
                     GL.Uniform1(nLoc, 1);
                 }
             }
+			else if(m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000") || m_q3Shader.GetShaderName().Contains("killblock_i4b") ||
+				m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
+			{
+				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
+				{
+					if(!m_q3Shader.GetStages()[i].IsRGBGENIdentity())
+					{
+						nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen" + Convert.ToString(i));
+						m_q3Shader.GetStages()[i].GetRGBGenValue(ref m_uniformFloat3);
+						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
+					}
+				}
+			}
 			else
 			{
-				nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
+				nLoc = GL.GetUniformLocation(ShaderProgram, "texture0");
 				GL.Uniform1(nLoc, 0);
-				nLoc = GL.GetUniformLocation(ShaderProgram, "texture2");
+				nLoc = GL.GetUniformLocation(ShaderProgram, "texture1");
 				GL.Uniform1(nLoc, 1);
-				nLoc = GL.GetUniformLocation(ShaderProgram, "texture3");
+				nLoc = GL.GetUniformLocation(ShaderProgram, "texture2");
 				GL.Uniform1(nLoc, 2);
 
                 nLoc = GL.GetUniformLocation(ShaderProgram, "custom_shader_controller");
                 int nCustomShaderValue = 1;
-                bool bCustom = m_q3Shader.GetShaderName().Contains("killblock_i4b") || m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000");
-                if (bCustom) nCustomShaderValue = 2;
-                if (m_q3Shader.GetShaderName().Contains("largerblock3b_ow")) nCustomShaderValue = 3;
                 GL.Uniform1(nLoc, nCustomShaderValue);
                 ShaderHelper.printOpenGLError();
 

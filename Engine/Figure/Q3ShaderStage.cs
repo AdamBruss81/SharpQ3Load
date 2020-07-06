@@ -1,25 +1,38 @@
-﻿using utilities;
-using System;
+﻿using System;
+using System.Collections.Generic;
 
 namespace engine
 {
-    class TCTURB
+    public abstract class TCMOD
+    {
+        public enum ETYPE { SCROLL, SCALE, TURB };
+
+        public abstract ETYPE GetModType();
+    }
+
+    class TCTURB : TCMOD
     {
         public float amplitude = 0f;
         public float phase = 0f;
         public float frequency = 0f;
+
+        public override ETYPE GetModType() { return ETYPE.TURB; }
     }
 
-    class TCSCROLL
+    class TCSCROLL : TCMOD
     {
         public float s = 0f;
         public float t = 0f;
+
+        public override ETYPE GetModType() { return ETYPE.SCROLL; }
     }
 
-    class TCSCALE
+    class TCSCALE : TCMOD
     {
         public float s = 1f;
         public float t = 1f;
+
+        public override ETYPE GetModType() { return ETYPE.SCALE; }
     }
 
     class RGBGEN
@@ -45,10 +58,18 @@ namespace engine
         TCSCROLL m_scroll = new TCSCROLL();
         RGBGEN m_rgbgen = new RGBGEN();
         Q3Shader m_ParentShader = null;
+        List<TCMOD> m_TCMODS = new List<TCMOD>();
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
+        public bool IsRGBGENIdentity() 
+        { 
+            return m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type); 
+        }
+
+        public List<TCMOD> GetTCMODS() { return m_TCMODS; }
+
         public void SetRGBGEN(string s)
         {
             string[] tokens = s.Split(' ');
@@ -73,9 +94,12 @@ namespace engine
             }
         }
 
+        public string GetBlendFunc() { return m_sBlendFunc; }
+
         public void SetTexturePath(string s) { m_sTexturePath = s; }
         public void SetAnimmap(string s) { m_sAnimmap = s; }
         public void SetLightmap(bool b) { m_bLightmap = b; }
+        public bool GetLightmap() { return m_bLightmap; }
         public void SetTCModScroll(string s) 
         {
             string[] tokens = s.Split(' ');
@@ -83,6 +107,8 @@ namespace engine
                 m_scroll.s = Convert.ToSingle(tokens[0]);
             if (tokens[1] != "0")
                 m_scroll.t = Convert.ToSingle(tokens[1]);
+
+            m_TCMODS.Add(m_scroll);
         }
         public void SetTCModTurb(string s) 
         {
@@ -93,13 +119,17 @@ namespace engine
                 m_turb.amplitude = Convert.ToSingle(tokens[1]); // amp
                 m_turb.phase = Convert.ToSingle(tokens[2]); // phase
                 m_turb.frequency = Convert.ToSingle(tokens[3]); // freq
-            }        
+            }
+
+            m_TCMODS.Add(m_turb);
         }
         public void SetTCModeScale(string s) 
         {
             string[] tokens = s.Split(' ');
             m_scale.s = Convert.ToSingle(tokens[0]);
             m_scale.t = Convert.ToSingle(tokens[1]);
+
+            m_TCMODS.Add(m_scale);
         }
 
         public string GetTexturePath() { return m_sTexturePath; }

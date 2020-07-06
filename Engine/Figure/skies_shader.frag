@@ -5,7 +5,7 @@ out vec4 outputColor;
 in vec2 mainTexCoord;
 in vec2 lightmapTexCoord; // probably unused in here
 in vec4 color; // probably unused in here
-in vec3 position;
+in vec3 vertice;
 
 // q3 shader variables
 uniform vec3 rgbgen;
@@ -17,9 +17,9 @@ uniform vec2 tcscale2; // s, t
 // helper variables
 uniform float timeS;
 
+uniform sampler2D texture0;
 uniform sampler2D texture1;
-uniform sampler2D texture2;
-uniform sampler2D texture3; // probably unused in here
+uniform sampler2D texture2; // probably unused in here
 
 void main()
 {
@@ -31,7 +31,7 @@ void main()
     texmod.x /= tcscale[0];
     texmod.y /= tcscale[1];
 
-    vec4 sky_texel1 = texture(texture1, texmod);
+    vec4 sky_texel1 = texture(texture0, texmod);
 
     texmod = mainTexCoord;
     // scroll
@@ -41,7 +41,7 @@ void main()
     texmod.x /= tcscale2[0];
     texmod.y /= tcscale2[1];
 
-    vec4 sky_texel2 = texture(texture2, texmod);
+    vec4 sky_texel2 = texture(texture1, texmod);
 
     outputColor = sky_texel1 + sky_texel2;
 }

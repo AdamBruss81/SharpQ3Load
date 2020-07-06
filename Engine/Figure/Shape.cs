@@ -486,6 +486,7 @@ namespace engine
 			else if(m_q3Shader.GetShaderName().Contains("ironcrosslt2_5000") || m_q3Shader.GetShaderName().Contains("killblock_i4b") ||
 				m_q3Shader.GetShaderName().Contains("largerblock3b_ow"))
 			{
+				// rgbgen
 				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
 					if(!m_q3Shader.GetStages()[i].IsRGBGENIdentity())
@@ -495,8 +496,50 @@ namespace engine
 						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
 					}
 				}
-			}
-			else
+
+				// tcmods
+				bool bTCMODS = false;
+				for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+                {
+                    Q3ShaderStage stage = m_q3Shader.GetStages()[i];
+
+                    for (int j = 0; j < stage.GetTCMODS().Count; j++)
+                    {
+						bTCMODS = true;
+						TCMOD mod = stage.GetTCMODS()[j];
+						switch(mod.GetModType())
+						{
+							case TCMOD.ETYPE.SCALE:
+								{
+									nLoc = GL.GetUniformLocation(ShaderProgram, "scale" + Convert.ToString(i));
+                                    stage.GetScaleValues(ref m_uniformFloat2);
+                                    GL.Uniform2(nLoc, 1, m_uniformFloat2);
+									break;
+                                }
+							case TCMOD.ETYPE.SCROLL:
+								{
+                                    nLoc = GL.GetUniformLocation(ShaderProgram, "scroll" + Convert.ToString(i));
+                                    stage.GetScrollValues(ref m_uniformFloat2);
+                                    GL.Uniform2(nLoc, 1, m_uniformFloat2);
+									break;
+                                }
+							case TCMOD.ETYPE.TURB:
+								{
+									nLoc = GL.GetUniformLocation(ShaderProgram, "turb" + Convert.ToString(i));
+									stage.GetTurbValues(ref m_uniformFloat3);                                
+									GL.Uniform3(nLoc, 1, m_uniformFloat3);
+									break;
+								}
+						}
+                    }
+                }
+				if (bTCMODS)
+				{
+					nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
+					GL.Uniform1(nLoc, GameClock.GetElapsedS());
+				}
+            }
+            else
 			{
 				nLoc = GL.GetUniformLocation(ShaderProgram, "texture0");
 				GL.Uniform1(nLoc, 0);

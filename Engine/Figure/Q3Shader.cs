@@ -242,7 +242,7 @@ namespace engine
                             {
                                 sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
                                 sb.AppendLine(sTexmod + ".x += sin( ( (vertice.x + vertice.z) * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
-                                sb.AppendLine(sTexmod + ".x += sin( (vertice.y * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
+                                sb.AppendLine(sTexmod + ".y += sin( (vertice.y * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
                                 break;
                             }
                     }
@@ -282,49 +282,58 @@ namespace engine
                 {
                     sb.AppendLine("vec4 rgbmod" + Convert.ToString(i) + " = vec4(rgbgen" + Convert.ToString(i) + ", 1.0);");
                 }
-            }        
+            }
 
             // define outputColor line
-            sb.Append("outputColor = clamp(");
+            System.Text.StringBuilder sbOutputline = new System.Text.StringBuilder();           
             for(int i = 0; i < m_lStages.Count; i++)
             {
                 Q3ShaderStage stage = m_lStages[i];
+                string sLightmapScale = stage.GetLightmap() ? " * 3.0" : "";
+
                 string sIndex = Convert.ToString(i);
+                string sTexel = "texel" + sIndex;
 
                 if (m_lStages.Count == 1 || i == 0)
                 {
-                    if(!stage.IsRGBGENIdentity())
+                    if (!stage.IsRGBGENIdentity())
                     {
-                        sb.Append("(texel" + sIndex + " * rgbmod" + sIndex + ")");
+                        sb.Append("outputColor = (" + sTexel + " * rgbmod" + sIndex + ")" + sLightmapScale);
                     }
-                    else sb.Append("texel" + sIndex);
+                    else sb.Append("outputColor = (" + sTexel + ")" + sLightmapScale);
                 }
                 else
                 {
                     Debug.Assert(m_lStages.Count > 1);
 
-                    string sub = "texel" + sIndex;
-                    if (!stage.IsRGBGENIdentity()) sub = "(texel" + sIndex + " * rgbmod" + sIndex + ")";
+                    string sub = sTexel;
+                    if (!stage.IsRGBGENIdentity()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
 
                     if (stage.GetBlendFunc() == "gl_dst_color gl_zero") // src * dest
                     {
-                        sb.Append(" * " + sub);
+                        sb.Append("outputColor *= " + sub + sLightmapScale);
                     }
                     else if(stage.GetBlendFunc() == "gl_one gl_one") // src + dest
                     {
-                        sb.Append(" + " + sub);
+                        sb.Append("outputColor += " + sub + sLightmapScale);
                     }
+                    else if(stage.GetBlendFunc() == "gl_src_alpha gl_one_minus_src_alpha") // mix
+                    {
+                        sb.Append("outputColor = mix(outputColor, " + sub + ", " + sub + ".w)" + sLightmapScale);
+                    }
+                    else if(stage.GetBlendFunc() == "gl_dst_color gl_one_minus_dst_alpha")
+                    {
+                        sb.Append("outputColor = (" + sub + " * outputColor + outputColor * (1 - outputColor.w))" + sLightmapScale);
+                    }                    
                 }
 
-                if(stage.GetLightmap())
-                {
-                    sb.Append(" * 3.0");
-                }
+                sb.Append(";\r\n");               
             }
-            sb.Append(", 0.0, 1.0);\r\n");
 
             // end main
-            sb.AppendLine("}");
+            sbOutputline.AppendLine("}");
+
+            sb.Append(sbOutputline.ToString());
         }
 
         /// <summary>

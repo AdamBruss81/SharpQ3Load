@@ -135,9 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Figure\shader.frag" />
     <None Include="Figure\shader.vert" />
-    <None Include="Figure\skies_shader.frag" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
   </ItemGroup>

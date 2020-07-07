@@ -30,7 +30,14 @@ namespace engine
 
         public string GetShaderName() { return m_sShaderName; }
 
-        public List<Texture> GetStageTexturesPerFrame() { return m_lStageTextures; }
+        public Texture GetStageTexture(int iStage)
+        {
+            if(m_lStages[iStage].IsAnimmap())
+            {
+                return m_lStages[iStage].GetAnimmapTexture();
+            }
+            else { return m_lStageTextures[iStage]; }
+        }
 
         public string GetShaderBasedMainTextureFullPath()
         {
@@ -123,7 +130,7 @@ namespace engine
 
         private bool IsMapTexture(string s)
         {
-            return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures")) && !s.Contains("clampmap");
+            return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures") || s.Contains("models")) && !s.Contains("clampmap");
         }
 
         public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL)
@@ -171,6 +178,8 @@ namespace engine
                 sb.AppendLine("uniform " + GetSampler2DName() + " texture" + Convert.ToString(i) + ";");
             }
 
+            sb.AppendLine("");
+
             bool bAddTime = false;
 
             // add uniforms
@@ -180,7 +189,7 @@ namespace engine
                 string sIndex = Convert.ToString(i);
 
                 // rgbgen
-                if(!stage.IsRGBGENIdentity())
+                if(!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
                     sb.AppendLine("uniform vec3 rgbgen" + sIndex + ";");
                 }
@@ -200,6 +209,8 @@ namespace engine
                     }                    
                 }
             }
+
+            sb.AppendLine("");
 
             // I'm trying to make these auto generated glsl shaders as minimal as possible to make debugging and reading them easier. So
             // only add this time uniform if it's actually used.
@@ -228,14 +239,30 @@ namespace engine
                     {
                         case TCMOD.ETYPE.SCROLL:
                             {
-                                sb.AppendLine(sTexmod + ".x += scroll" + sIndex + "[0] * timeS;");
-                                sb.AppendLine(sTexmod + ".y += scroll" + sIndex + "[1] * timeS;");
+                                if (GetShaderName().Contains("skies"))
+                                {
+                                    sb.AppendLine(sTexmod + ".x += scroll" + sIndex + "[0] * timeS * 10;");
+                                    sb.AppendLine(sTexmod + ".y += scroll" + sIndex + "[1] * timeS * 10;");
+                                }
+                                else
+                                {
+                                    sb.AppendLine(sTexmod + ".x += scroll" + sIndex + "[0] * timeS;");
+                                    sb.AppendLine(sTexmod + ".y += scroll" + sIndex + "[1] * timeS;");
+                                }
                                 break;
                             }
                         case TCMOD.ETYPE.SCALE:
                             {
-                                sb.AppendLine(sTexmod + ".x *= scale" + sIndex + "[0];");
-                                sb.AppendLine(sTexmod + ".y *= scale" + sIndex + "[1];");
+                                if (GetShaderName().Contains("skies"))
+                                {
+                                    sb.AppendLine(sTexmod + ".x /= scale" + sIndex + "[0];");
+                                    sb.AppendLine(sTexmod + ".y /= scale" + sIndex + "[1];");
+                                }
+                                else
+                                {
+                                    sb.AppendLine(sTexmod + ".x *= scale" + sIndex + "[0];");
+                                    sb.AppendLine(sTexmod + ".y *= scale" + sIndex + "[1];");
+                                }
                                 break;
                             }
                         case TCMOD.ETYPE.TURB:
@@ -249,7 +276,9 @@ namespace engine
                 }
             }
 
-            // define texture texels
+            sb.AppendLine("");
+
+            // define texture texels and create stage textures
             for (int i = 0; i < m_lStages.Count; i++)
             {
                 Q3ShaderStage stage = m_lStages[i];
@@ -257,8 +286,6 @@ namespace engine
 
                 if (stage.GetLightmap())
                 {
-                    Debug.Assert(m_pParent.GetLightmapTexture() != null);
-
                     m_lStageTextures.Add(m_pParent.GetLightmapTexture());
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", lightmapTexCoord);");
@@ -273,12 +300,22 @@ namespace engine
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
                 }
+                else if(stage.IsAnimmap())
+                {
+                    m_lStageTextures.Add(stage.GetAnimmapTexture()); // initial texture, will change as time passes
+
+                    string sTexCoordName = "mainTexCoord";
+                    if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
+                    sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
+                }
             }
+
+            sb.AppendLine("");
 
             // define rgbgen vec4s to use in outputColor below
             for(int i = 0; i < m_lStages.Count; i++)
             {
-                if(!m_lStages[i].IsRGBGENIdentity())
+                if(!m_lStages[i].IsRGBGENIdentity() && !m_lStages[i].IsVertexColor())
                 {
                     sb.AppendLine("vec4 rgbmod" + Convert.ToString(i) + " = vec4(rgbgen" + Convert.ToString(i) + ", 1.0);");
                 }
@@ -296,9 +333,13 @@ namespace engine
 
                 if (m_lStages.Count == 1 || i == 0)
                 {
-                    if (!stage.IsRGBGENIdentity())
+                    if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                     {
                         sb.Append("outputColor = (" + sTexel + " * rgbmod" + sIndex + ")" + sLightmapScale);
+                    }
+                    else if(stage.IsVertexColor())
+                    {
+                        sb.Append("outputColor = (" + sTexel + " * color * 2.0)");
                     }
                     else sb.Append("outputColor = (" + sTexel + ")" + sLightmapScale);
                 }
@@ -307,7 +348,8 @@ namespace engine
                     Debug.Assert(m_lStages.Count > 1);
 
                     string sub = sTexel;
-                    if (!stage.IsRGBGENIdentity()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
+                    if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
+                    else if (stage.IsVertexColor()) sub = "(" + sTexel + " * color * 2.0)";
 
                     if (stage.GetBlendFunc() == "gl_dst_color gl_zero") // src * dest
                     {
@@ -396,13 +438,19 @@ namespace engine
                                 m_lStages.Add(new Q3ShaderStage(this));
                                 nCurlyCounter++;
                             }
+                            else if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));                                
+                            }
                             // read stage items
                             else if(IsMapTexture(sInsideTargetShaderLine))  
                             {
                                 string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                                 if (tokens.Length == 2)
                                 {
-                                    if (tokens[0].Trim(new char[] { '\t' }) == "map" && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
+                                    if (tokens[0].Trim(new char[] { '\t' }) == "map") // && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
                                     {
                                         if (string.IsNullOrEmpty(sNewPath)) sNewPath = tokens[1];
                                         m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
@@ -420,13 +468,7 @@ namespace engine
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("animmap"))
-                            {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
-                                m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));
-                            }
+                            }                            
                             else if (sInsideTargetShaderLine.Contains("tcmod scroll"))
                             {
                                 string sTrimmed = sInsideTargetShaderLine.Trim();

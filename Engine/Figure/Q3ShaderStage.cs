@@ -51,7 +51,6 @@ namespace engine
         // read in members
         string m_sTexturePath = "";
         string m_sBlendFunc = "";
-        string m_sAnimmap = "";
         bool m_bLightmap = false;
         TCTURB m_turb = new TCTURB();
         TCSCALE m_scale = new TCSCALE();
@@ -59,13 +58,23 @@ namespace engine
         RGBGEN m_rgbgen = new RGBGEN();
         Q3Shader m_ParentShader = null;
         List<TCMOD> m_TCMODS = new List<TCMOD>();
+        List<Texture> m_lAnimmapTextures = new List<Texture>();
+        int m_nCurAnimmapTextureIndex = 0;
+        int m_nAnimmapFreq = 0;
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
         public bool IsRGBGENIdentity() 
-        { 
-            return m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type); 
+        {
+            return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type)); 
+        }
+
+        public bool IsAnimmap() { return m_lAnimmapTextures.Count > 0; }
+
+        public Texture GetAnimmapTexture()
+        {
+            return m_lAnimmapTextures[m_nCurAnimmapTextureIndex];
         }
 
         public List<TCMOD> GetTCMODS() { return m_TCMODS; }
@@ -94,10 +103,25 @@ namespace engine
             }
         }
 
+        public bool IsVertexColor() { return m_rgbgen.type.ToLower() == "vertex"; }
+
         public string GetBlendFunc() { return m_sBlendFunc; }
 
         public void SetTexturePath(string s) { m_sTexturePath = s; }
-        public void SetAnimmap(string s) { m_sAnimmap = s; }
+        public void SetAnimmap(string s) 
+        {
+            string[] tokens = s.Split(' ');
+            if(tokens.Length > 0)
+            {
+                m_nAnimmapFreq = Convert.ToInt32(tokens[0]);
+                for(int i = 1; i < tokens.Length; i++)
+                {
+                    m_lAnimmapTextures.Add(new Texture(tokens[i]));
+                    string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath());
+                    m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture);
+                }
+            }
+        }
         public void SetLightmap(bool b) { m_bLightmap = b; }
         public bool GetLightmap() { return m_bLightmap; }
         public void SetTCModScroll(string s) 

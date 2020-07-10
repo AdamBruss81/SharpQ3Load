@@ -379,6 +379,20 @@ namespace engine
 
                 sb.Append(";\r\n");
 
+                // alpha testing - for example makes skel in fatal instinct look much better
+                if(stage.GetAlphaFunc() == "ge128")
+                {
+                    sb.AppendLine("if(outputColor.w < 0.5) discard;");
+                }
+                else if(stage.GetAlphaFunc() == "gt0")
+                {
+                    sb.AppendLine("if(outputColor.w <= 0) discard;");
+                }
+                else if(stage.GetAlphaFunc() == "lt128")
+                {
+                    sb.AppendLine("if(outputColor.w >= 0.5) discard;");
+                }
+
                 if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
                 {
                 }
@@ -488,7 +502,13 @@ namespace engine
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
-                            }                            
+                            }
+                            else if (sInsideTargetShaderLine.Contains("alphafunc"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetAlphaFunc(GetTokensAfterFirst(tokens));
+                            }
                             else if (sInsideTargetShaderLine.Contains("tcmod scroll"))
                             {
                                 string sTrimmed = sInsideTargetShaderLine.Trim();

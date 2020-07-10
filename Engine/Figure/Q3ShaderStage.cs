@@ -51,6 +51,7 @@ namespace engine
         // read in members
         string m_sTexturePath = "";
         string m_sBlendFunc = "";
+        string m_sAlphaFunc = "";
         bool m_bLightmap = false;
         TCTURB m_turb = new TCTURB();
         TCSCALE m_scale = new TCSCALE();
@@ -66,6 +67,7 @@ namespace engine
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
+        public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
         public bool IsRGBGENIdentity() 
         {
             return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type)); 
@@ -115,6 +117,7 @@ namespace engine
         public bool IsVertexColor() { return m_rgbgen.type.ToLower() == "vertex"; }
 
         public string GetBlendFunc() { return m_sBlendFunc; }
+        public string GetAlphaFunc() { return m_sAlphaFunc; }
 
         public void SetTexturePath(string s) { m_sTexturePath = s; }
         public void SetAnimmap(string s) 

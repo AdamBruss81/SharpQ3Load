@@ -22,6 +22,7 @@ namespace engine
     {
         private uint[] m_pnTextures;
 		private string m_sInternalZipPath;
+        bool m_bShouldBeTGA = false;
         
         public enum EFileType { PNG, TGA, JPG };
 
@@ -40,6 +41,9 @@ namespace engine
             if(m_pnTextures != null)
 			    GL.DeleteTextures(1, m_pnTextures);
 		}  
+
+        public void SetShouldBeTGA(bool b) { m_bShouldBeTGA = b; }
+        public bool GetShouldBeTGA() { return m_bShouldBeTGA; }
 
         public void SetTexture(string sFullPath)
         {

@@ -133,7 +133,7 @@ namespace engine
             return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures") || s.Contains("models")) && !s.Contains("clampmap");
         }
 
-        public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL)
+        public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL, ref bool bShouldBeTGA)
         {
             string sFullPath;
 
@@ -152,10 +152,14 @@ namespace engine
                     if (Path.GetExtension(sFullPath) == ".jpg")
                         sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
                     else
+                    {
+                        bShouldBeTGA = true;
                         sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"));
+                    }
 
                     if (!File.Exists(sFullPath))
                     {
+                        // the only texture in the game of this nature
                         if (sFullPath.Contains("nightsky_xian_dm1"))
                             sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
                     }
@@ -293,7 +297,9 @@ namespace engine
                 else if (!string.IsNullOrEmpty(stage.GetTexturePath())) 
                 {
                     m_lStageTextures.Add(new Texture(stage.GetTexturePath()));
-                    m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, stage.GetTexturePath()));
+                    bool bTGA = false;
+                    m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bTGA));
+                    m_lStageTextures[m_lStageTextures.Count - 1].SetShouldBeTGA(bTGA);
 
                     string sTexCoordName = "mainTexCoord";
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
@@ -321,55 +327,70 @@ namespace engine
                 }
             }
 
+            sb.AppendLine("");
+
             // define outputColor line
+            sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
+
+            sb.AppendLine("");
+
+            bool bAddAlpha = true; // this is for tgas that got converted to jpg by id before shipping
+            // if they were tgas, the blending would just work for free for the most part
+            // instead i have to add alpha myself. not sure how q3 actually does this
+            // deciding when to do it is specific for now. see below
+
             System.Text.StringBuilder sbOutputline = new System.Text.StringBuilder();           
             for(int i = 0; i < m_lStages.Count; i++)
-            {
+            {                
                 Q3ShaderStage stage = m_lStages[i];
                 string sLightmapScale = stage.GetLightmap() ? " * 3.0" : "";
-
+                 
                 string sIndex = Convert.ToString(i);
                 string sTexel = "texel" + sIndex;
 
-                if (m_lStages.Count == 1 || i == 0)
+                string sub = sTexel;
+                if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
+                else if (stage.IsVertexColor()) sub = "(" + sTexel + " * color * 2.0)";                
+
+                if (stage.GetBlendFunc() == "gl_dst_color gl_zero") // src * dest
                 {
-                    if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
-                    {
-                        sb.Append("outputColor = (" + sTexel + " * rgbmod" + sIndex + ")" + sLightmapScale);
-                    }
-                    else if(stage.IsVertexColor())
-                    {
-                        sb.Append("outputColor = (" + sTexel + " * color * 2.0)");
-                    }
-                    else sb.Append("outputColor = (" + sTexel + ")" + sLightmapScale);
+                    sb.Append("outputColor *= " + sub + sLightmapScale);
+                }
+                else if (stage.GetBlendFunc() == "gl_one gl_one") // src + dest
+                {
+                    sb.Append("outputColor += " + sub + sLightmapScale);
+                }
+                else if (stage.GetBlendFunc() == "gl_src_alpha gl_one_minus_src_alpha") // mix
+                {
+                    sb.Append("outputColor = mix(outputColor, " + sub + ", " + sub + ".w)" + sLightmapScale);
+                }
+                else if (stage.GetBlendFunc() == "gl_dst_color gl_one_minus_dst_alpha")
+                {
+                    // should never be any equals?
+                    sb.Append("outputColor = (" + sub + " * outputColor + outputColor * (1 - outputColor.w))" + sLightmapScale);
+                }
+                else if (stage.IsVertexColor())
+                {
+                    sb.Append("outputColor += (" + sTexel + " * color * 2.0)");
                 }
                 else
                 {
-                    Debug.Assert(m_lStages.Count > 1);
-
-                    string sub = sTexel;
-                    if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
-                    else if (stage.IsVertexColor()) sub = "(" + sTexel + " * color * 2.0)";
-
-                    if (stage.GetBlendFunc() == "gl_dst_color gl_zero") // src * dest
-                    {
-                        sb.Append("outputColor *= " + sub + sLightmapScale);
-                    }
-                    else if(stage.GetBlendFunc() == "gl_one gl_one") // src + dest
-                    {
-                        sb.Append("outputColor += " + sub + sLightmapScale);
-                    }
-                    else if(stage.GetBlendFunc() == "gl_src_alpha gl_one_minus_src_alpha") // mix
-                    {
-                        sb.Append("outputColor = mix(outputColor, " + sub + ", " + sub + ".w)" + sLightmapScale);
-                    }
-                    else if(stage.GetBlendFunc() == "gl_dst_color gl_one_minus_dst_alpha")
-                    {
-                        sb.Append("outputColor = (" + sub + " * outputColor + outputColor * (1 - outputColor.w))" + sLightmapScale);
-                    }                    
+                    sb.Append("outputColor += (" + sub + ")" + sLightmapScale);
                 }
 
-                sb.Append(";\r\n");               
+                sb.Append(";\r\n");
+
+                if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
+                {
+                }
+                else bAddAlpha = false;
+            }
+
+            if (bAddAlpha)
+            {
+                sb.AppendLine("");
+                sb.AppendLine("float na = 0.2126 * outputColor.r + 0.7152 * outputColor.g + 0.0722 * outputColor.b;");
+                sb.AppendLine("outputColor.w = na;");
             }
 
             // end main
@@ -450,7 +471,7 @@ namespace engine
                                 string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                                 if (tokens.Length == 2)
                                 {
-                                    if (tokens[0].Trim(new char[] { '\t' }) == "map") // && (tokens[1].Contains("textures") || tokens[1].Contains("gfx")))
+                                    if (tokens[0].Trim(new char[] { '\t' }) == "map")
                                     {
                                         if (string.IsNullOrEmpty(sNewPath)) sNewPath = tokens[1];
                                         m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);

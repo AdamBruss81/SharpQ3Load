@@ -60,7 +60,8 @@ namespace engine
         List<TCMOD> m_TCMODS = new List<TCMOD>();
         List<Texture> m_lAnimmapTextures = new List<Texture>();
         int m_nCurAnimmapTextureIndex = 0;
-        int m_nAnimmapFreq = 0;
+        float m_fSecondsPerAnimmapTexture = 0f;
+        float m_fLastAnimmapTextureChangeTime = 0f;
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
@@ -74,6 +75,14 @@ namespace engine
 
         public Texture GetAnimmapTexture()
         {
+            if (m_fLastAnimmapTextureChangeTime == 0f) m_fLastAnimmapTextureChangeTime = GameClock.GetElapsedS();
+            else if(GameClock.GetElapsedS() - m_fLastAnimmapTextureChangeTime >= m_fSecondsPerAnimmapTexture)
+            {
+                m_nCurAnimmapTextureIndex++;
+                if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
+                m_fLastAnimmapTextureChangeTime = GameClock.GetElapsedS();
+            }
+            
             return m_lAnimmapTextures[m_nCurAnimmapTextureIndex];
         }
 
@@ -86,8 +95,8 @@ namespace engine
             if (tokens.Length == 1) m_rgbgen.type = tokens[0];
             else
             {
-                m_rgbgen.type = tokens[0];
-                m_rgbgen.func = tokens[1];
+                m_rgbgen.type = tokens[0].ToLower();
+                m_rgbgen.func = tokens[1].ToLower();
 
                 // initial value
                 m_rgbgen.fbase = System.Convert.ToSingle(tokens[2]);
@@ -113,13 +122,15 @@ namespace engine
             string[] tokens = s.Split(' ');
             if(tokens.Length > 0)
             {
-                m_nAnimmapFreq = Convert.ToInt32(tokens[0]);
-                for(int i = 1; i < tokens.Length; i++)
+                for (int i = 1; i < tokens.Length; i++)
                 {
                     m_lAnimmapTextures.Add(new Texture(tokens[i]));
-                    string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath());
+                    bool bShouldBeTGA = false;
+                    string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
                     m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture);
+                    if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
                 }
+                m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToInt32(tokens[0]);
             }
         }
         public void SetLightmap(bool b) { m_bLightmap = b; }
@@ -179,10 +190,14 @@ namespace engine
 
         public void GetRGBGenValue(ref float[] rgb)
         {
-            if (m_rgbgen.type == "wave")
-            {
-                float dCycleTimeMS = 1.0f / m_rgbgen.freq * 1000.0f;
+            rgb[0] = 1f; 
+            rgb[1] = 1f; 
+            rgb[2] = 1f;
 
+            float dCycleTimeMS = 1.0f / m_rgbgen.freq * 1000.0f;
+
+            if (m_rgbgen.type == "wave")
+            {               
                 if (m_rgbgen.func == "sin")
                 {
                     // the point of this calculation is to convert from one range to another
@@ -193,6 +208,18 @@ namespace engine
 
                     // after plugging into sin you just have to scale by the amplitude and then add the initial value
                     rgb[0] = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * m_rgbgen.amp + m_rgbgen.fbase));
+                    rgb[1] = rgb[0];
+                    rgb[2] = rgb[0];
+                }
+                else if(m_rgbgen.func == "sawtooth")
+                {
+                    rgb[0] = ((GameClock.GetElapsedS() * m_rgbgen.freq) % 1f) * m_rgbgen.amp;
+                    rgb[1] = rgb[0];
+                    rgb[2] = rgb[0];
+                }
+                else if (m_rgbgen.func == "inversesawtooth")
+                {
+                    rgb[0] = (((1f - (GameClock.GetElapsedS() % 1f)) * (m_rgbgen.freq)) % 1f) * m_rgbgen.amp;
                     rgb[1] = rgb[0];
                     rgb[2] = rgb[0];
                 }

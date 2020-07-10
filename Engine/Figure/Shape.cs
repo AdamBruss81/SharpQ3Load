@@ -133,16 +133,17 @@ namespace engine
 		{
 			m_q3Shader.ReadShader(GetMainTexture().GetPath());
 
+			bool bUnused = false;
 			foreach (Texture t in m_lTextures)
 			{
 				if (GetMainTexture() == t) {
-					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath());
+					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bUnused);
 					if(File.Exists(sNonShaderTexture))
 						t.SetTexture(sNonShaderTexture);
 					else
 						t.SetTexture(m_q3Shader.GetShaderBasedMainTextureFullPath());
 				} 
-				else t.SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath()));
+				else t.SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath(), ref bUnused));
 			}     
 
             foreach (Face f in m_lFaces)
@@ -371,7 +372,31 @@ namespace engine
         {
             if (m_lTextures.Count > 1) return 1;
             else return -1;
-        }		
+        }	
+		
+		public int GetRenderOrder()
+		{
+			int nVal;
+			// 0 means render first
+			// higher means render later
+
+			// 0 unshaded and not models
+			// 1 shaded but not flames or models
+			// 2 models
+			// 3 flames
+
+			// this is very non-generic at this point but I don't know exactly how q3 sorts its faces/shapes for rendering
+			// and I don't care to figure it all out at this point. Just get something working for now.
+
+			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()) && !GetMainTexture().GetPath().Contains("models")) nVal = 0;
+			else if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()) && !GetMainTexture().GetPath().Contains("models") &&
+				!m_q3Shader.GetShaderName().Contains("flame")) nVal = 1;
+			else if (GetMainTexture().GetPath().Contains("models")) nVal = 2;
+			else if (m_q3Shader.GetShaderName().Contains("flame")) nVal = 3;
+			else nVal = 0;
+
+			return nVal;
+		}
 
         public List<Texture> GetTextures() { return m_lTextures; }
 
@@ -384,12 +409,11 @@ namespace engine
 			if (DontRender()) return;
 
 			// old school open gl functions ***
-			if(GetMainTexture().GetPath().Contains("models"))
+			if(true) // fix this, always blend?
 			{
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             }
-
 			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
 			{
 				GL.PushAttrib(AttribMask.EnableBit);
@@ -463,7 +487,7 @@ namespace engine
 						m_q3Shader.GetStages()[i].GetRGBGenValue(ref m_uniformFloat3);
 						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
 					}
-				}
+				}				
 
 				// tcmods
 				bool bTCMODS = false;
@@ -527,7 +551,7 @@ namespace engine
 			GL.UseProgram(0);
 
 			// old school open gl ***
-            if (GetMainTexture().GetPath().Contains("models"))
+            if (true) // fix this, always blend?
             {
                 GL.Disable(EnableCap.Blend);
             }

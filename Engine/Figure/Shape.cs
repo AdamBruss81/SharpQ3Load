@@ -210,8 +210,10 @@ namespace engine
                 ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL);          
 			}
 
+#if DEBUG
 			if(!string.IsNullOrEmpty(autoGenereatedGLSL))
 				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".txt", autoGenereatedGLSL);
+#endif
 
             VertexBufferObject = GL.GenBuffer();
             VertexArrayObject = GL.GenVertexArray();

@@ -362,12 +362,11 @@ namespace engine
                 }
                 else if (stage.GetBlendFunc() == "gl_src_alpha gl_one_minus_src_alpha") // mix
                 {
-                    sb.Append("outputColor = mix(outputColor, " + sub + ", " + sub + ".w)" + sLightmapScale);
+                    sb.Append("outputColor = " + sTexel + " * " + sTexel + ".w + texel" + Convert.ToString(i - 1) + " * (1 - " + sTexel + ".w)");
                 }
                 else if (stage.GetBlendFunc() == "gl_dst_color gl_one_minus_dst_alpha")
                 {
-                    // should never be any equals?
-                    sb.Append("outputColor = (" + sub + " * outputColor + outputColor * (1 - outputColor.w))" + sLightmapScale);
+                    sb.Append("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w))");
                 }
                 else if (stage.IsVertexColor())
                 {

@@ -399,11 +399,21 @@ namespace engine
                 else bAddAlpha = false;
             }
 
+            // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
+            // to. 
             if (bAddAlpha)
             {
                 sb.AppendLine("");
-                sb.AppendLine("float na = 0.2126 * outputColor.r + 0.7152 * outputColor.g + 0.0722 * outputColor.b;");
-                sb.AppendLine("outputColor.w = na;");
+
+                //sb.AppendLine("float na = 0.2126 * outputColor.r + 0.7152 * outputColor.g + 0.0722 * outputColor.b;");
+                //sb.AppendLine("float na = 0.299 * outputColor.r + 0.587 * outputColor.g + 0.114 * outputColor.b;");
+
+                // best
+                //sb.AppendLine("float na = sqrt(0.299 * pow(outputColor.r, 2) + 0.587 * pow(outputColor.g, 2) + 0.114 * pow(outputColor.b, 2));");
+                //sb.AppendLine("outputColor.w = na;");
+
+                //sqrt(0.299 * R ^ 2 + 0.587 * G ^ 2 + 0.114 * B ^ 2)
+                // (0.299*R + 0.587*G + 0.114*B
             }
 
             // end main

@@ -393,17 +393,17 @@ namespace engine
                     sb.AppendLine("if(outputColor.w >= 0.5) discard;");
                 }
 
-                if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
+                /*if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
                 {
                 }
-                else bAddAlpha = false;
+                else bAddAlpha = false;*/
             }
 
             // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
             // to. 
             if (bAddAlpha)
             {
-                sb.AppendLine("");
+                //sb.AppendLine("");
 
                 //sb.AppendLine("float na = 0.2126 * outputColor.r + 0.7152 * outputColor.g + 0.0722 * outputColor.b;");
                 //sb.AppendLine("float na = 0.299 * outputColor.r + 0.587 * outputColor.g + 0.114 * outputColor.b;");
@@ -457,6 +457,14 @@ namespace engine
                         while (true) // read found shader surface params and stages
                         {
                             string sInsideTargetShaderLine = sr.ReadLine().ToLower();
+
+                            if(sInsideTargetShaderLine.Contains("//"))
+                            {
+                                continue;
+                                // for now just avoid lines with comments in them
+                                // may need to make this smarter later for lines with comments
+                                // at end and valid stuff at beginning of line
+                            }
 
                             // read shader properties
                             if (sInsideTargetShaderLine.Contains("surfaceparm"))

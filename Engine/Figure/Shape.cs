@@ -436,6 +436,7 @@ namespace engine
 			{ 
 				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
+
 					switch(i)
 					{
 						case 0: GL.ActiveTexture(TextureUnit.Texture0); break;

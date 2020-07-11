@@ -127,15 +127,19 @@ namespace engine
             {
                 for (int i = 1; i < tokens.Length; i++)
                 {
-                    m_lAnimmapTextures.Add(new Texture(tokens[i]));
-                    bool bShouldBeTGA = false;
-                    string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
-                    m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture);
-                    if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
+                    string sToken = tokens[i].Trim();
+                    if (!string.IsNullOrEmpty(sToken))
+                    {
+                        m_lAnimmapTextures.Add(new Texture(sToken));
+                        bool bShouldBeTGA = false;
+                        string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
+                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture);
+                        if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
+                    }
                 }
                 m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToInt32(tokens[0]);
             }
-        }
+        } 
         public void SetLightmap(bool b) { m_bLightmap = b; }
         public bool GetLightmap() { return m_bLightmap; }
         public void SetTCModScroll(string s) 

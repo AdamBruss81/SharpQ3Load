@@ -410,12 +410,7 @@ namespace engine
          {
 			if (DontRender()) return;
 
-			// old school open gl functions ***
-			if(true) // fix this, always blend?
-			{
-                GL.Enable(EnableCap.Blend);
-                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            }
+			// these apply to entire shader
 			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
 			{
 				GL.PushAttrib(AttribMask.EnableBit);
@@ -426,7 +421,7 @@ namespace engine
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.CullFace(CullFaceMode.Back);
             }
-			// end old school
+			// ***
 
 			ShaderHelper.UseProgram(ShaderProgram);
         
@@ -436,12 +431,12 @@ namespace engine
 			{ 
 				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
-
 					switch(i)
 					{
 						case 0: GL.ActiveTexture(TextureUnit.Texture0); break;
 						case 1: GL.ActiveTexture(TextureUnit.Texture1); break;
 						case 2: GL.ActiveTexture(TextureUnit.Texture2); break;
+						case 3: GL.ActiveTexture(TextureUnit.Texture3); break;
 					}
 					m_q3Shader.GetStageTexture(i).bindMeRaw(); // assuming every stage has a texture but may not be true always. not sure.
 
@@ -553,16 +548,12 @@ namespace engine
 
 			GL.UseProgram(0);
 
-			// old school open gl ***
-            if (true) // fix this, always blend?
-            {
-                GL.Disable(EnableCap.Blend);
-            }
+			// apply to whole shader
             if (m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none" || m_q3Shader.GetCull() == "back")
             {
 				GL.PopAttrib();
             }
-			// end old school
+			// ***
         }
 
 		/// <summary>

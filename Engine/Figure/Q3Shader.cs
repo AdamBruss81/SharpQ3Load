@@ -91,6 +91,8 @@ namespace engine
                     return new List<string>() { "gothic_light" };
                 else if (tokens[1].Contains("gothic_trim"))
                     return new List<string>() { "gothic_trim" };
+                else if (tokens[1].Contains("gothic_door")) // for this the only way to know where to look is by looking through all the maps and seeing what doesn't look right
+                    return new List<string>() { "gothic_block" }; // i can't think of any programmatic way besides searching the entire set of shader files which I don't want to do
                 else if (tokens[1].Contains("common"))
                     return new List<string>() { "common" };
                 else if (tokens[0].Contains("models"))
@@ -245,13 +247,13 @@ namespace engine
                             {
                                 if (GetShaderName().Contains("skies"))
                                 {
-                                    sb.AppendLine(sTexmod + ".x += scroll" + sIndex + "[0] * timeS * 10;");
-                                    sb.AppendLine(sTexmod + ".y += scroll" + sIndex + "[1] * timeS * 10;");
+                                    sb.AppendLine(sTexmod + ".x -= scroll" + sIndex + "[0] * timeS * 10;");
+                                    sb.AppendLine(sTexmod + ".y -= scroll" + sIndex + "[1] * timeS * 10;");
                                 }
                                 else
                                 {
-                                    sb.AppendLine(sTexmod + ".x += scroll" + sIndex + "[0] * timeS;");
-                                    sb.AppendLine(sTexmod + ".y += scroll" + sIndex + "[1] * timeS;");
+                                    sb.AppendLine(sTexmod + ".x -= scroll" + sIndex + "[0] * timeS;");
+                                    sb.AppendLine(sTexmod + ".y -= scroll" + sIndex + "[1] * timeS;");
                                 }
                                 break;
                             }
@@ -347,26 +349,30 @@ namespace engine
                  
                 string sIndex = Convert.ToString(i);
                 string sTexel = "texel" + sIndex;
+                string sBlendFunc = stage.GetBlendFunc();
 
                 string sub = sTexel;
-                if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
-                else if (stage.IsVertexColor()) sub = "(" + sTexel + " * color * 2.0)";                
+                if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";               
 
-                if (stage.GetBlendFunc() == "gl_dst_color gl_zero") // src * dest
+                if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
                 {
                     sb.Append("outputColor *= " + sub + sLightmapScale);
                 }
-                else if (stage.GetBlendFunc() == "gl_one gl_one") // src + dest
+                else if (sBlendFunc == "gl_one gl_one" || sBlendFunc == "add") // src + dest
                 {
                     sb.Append("outputColor += " + sub + sLightmapScale);
                 }
-                else if (stage.GetBlendFunc() == "gl_src_alpha gl_one_minus_src_alpha") // mix
+                else if (sBlendFunc == "gl_src_alpha gl_one_minus_src_alpha" || sBlendFunc == "blend") // mix
                 {
-                    sb.Append("outputColor = " + sTexel + " * " + sTexel + ".w + texel" + Convert.ToString(i - 1) + " * (1 - " + sTexel + ".w)");
+                    sb.Append("outputColor = mix(outputColor, " + sTexel + ", " + sTexel + ".w)");
                 }
-                else if (stage.GetBlendFunc() == "gl_dst_color gl_one_minus_dst_alpha")
+                else if (sBlendFunc == "gl_dst_color gl_one_minus_dst_alpha")
                 {
                     sb.Append("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w))");
+                }
+                else if (sBlendFunc == "gl_one gl_zero")
+                {
+                    sb.Append("outputColor += (" + sub + ")");
                 }
                 else if (stage.IsVertexColor())
                 {

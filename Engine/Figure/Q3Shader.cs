@@ -441,7 +441,8 @@ namespace engine
                 {
                     int nCurlyCounter = 0;
                     string sLine = sr.ReadLine().ToLower();
-                    if (sLine.Trim() == sInternalPathNoExtension) // found shader
+
+                    if (sLine.Trim() == sInternalPathNoExtension.ToLower()) // found shader
                     {
                         m_sShaderName = sPathFromVRML;
 

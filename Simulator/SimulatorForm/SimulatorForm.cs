@@ -93,6 +93,8 @@ namespace simulator
 			timerRedrawer.Interval = 15;
 
 			SetViewMode(true);
+
+			GameClock.m_SW.Start(); // start this once and let it go.
 		}
 
 		private void Simulator_Load(object sender, EventArgs e)
@@ -250,7 +252,7 @@ namespace simulator
 
 			resetMouseCursor();
 
-			SetGameClock(true, true);
+			SetRunning(true);
 
 			StartStopRedrawer(true);
 
@@ -259,15 +261,9 @@ namespace simulator
             m_swDelayMusicStart.Start();
 		}
 
-		private void SetGameClock(bool bOnOff, bool bRestart)
+		private void SetRunning(bool bOnOff)
 		{
 			m_bRunning = bOnOff;
-			if (!m_bRunning) GameClock.m_SW.Stop();
-			else
-			{
-				if (!bRestart) GameClock.m_SW.Start();
-				else GameClock.m_SW.Restart();
-			}
 		}
 
 		/// <summary>
@@ -276,7 +272,7 @@ namespace simulator
 		public void Halt()
 		{
 			// disable timer to stop opengl refreshing and mouse cursor resetting
-			SetGameClock(false, false);
+			SetRunning(false);
 			StopAllTimers();
 
 			SetCursor(true, true);
@@ -287,7 +283,7 @@ namespace simulator
 			m_bOpeningMap = true;
 
 			// disable timer to stop opengl refreshing and mouse cursor resetting
-			SetGameClock(false, false);
+			SetRunning(false);
 			StopAllTimers();
 
 			SetCursor(true, false);
@@ -312,7 +308,7 @@ namespace simulator
 			m_bOpeningMap = true;
 
 			// disable timer to stop opengl refreshing and mouse cursor resetting
-			SetGameClock(false, false);
+			SetRunning(false);
 			StopAllTimers();
 
 			SetCursor(true, false);
@@ -335,7 +331,7 @@ namespace simulator
 			{
 				m_bClosed = true;
 
-				SetGameClock(false, false);
+				SetRunning(false);
 
 				StopAllTimers();
 
@@ -398,7 +394,7 @@ namespace simulator
 				resetMouseCursor();
 
 				// start timer for opengl refreshing
-				SetGameClock(true, false);
+				SetRunning(true);
 				StartStopRedrawer(true);
                 m_swDelayMusicStart.Start();
 			}
@@ -459,7 +455,7 @@ namespace simulator
 			if (!m_bOpeningMap && m_bPaused && !m_bLoadingMap && !m_bClosed && m_Engine != null)
 			{
 				m_bPaused = false;
-				SetGameClock(true, false);
+				SetRunning(true);
 
 				StartStopRedrawer(true);
 			}
@@ -474,7 +470,7 @@ namespace simulator
 			if (!m_bOpeningMap && !m_bPaused && !m_bLoadingMap && !m_bClosed && m_Engine != null)
 			{
 				m_bPaused = true;
-				SetGameClock(false, false);
+				SetRunning(false);
 				StopAllTimers();
 			}
 		}

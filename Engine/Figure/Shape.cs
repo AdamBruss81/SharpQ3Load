@@ -37,6 +37,7 @@ namespace engine
 		Q3Shader m_q3Shader = null;
 
 		// shader utility members for performance
+		float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
 		float[] m_uniformFloat3 = { 0f, 0f, 0f };
 		float[] m_uniformFloat2 = { 0f, 0f };
 
@@ -437,6 +438,7 @@ namespace engine
 						case 1: GL.ActiveTexture(TextureUnit.Texture1); break;
 						case 2: GL.ActiveTexture(TextureUnit.Texture2); break;
 						case 3: GL.ActiveTexture(TextureUnit.Texture3); break;
+						case 4: GL.ActiveTexture(TextureUnit.Texture4); break;
 					}
 					m_q3Shader.GetStageTexture(i).bindMeRaw(); // assuming every stage has a texture but may not be true always. not sure.
 
@@ -520,7 +522,21 @@ namespace engine
 									GL.Uniform3(nLoc, 1, m_uniformFloat3);
 									break;
 								}
-						}
+							case TCMOD.ETYPE.STRETCH:
+								{
+									nLoc = GL.GetUniformLocation(ShaderProgram, "stretch" + Convert.ToString(i));
+									stage.GetStretchValues(ref m_uniformFloat6);
+									GL.Uniform1(nLoc, 6, m_uniformFloat6);
+									break;
+								}
+                            case TCMOD.ETYPE.ROTATE:
+                                {
+                                    nLoc = GL.GetUniformLocation(ShaderProgram, "rotate" + Convert.ToString(i));
+                                    stage.GetRotateValues(ref m_uniformFloat6);
+                                    GL.Uniform1(nLoc, 6, m_uniformFloat6);
+                                    break;
+                                }
+                        }
                     }
                 }
 				if (bTCMODS)

@@ -211,6 +211,8 @@ namespace engine
                             case TCMOD.ETYPE.SCALE: sb.AppendLine("uniform vec2 scale" + sIndex + ";"); break;
                             case TCMOD.ETYPE.SCROLL: sb.AppendLine("uniform vec2 scroll" + sIndex + ";"); break;
                             case TCMOD.ETYPE.TURB: sb.AppendLine("uniform vec3 turb" + sIndex + ";"); break;
+                            case TCMOD.ETYPE.STRETCH: sb.AppendLine("uniform float stretch" + sIndex + "[6];"); break;
+                            case TCMOD.ETYPE.ROTATE: sb.AppendLine("uniform float rotate" + sIndex + "[6];"); break;
                         }
                     }                    
                 }
@@ -269,6 +271,26 @@ namespace engine
                                     sb.AppendLine(sTexmod + ".x *= scale" + sIndex + "[0];");
                                     sb.AppendLine(sTexmod + ".y *= scale" + sIndex + "[1];");
                                 }
+                                break;
+                            }
+                        case TCMOD.ETYPE.STRETCH:
+                            {
+                                // 0 - 3 are the 2x2 transform matrix
+                                // 4-5 are the translate vector
+                                sb.AppendLine("float " + sTexmod + "_stretch_x = " + sTexmod + ".x;");
+                                sb.AppendLine("float " + sTexmod + "_stretch_y = " + sTexmod + ".y;");
+                                sb.AppendLine(sTexmod + ".x = " + sTexmod + "_stretch_x * stretch" + sIndex + "[0] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[1] + stretch" + sIndex + "[4];");
+                                sb.AppendLine(sTexmod + ".y = " + sTexmod + "_stretch_x * stretch" + sIndex + "[2] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[3] + stretch" + sIndex + "[5];");
+                                break;
+                            }
+                        case TCMOD.ETYPE.ROTATE:
+                            {
+                                // 0 - 3 are the 2x2 transform matrix
+                                // 4-5 are the translate vector
+                                sb.AppendLine("float " + sTexmod + "_rotate_x = " + sTexmod + ".x;");
+                                sb.AppendLine("float " + sTexmod + "_rotate_y = " + sTexmod + ".y;");
+                                sb.AppendLine(sTexmod + ".x = " + sTexmod + "_rotate_x * rotate" + sIndex + "[0] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[1] + rotate" + sIndex + "[4];");
+                                sb.AppendLine(sTexmod + ".y = " + sTexmod + "_rotate_x * rotate" + sIndex + "[2] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[3] + rotate" + sIndex + "[5];");
                                 break;
                             }
                         case TCMOD.ETYPE.TURB:
@@ -403,11 +425,11 @@ namespace engine
                 {
                 }
                 else bAddAlpha = false;*/
-            }
+                            }
 
-            // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
-            // to. 
-            if (bAddAlpha)
+                            // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
+                            // to. 
+                            if (bAddAlpha)
             {
                 //sb.AppendLine("");
 
@@ -545,6 +567,18 @@ namespace engine
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_lStages[m_lStages.Count - 1].SetTCModTurb(GetTokensAfterSecond(tokens));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("tcmod rotate"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetTCMODRotate(Convert.ToSingle(GetTokensAfterSecond(tokens)));
+                            }
+                            else if (sInsideTargetShaderLine.Contains("tcmod stretch"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetTCMODStretch(GetTokensAfterSecond(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod scale"))
                             {

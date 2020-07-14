@@ -233,6 +233,9 @@ namespace engine
         {
             float p = CalculateWaveForm(m_stretch.wf);
 
+            p = p * 1.5f; // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now
+            // without it the stretching doesn't go far enough in towards the center
+
             vals[0] = p;
             vals[1] = 0;
             vals[4] = (.5f - .5f * p);

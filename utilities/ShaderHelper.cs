@@ -145,11 +145,17 @@ namespace utilities
 			return retCode;
         }
 
-		public static int printOpenGLError()
+		public static int printOpenGLError(string sHelperStr)
 		{
 			string s = "";
 			int retCode = GetOpenGLErrors(ref s);
-			Console.WriteLine(s);
+			s = s.Trim();
+			if (!string.IsNullOrEmpty(s))
+			{
+				if (sHelperStr == "")
+					Console.WriteLine(s);
+				else Console.WriteLine(s + " from " + sHelperStr);
+			}
 			return retCode;
 		}
 

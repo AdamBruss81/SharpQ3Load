@@ -68,6 +68,7 @@ namespace engine
         string m_sTexturePath = "";
         string m_sBlendFunc = "";
         string m_sAlphaFunc = "";
+        string m_sTCGEN_CS = "";
         bool m_bLightmap = false;
         TCTURB m_turb = new TCTURB();
         TCSCALE m_scale = new TCSCALE();
@@ -84,6 +85,8 @@ namespace engine
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
+        public string GetTCGEN_CS() { return m_sTCGEN_CS; }
+        public void SetTCGEN_CS(string s) { m_sTCGEN_CS = s; }
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
         public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
         public bool IsRGBGENIdentity()
@@ -95,12 +98,12 @@ namespace engine
 
         public Texture GetAnimmapTexture()
         {
-            if (m_fLastAnimmapTextureChangeTime == 0f) m_fLastAnimmapTextureChangeTime = GameClock.GetElapsedS();
-            else if (GameClock.GetElapsedS() - m_fLastAnimmapTextureChangeTime >= m_fSecondsPerAnimmapTexture)
+            if (m_fLastAnimmapTextureChangeTime == 0f) m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
+            else if (GameGlobals.GetElapsedS() - m_fLastAnimmapTextureChangeTime >= m_fSecondsPerAnimmapTexture)
             {
                 m_nCurAnimmapTextureIndex++;
                 if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
-                m_fLastAnimmapTextureChangeTime = GameClock.GetElapsedS();
+                m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
             }
 
             return m_lAnimmapTextures[m_nCurAnimmapTextureIndex];
@@ -250,7 +253,7 @@ namespace engine
             float degs;
             float sinValue, cosValue;
 
-            degs = m_rotate.degPerSecond * -1f * GameClock.GetElapsedS();
+            degs = m_rotate.degPerSecond * -1f * GameGlobals.GetElapsedS();
 
             sinValue = Convert.ToSingle(Math.Sin(Convert.ToDouble(degs) * utilities.GLB.DegToRad)); 
             cosValue = Convert.ToSingle(Math.Cos(Convert.ToDouble(degs) * utilities.GLB.DegToRad)); 
@@ -275,18 +278,18 @@ namespace engine
                 // the first range is from 0 to the full cycle time
                 // the second range is from 0 to PI
                 // we want to convert the first range to the second so we can plug into sin
-                double dIntoSin = GameClock.GetElapsedMS() / dCycleTimeMS * Math.PI;
+                double dIntoSin = GameGlobals.GetElapsedMS() / dCycleTimeMS * Math.PI;
 
                 // after plugging into sin you just have to scale by the amplitude and then add the initial value
                 fVal = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase));
             }
             else if (wf.func == "sawtooth")
             {
-                fVal = ((GameClock.GetElapsedS() * wf.freq) % 1f) * wf.amp;
+                fVal = ((GameGlobals.GetElapsedS() * wf.freq) % 1f) * wf.amp;
             }
             else if (wf.func == "inversesawtooth")
             {
-                fVal = (((1f - (GameClock.GetElapsedS() % 1f)) * (wf.freq)) % 1f) * wf.amp;
+                fVal = (((1f - (GameGlobals.GetElapsedS() % 1f)) * (wf.freq)) % 1f) * wf.amp;
             }
 
             return fVal;

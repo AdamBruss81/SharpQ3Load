@@ -151,6 +151,11 @@ namespace utilities
 		/// Returns an array of length 3 containg doubles.
 		/// </summary>
 		public double[] Vect { get { return vect; } }
+		public float[] VectFloat()
+		{
+			float[] v = { Convert.ToSingle(x), Convert.ToSingle(y), Convert.ToSingle(z) };
+			return v;
+		}
 
 		public double this[int index]
 		{

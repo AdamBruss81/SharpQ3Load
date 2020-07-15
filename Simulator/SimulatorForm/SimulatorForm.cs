@@ -94,7 +94,7 @@ namespace simulator
 
 			SetViewMode(true);
 
-			GameClock.m_SW.Start(); // start this once and let it go.
+			GameGlobals.m_SW.Start(); // start this once and let it go.
 		}
 
 		private void Simulator_Load(object sender, EventArgs e)

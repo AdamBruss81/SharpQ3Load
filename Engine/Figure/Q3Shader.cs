@@ -194,7 +194,7 @@ namespace engine
                 Q3ShaderStage stage = m_lStages[i];
                 string sIndex = Convert.ToString(i);
 
-                // rgbgen
+                // rgbgen - at some point change rgbgen to a single value i think
                 if(!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
                     sb.AppendLine("uniform vec3 rgbgen" + sIndex + ";");
@@ -215,7 +215,7 @@ namespace engine
                             case TCMOD.ETYPE.ROTATE: sb.AppendLine("uniform float rotate" + sIndex + "[6];"); break;
                         }
                     }                    
-                }
+                }                
             }
 
             sb.AppendLine("");
@@ -238,8 +238,11 @@ namespace engine
 
                 if (stage.GetTCMODS().Count > 0)
                 {
-                    sb.AppendLine("vec2 " + sTexmod + " = mainTexCoord;");
-                }
+                    if(stage.GetTCGEN_CS() == "environment")
+                        sb.AppendLine("vec2 " + sTexmod + " = tcgenEnvTexCoord;");
+                    else
+                        sb.AppendLine("vec2 " + sTexmod + " = mainTexCoord;");
+                }                
 
                 for (int j = 0; j < stage.GetTCMODS().Count; j++)
                 {
@@ -326,7 +329,8 @@ namespace engine
                     m_lStageTextures[m_lStageTextures.Count - 1].SetShouldBeTGA(bTGA);
 
                     string sTexCoordName = "mainTexCoord";
-                    if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
+                    if (stage.GetTCGEN_CS() == "environment") sTexCoordName = "tcgenEnvTexCoord";
+                    if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex; // this can have started with tcgen environment already
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
                 }
@@ -585,6 +589,10 @@ namespace engine
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_lStages[m_lStages.Count - 1].SetTCModeScale(GetTokensAfterSecond(tokens));
+                            }
+                            else if(sInsideTargetShaderLine.Contains("tcgen environment"))
+                            {
+                                m_lStages[m_lStages.Count - 1].SetTCGEN_CS("environment");
                             }
                             else if(sInsideTargetShaderLine.Contains("$lightmap"))
                             {

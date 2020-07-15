@@ -184,7 +184,9 @@ namespace engine
 			m_cam.GetLookAtRef(m_d3LastMovableCameraLookAt);
             Matrix4 lookat = Matrix4.LookAt((float)m_cam.Position[0], (float)m_cam.Position[1], (float)m_cam.Position[2],
 				(float)m_d3LastMovableCameraLookAt[0], (float)m_d3LastMovableCameraLookAt[1], (float)m_d3LastMovableCameraLookAt[2], 0, 0, 1);
-            GL.LoadMatrix(ref lookat);         
+            GL.LoadMatrix(ref lookat);
+
+			GameGlobals.m_CamPosition = m_cam.Position;
 
 			m_lStaticFigList.ShowAllFigures(m_GraphicsMode, m_cam);
 			m_dynamicFigList.ShowAllFigures(m_GraphicsMode, m_cam); 

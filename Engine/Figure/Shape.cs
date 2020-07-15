@@ -29,7 +29,7 @@ namespace engine
 
 		List<Texture> m_lTextures;
         List<Face> m_lFaces = new List<Face>();
-		List<List<int>> m_lCoordinateIndexes = new List<List<int>>();
+		List<List<int>> m_lCoordinateIndexes = new List<List<int>>(); // the inner list always has 3 elements
         List<D3Vect> m_lVertices = new List<D3Vect>();
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
@@ -88,9 +88,10 @@ namespace engine
 			sb.AppendLine("out vec4 outputColor;");
 			sb.AppendLine("");
 			sb.AppendLine("in vec2 mainTexCoord;");
-			sb.AppendLine("in vec2 lightmapTexCoord;");
+			sb.AppendLine("in vec2 lightmapTexCoord;");			
 			sb.AppendLine("in vec4 color;");
 			sb.AppendLine("in vec3 vertice;");
+			sb.AppendLine("in vec2 tcgenEnvTexCoord;");
 			sb.AppendLine("");
 			
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
@@ -154,7 +155,7 @@ namespace engine
 
 			// use modern open gl via vertex buffers, vertex array, element buffer and shaders
 			// setup vertices
-			int nNumValues = 11;
+			int nNumValues = 14;
             m_arVertices = new double[m_lVertices.Count * nNumValues]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap), color
 			for(int i = 0; i < m_lVertices.Count; i++)
 			{
@@ -169,7 +170,7 @@ namespace engine
 				m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
 				m_arVertices[nBase + 4] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[1];
 
-				if(m_lTextures.Count > 1 && !GetMainTexture().GetPath().Contains("toxicskydim"))
+				if(m_lTextures.Count > 1)
 				{
 					// lightmap texture coordinates
                     m_arVertices[nBase + 5] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[0];
@@ -187,6 +188,28 @@ namespace engine
 				m_arVertices[nBase + 8] = m_lVerticeColors[i].y;
 				m_arVertices[nBase + 9] = m_lVerticeColors[i].z;
 				m_arVertices[nBase + 10] = 1.0;
+
+				// vertice normals
+				D3Vect vNormal = new D3Vect();
+				int nCounter = 0;
+				for(int j = 0; j < m_lCoordinateIndexes.Count; j++)
+				{
+					for(int k = 0; k < m_lCoordinateIndexes[j].Count; k++)
+					{
+						if(i == m_lCoordinateIndexes[j][k])
+						{
+							// j corresponds to a face
+							vNormal += m_lFaces[j].GetNormal;
+							nCounter++;
+						}
+					}
+				}
+				vNormal = vNormal / nCounter;
+				vNormal.normalize();
+
+				m_arVertices[nBase + 11] = vNormal.x;
+				m_arVertices[nBase + 12] = vNormal.y;
+				m_arVertices[nBase + 13] = vNormal.z;
 			}
             
             m_arIndices = new uint[m_lCoordinateIndexes.Count * 3];
@@ -220,7 +243,7 @@ namespace engine
             VertexArrayObject = GL.GenVertexArray();
             ElementBufferObject = GL.GenBuffer();
 
-			ShaderHelper.printOpenGLError();
+			ShaderHelper.printOpenGLError("");
 
 			// setup vertex array object
 			GL.BindVertexArray(VertexArrayObject);
@@ -242,14 +265,17 @@ namespace engine
             GL.VertexAttribPointer(3, 4, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 7 * sizeof(double));
             GL.EnableVertexAttribArray(3);
 
-            ShaderHelper.printOpenGLError();
+            GL.VertexAttribPointer(4, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 11 * sizeof(double));
+            GL.EnableVertexAttribArray(3);
+
+            ShaderHelper.printOpenGLError("");
 
 			// setup element buffer for vertex indices
 			GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
             GL.BufferData(BufferTarget.ElementArrayBuffer, m_arIndices.Length * sizeof(uint), m_arIndices, BufferUsageHint.StaticDraw);
 			// ===
 
-			ShaderHelper.printOpenGLError();
+			ShaderHelper.printOpenGLError("");
 		}
 
         public int GetIndex(Face f)
@@ -425,7 +451,8 @@ namespace engine
 			// ***
 
 			ShaderHelper.UseProgram(ShaderProgram);
-        
+
+			for (int i = 0; i < m_arVertices.Length; i++) m_arVertices[i] = 0;
 			GL.BindVertexArray(VertexArrayObject);
 
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
@@ -542,13 +569,15 @@ namespace engine
 				if (bTCMODS)
 				{
 					nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
-					GL.Uniform1(nLoc, GameClock.GetElapsedS());
+					GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
 				}
-            }            
+				nLoc = GL.GetUniformLocation(ShaderProgram, "camPosition");
+				GL.Uniform3(nLoc, 1, GameGlobals.m_CamPosition.VectFloat());
+			}            
 
 			// END SET UNIFORMS ***
 
-			ShaderHelper.printOpenGLError();
+			ShaderHelper.printOpenGLError(m_q3Shader.GetShaderName());
 
             float[] proj = new float[16];
 			float[] modelview = new float[16]; 

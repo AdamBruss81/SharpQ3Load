@@ -158,7 +158,7 @@ namespace engine
                         if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
                     }
                 }
-                m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToInt32(tokens[0]);
+                m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToSingle(tokens[0]);
             }
         }
         public void SetLightmap(bool b) { m_bLightmap = b; }
@@ -203,7 +203,7 @@ namespace engine
         }
         public void SetTCModeScale(string s)
         {
-            string[] tokens = s.Split(' ');
+            string[] tokens = s.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             m_scale.s = Convert.ToSingle(tokens[0]);
             m_scale.t = Convert.ToSingle(tokens[1]);
 

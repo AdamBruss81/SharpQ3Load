@@ -342,6 +342,10 @@ namespace engine
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
                 }
+                else
+                {
+                    m_lStageTextures.Add(null); // need a placeholder here, will check for null later
+                }
             }
 
             sb.AppendLine("");

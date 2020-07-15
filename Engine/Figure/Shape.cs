@@ -467,10 +467,14 @@ namespace engine
 						case 3: GL.ActiveTexture(TextureUnit.Texture3); break;
 						case 4: GL.ActiveTexture(TextureUnit.Texture4); break;
 					}
-					m_q3Shader.GetStageTexture(i).bindMeRaw(); // assuming every stage has a texture but may not be true always. not sure.
+					Texture tex = m_q3Shader.GetStageTexture(i);
+					if (tex != null)
+					{
+						m_q3Shader.GetStageTexture(i).bindMeRaw();
 
-					int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
-					GL.Uniform1(nLocation, i);
+						int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
+						GL.Uniform1(nLocation, i);
+					}
                 }
 			}
 			else

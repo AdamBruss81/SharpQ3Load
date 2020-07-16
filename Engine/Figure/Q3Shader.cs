@@ -18,6 +18,7 @@ namespace engine
         List<Texture> m_lStageTextures = new List<Texture>(); // ordered to match stages in q3 shader top to bottom. 
         // this list will change after init for effects like animmap
         Shape m_pParent = null;
+        bool m_bAddAlpha = false;
 
         // static methods
         public static string GetSampler2DName() { return "sampler2D"; }
@@ -27,6 +28,11 @@ namespace engine
         {
             m_pParent = parent;
         }        
+
+        public bool GetAddAlpha()
+        {
+            return m_bAddAlpha;
+        }
 
         public string GetShaderName() { return m_sShaderName; }
 
@@ -406,7 +412,7 @@ namespace engine
                 }
                 else if (stage.IsVertexColor())
                 {
-                    sb.Append("outputColor += (" + sTexel + " * color * 2.0)");
+                    sb.Append("outputColor += (" + sTexel + " * color)");
                 }
                 else
                 {
@@ -429,27 +435,21 @@ namespace engine
                     sb.AppendLine("if(outputColor.w >= 0.5) discard;");
                 }
 
-                /*if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
+                if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
                 {
                 }
-                else bAddAlpha = false;*/
-                            }
+                else bAddAlpha = false;
+            }
 
-                            // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
-                            // to. 
-                            if (bAddAlpha)
+            // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
+            // to. 
+            if (bAddAlpha)
             {
-                //sb.AppendLine("");
-
-                //sb.AppendLine("float na = 0.2126 * outputColor.r + 0.7152 * outputColor.g + 0.0722 * outputColor.b;");
-                //sb.AppendLine("float na = 0.299 * outputColor.r + 0.587 * outputColor.g + 0.114 * outputColor.b;");
+                m_bAddAlpha = true;
 
                 // best
-                //sb.AppendLine("float na = sqrt(0.299 * pow(outputColor.r, 2) + 0.587 * pow(outputColor.g, 2) + 0.114 * pow(outputColor.b, 2));");
-                //sb.AppendLine("outputColor.w = na;");
-
-                //sqrt(0.299 * R ^ 2 + 0.587 * G ^ 2 + 0.114 * B ^ 2)
-                // (0.299*R + 0.587*G + 0.114*B
+                sb.AppendLine("float na = sqrt(0.299 * pow(outputColor.r, 2) + 0.587 * pow(outputColor.g, 2) + 0.114 * pow(outputColor.b, 2));");
+                sb.AppendLine("outputColor.w = na;");
             }
 
             // end main

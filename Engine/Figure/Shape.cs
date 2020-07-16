@@ -448,6 +448,11 @@ namespace engine
                 GL.PushAttrib(AttribMask.EnableBit);
                 GL.CullFace(CullFaceMode.Back);
             }
+			if(m_q3Shader.GetAddAlpha())
+			{
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            }
 			// ***
 
 			ShaderHelper.UseProgram(ShaderProgram);
@@ -602,7 +607,11 @@ namespace engine
             {
 				GL.PopAttrib();
             }
-			// ***
+            if (m_q3Shader.GetAddAlpha()) 
+            {
+                GL.Disable(EnableCap.Blend);
+            }
+            // ***
         }
 
 		/// <summary>

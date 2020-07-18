@@ -412,7 +412,7 @@ namespace engine
                 }
                 else if (stage.IsVertexColor())
                 {
-                    sb.Append("outputColor += (" + sTexel + " * color)");
+                    sb.Append("outputColor += (" + sTexel + " * color * 2.0)");
                 }
                 else
                 {

@@ -268,6 +268,9 @@ namespace engine
 				case Keys.F:
 					STATE.DrawFaceNormals = !STATE.DrawFaceNormals;
 					break;
+				case Keys.G:
+					STATE.Gravity = !STATE.Gravity;
+					break;
 			}
 
 			if((Control.ModifierKeys & Keys.Control) == Keys.Control) {
@@ -659,7 +662,7 @@ namespace engine
 
 				if(m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false)
                 {
-                    DetectJumppads(ref eEffectToPlay);
+                    if(STATE.Gravity) DetectJumppads(ref eEffectToPlay);
                 }
 
 				if (eEffectToPlay != SoundManager.EEffects.NONE) m_SoundManager.PlayEffect(eEffectToPlay);
@@ -759,6 +762,8 @@ namespace engine
 		/// </summary>
 		override public void Fall(ref SoundManager.EEffects eEffectToPlay)
         {
+			if (!STATE.Gravity) return;
+
             m_cam.TurnDown();
             int nMoveAttemptCount = 0;
             bool bCanMove = TryToMove(m_cam.GetLookAtNew, m_cam.Position, ref nMoveAttemptCount, false, MovableCamera.DIRECTION.DOWN, false);

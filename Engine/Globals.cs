@@ -24,6 +24,7 @@ namespace engine
 		private static bool m_bShowDebuggingFaces = false;
 		private static bool m_bDrawFaceNormals = false;
 		private static bool m_bAllowPrinting = false;
+		private static bool m_bGravity = true;
 
 		public static bool AllowPrinting
 		{
@@ -48,6 +49,12 @@ namespace engine
 			get { return m_bDrawFaceNormals; }
 			set { m_bDrawFaceNormals = value; }
 		}
+
+		public static bool Gravity
+		{
+            get { return m_bGravity; }
+            set { m_bGravity = value; }
+        }
 	}
 
 	public class LOGGER

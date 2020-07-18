@@ -34,8 +34,8 @@ namespace engine
 		D3Vect m_d3MidPoint = new D3Vect();
 		D3Vect m_d3HalfDimensions = new D3Vect();
 		Color m_color;
-		int m_nIndex;
-		int m_nGlobalIndex;
+		int m_nPrunedIndex;
+		int m_nUnprunedIndex;
 		BoundingBox m_pParent = null;
 		Figure m_pFigure = null;
 
@@ -236,21 +236,21 @@ namespace engine
 			get { return m_MaxCorner; }
 		}
 
-		public int Index
+		public int PrunedIndex
 		{
 			set {
-				m_nIndex = value;
+				m_nPrunedIndex = value;
 			}
 			get
 			{
-				return m_nIndex;
+				return m_nPrunedIndex;
 			}
 		}
 
-		public int GlobalIndex
+		public int UnPrunedIndex
 		{
-			set { m_nGlobalIndex = value; }
-			get { return m_nGlobalIndex; }
+			set { m_nUnprunedIndex = value; }
+			get { return m_nUnprunedIndex; }
 		}
 
 		public D3Vect GetMinCorner
@@ -509,7 +509,7 @@ namespace engine
 
 		public override string ToString()
 		{
-			return "BBOX " + System.Convert.ToString(m_nIndex) + 
+			return "BBOX " + System.Convert.ToString(m_nPrunedIndex) + 
 				" encompassing " + System.Convert.ToString(m_lMapFaces.Count) + " map faces ";
 		}
 
@@ -615,7 +615,7 @@ namespace engine
 			if (m_lMapFaces.Count > 0)
 			{
 				int nCounter = 0;
-				sw.Write("[" + Convert.ToString(m_nGlobalIndex) + "\n");
+				sw.Write("[" + Convert.ToString(m_nUnprunedIndex) + "\n");
 				int nNumMapFaces = GetNumMapFaces;
 				while (nCounter < nNumMapFaces)
 				{
@@ -637,7 +637,7 @@ namespace engine
                 int nNumFaceContainingBoxes = m_lFaceContainingBoxes.Count;
                 while (nCounter < nNumFaceContainingBoxes)
                 {
-                    sw.Write(Convert.ToString(m_lFaceContainingBoxes[nCounter].Index));
+                    sw.Write(Convert.ToString(m_lFaceContainingBoxes[nCounter].m_nUnprunedIndex));
                     if (nCounter % 50 == 0 && nCounter != 0 && nCounter + 1 < nNumFaceContainingBoxes)
                         sw.Write("\n");
                     else if (nCounter + 1 < nNumFaceContainingBoxes)
@@ -664,7 +664,7 @@ namespace engine
                 string sLine = sr.ReadLine(); // ex. "["
                 nLineCounter++;
                 int i;
-                int nBoxIndex;
+                int nUnprunedIndex;
 
                 sLine = sr.ReadLine();
                 nLineCounter++;
@@ -674,8 +674,8 @@ namespace engine
 
                     for (i = 0; i < psFaceBoxIndices.Length; i++)
                     {
-                        nBoxIndex = Convert.ToInt32(psFaceBoxIndices[i]);
-						lBoxes[nIndex].AddFaceContainingBox(lBoxes[nIndex].GetFigure().GetFaceContainingBoundingBoxes()[nBoxIndex]);
+                        nUnprunedIndex = Convert.ToInt32(psFaceBoxIndices[i]);
+						lBoxes[nIndex].AddFaceContainingBox(lBoxes[nIndex].GetFigure().GetFaceContainingBoundingBoxes()[nUnprunedIndex]);
                     }
                     sLine = sr.ReadLine();
                     nLineCounter++;
@@ -685,7 +685,7 @@ namespace engine
 			{
 				string sLine = sr.ReadLine(); // ex. "[34"
 				nLineCounter++;
-				int nGlobalIndex = Convert.ToInt32(sLine.Substring(1));
+				int nUnprunedIndex = Convert.ToInt32(sLine.Substring(1));
 				int i;
 				int nFaceIndex;
 
@@ -697,7 +697,7 @@ namespace engine
 					for (i = 0; i < psFaceIndexes.Length; i++)
 					{
 						nFaceIndex = Convert.ToInt32(psFaceIndexes[i]);
-						lBoxes[nGlobalIndex].AddFace(lMapFaces[nFaceIndex], false);
+						lBoxes[nUnprunedIndex].AddFace(lMapFaces[nFaceIndex], false);
 					}
 					sLine = sr.ReadLine();
 					nLineCounter++;

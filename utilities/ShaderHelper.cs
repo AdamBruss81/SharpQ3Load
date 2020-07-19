@@ -6,7 +6,7 @@ namespace utilities
 {
 	public class ShaderHelper
 	{
-		public static void AttachShader(int nProgram, string sPathOrContent, ShaderType eType, out int nShader, bool bContent)
+		public static void AttachShader(int nProgram, string sPathOrContent, ShaderType eType, out int nShader, bool bContent, string sLabel)
 		{
 			if (!GL.IsProgram(nProgram)) {
 				nShader = -1;
@@ -35,7 +35,7 @@ namespace utilities
 				GL.CompileShader(nShader);
 				GL.GetShader(nShader, ShaderParameter.CompileStatus, out nStatus);
 
-				if (nStatus == 0) printShaderInfoLog(nShader);
+				if (nStatus == 0) printShaderInfoLog(nShader, sLabel);
 
 				GL.AttachShader(nProgram, nShader);
 				GL.LinkProgram(nProgram);
@@ -45,17 +45,17 @@ namespace utilities
 		}
 
         public static void AttachShadersFromContent(int nProgram, string sVert, string sFrag,
-            out int nVertShader, out int nFragShader)
+            out int nVertShader, out int nFragShader, string sLabel)
         {
-            AttachShader(nProgram, sVert, ShaderType.VertexShader, out nVertShader, true);
-            AttachShader(nProgram, sFrag, ShaderType.FragmentShader, out nFragShader, true);
+            AttachShader(nProgram, sVert, ShaderType.VertexShader, out nVertShader, true, sLabel);
+            AttachShader(nProgram, sFrag, ShaderType.FragmentShader, out nFragShader, true, sLabel);
         }
 
         public static void AttachShaders(int nProgram, string sVertPath, string sFragPath, 
 			out int nVertShader, out int nFragShader)
 		{
-			AttachShader(nProgram, sVertPath, ShaderType.VertexShader, out nVertShader, false);
-			AttachShader(nProgram, sFragPath, ShaderType.FragmentShader, out nFragShader, false);
+			AttachShader(nProgram, sVertPath, ShaderType.VertexShader, out nVertShader, false, "");
+			AttachShader(nProgram, sFragPath, ShaderType.FragmentShader, out nFragShader, false, "");
 		}
 
 		public static void DetachShader(int nRunningProgram, int nShader)
@@ -86,16 +86,16 @@ namespace utilities
 			int nProgram = CreateProgram();
 
 			int nShader;
-			AttachShader(nProgram, sPath, eType, out nShader, false);
+			AttachShader(nProgram, sPath, eType, out nShader, false, "");
 			return nProgram;
 		}
 
-		public static int CreateProgramFromContent(string sVertShader, string sFragShader)
+		public static int CreateProgramFromContent(string sVertShader, string sFragShader, string sLabel)
 		{
             int nProgram = CreateProgram();
 
             int nVertShader, nFragShader;
-            AttachShadersFromContent(nProgram, sVertShader, sFragShader, out nVertShader, out nFragShader);
+            AttachShadersFromContent(nProgram, sVertShader, sFragShader, out nVertShader, out nFragShader, sLabel);
             return nProgram;
         }
 
@@ -112,7 +112,7 @@ namespace utilities
 		{
 			int nProgram = CreateProgram();
 
-			AttachShader(nProgram, sPath, eType, out nShader, false);
+			AttachShader(nProgram, sPath, eType, out nShader, false, "");
 			return nProgram;
 		}
 
@@ -178,7 +178,7 @@ namespace utilities
 			}
 		}
 
-		public static void printShaderInfoLog(int nShader)
+		public static void printShaderInfoLog(int nShader, string sLabel)
 		{
 			int infologLength = 0;
 			int charsWritten = 0;			
@@ -189,7 +189,7 @@ namespace utilities
 			{
 				string infoLog;
 				GL.GetShaderInfoLog(nShader, infologLength, out charsWritten, out infoLog);
-				Console.WriteLine("Shader InfoLog:\n" + infoLog);
+				Console.WriteLine(sLabel + " : Shader InfoLog:\n" + infoLog);
 			}
 		}
 

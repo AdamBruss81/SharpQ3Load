@@ -201,6 +201,7 @@ namespace engine
 							// j corresponds to a face
 							vNormal += m_lFaces[j].GetNormal;
 							nCounter++;
+							break;
 						}
 					}
 				}
@@ -225,13 +226,13 @@ namespace engine
 			// create shape specific shaders here to use instead of ones on file
 			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-				ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), CreateGLSLFragShader());
+				ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), CreateGLSLFragShader(), "");
 			}
 			else
 			{
                 // create buffers and shader program
                 autoGenereatedGLSL = CreateGLSLFragShader();
-                ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL);          
+                ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL, m_q3Shader.GetShaderName());          
 			}
 
 #if DEBUG

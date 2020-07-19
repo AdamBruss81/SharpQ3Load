@@ -70,6 +70,7 @@ namespace engine
         string m_sAlphaFunc = "";
         string m_sTCGEN_CS = "";
         bool m_bLightmap = false;
+        bool m_bLightmapFlag = false; 
         TCTURB m_turb = new TCTURB();
         TCSCALE m_scale = new TCSCALE();
         TCSCROLL m_scroll = new TCSCROLL();
@@ -89,7 +90,9 @@ namespace engine
         public void SetTCGEN_CS(string s) { m_sTCGEN_CS = s; }
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
         public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
-        public bool IsRGBGENIdentity()
+        public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
+        public bool GetLightmapFlag() { return m_bLightmapFlag; }
+        public bool IsRGBGENIdentity()  
         {
             return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type));
         }

@@ -15,6 +15,7 @@ namespace engine
         private Zipper m_zipper = new Zipper();
         string m_sShaderName = "";
         string m_sCull = "";
+        string m_sLightImage = "";
         List<Texture> m_lStageTextures = new List<Texture>(); // ordered to match stages in q3 shader top to bottom. 
         // this list will change after init for effects like animmap
         Shape m_pParent = null;
@@ -322,7 +323,7 @@ namespace engine
                 string sIndex = Convert.ToString(i);
 
                 if (stage.GetLightmap())
-                {
+                {        
                     m_lStageTextures.Add(m_pParent.GetLightmapTexture());
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", lightmapTexCoord);");
@@ -400,15 +401,19 @@ namespace engine
                 }
                 else if (sBlendFunc == "gl_src_alpha gl_one_minus_src_alpha" || sBlendFunc == "blend") // mix
                 {
-                    sb.Append("outputColor = mix(outputColor, " + sTexel + ", " + sTexel + ".w)");
+                    sb.Append("outputColor = mix(outputColor, " + sub + ", " + sub + ".w)");
                 }
                 else if (sBlendFunc == "gl_dst_color gl_one_minus_dst_alpha")
-                {
+                {                    
                     sb.Append("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w))");
                 }
                 else if (sBlendFunc == "gl_one gl_zero")
                 {
                     sb.Append("outputColor += (" + sub + ")");
+                }
+                else if(sBlendFunc == "gl_dst_color gl_one")
+                {
+                    sb.Append("outputColor = " + sub + " * outputColor + outputColor");
                 }
                 else if (stage.IsVertexColor())
                 {
@@ -420,6 +425,7 @@ namespace engine
                 }
 
                 sb.Append(";\r\n");
+                sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
 
                 // alpha testing - for example makes skel in fatal instinct look much better
                 if(stage.GetAlphaFunc() == "ge128")
@@ -521,13 +527,32 @@ namespace engine
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_sCull = GetTokensAfterFirst(tokens);
                             }
+                            else if(sInsideTargetShaderLine.Contains("q3map_lightimage"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+
+                                bool bJunk = false;
+                                string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bJunk);
+                                if(File.Exists(sTexPath))
+                                {
+                                    m_sLightImage = tokens[1];
+                                } 
+                            }
+
                             // begin stage found
-                            else if (sInsideTargetShaderLine.Contains("{"))
+                            // sometimes there is shader content after the open stage curly on the same line
+                            if (sInsideTargetShaderLine.Contains("{"))
                             {
                                 m_lStages.Add(new Q3ShaderStage(this));
                                 nCurlyCounter++;
+
+                                // remove open curly from line
+                                int nCurIndex = sInsideTargetShaderLine.IndexOf("{");
+                                sInsideTargetShaderLine = sInsideTargetShaderLine.Substring(nCurIndex + 1);
                             }
-                            else if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
+
+                            if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
                             {
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
@@ -600,7 +625,14 @@ namespace engine
                             }
                             else if(sInsideTargetShaderLine.Contains("$lightmap"))
                             {
-                                m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                                m_lStages[m_lStages.Count - 1].SetLightmapFlag(true);
+
+                                if(m_sLightImage == "")
+                                    m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                                else
+                                {
+                                    m_lStages[m_lStages.Count - 1].SetTexturePath(m_sLightImage);
+                                }
                             }
                             // end stage reading                            
                             else if (sInsideTargetShaderLine.Contains("}")) // end of stage
@@ -609,6 +641,14 @@ namespace engine
 
                                 if (nCurlyCounter == 0)
                                     break; // end of shader
+                                else
+                                {
+                                    if(m_lStages[m_lStages.Count - 1].GetLightmapFlag() && m_sLightImage != "" 
+                                        && m_lStages[m_lStages.Count - 1].GetTCGEN_CS() != "environment")
+                                    {
+                                        m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                                    }
+                                }                                 
                             }
                         }
                         break;

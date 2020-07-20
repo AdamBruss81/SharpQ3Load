@@ -69,6 +69,7 @@ namespace engine
         string m_sBlendFunc = "";
         string m_sAlphaFunc = "";
         string m_sTCGEN_CS = "";
+        string m_sAlphaGenFunc = "";
         bool m_bLightmap = false;
         bool m_bLightmapFlag = false; 
         TCTURB m_turb = new TCTURB();
@@ -92,6 +93,7 @@ namespace engine
         public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
         public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
         public bool GetLightmapFlag() { return m_bLightmapFlag; }
+        public void SetAlphaGen(string s) { m_sAlphaGenFunc = s; }
         public bool IsRGBGENIdentity()  
         {
             return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type));
@@ -142,6 +144,7 @@ namespace engine
 
         public string GetBlendFunc() { return m_sBlendFunc; }
         public string GetAlphaFunc() { return m_sAlphaFunc; }
+        public string GetAlphaGenFunc() { return m_sAlphaGenFunc; }
 
         public void SetTexturePath(string s) { m_sTexturePath = s; }
         public void SetAnimmap(string s)
@@ -293,6 +296,12 @@ namespace engine
             else if (wf.func == "inversesawtooth")
             {
                 fVal = (((1f - (GameGlobals.GetElapsedS() % 1f)) * (wf.freq)) % 1f) * wf.amp;
+            }
+            else if(wf.func == "square")
+            {
+                int n = Math.Sign(Math.Sin(Math.PI * 2 * GameGlobals.GetElapsedS() * wf.freq));
+                if (n >= 0) fVal = wf.fbase + wf.amp;
+                else fVal = wf.fbase;
             }
 
             return fVal;

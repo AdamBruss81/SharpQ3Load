@@ -359,7 +359,7 @@ namespace engine
 			if (GetMainTexture() != null) 
 			{
 				string sName = Path.GetFileName(GetMainTexture().GetPath());
-				if(sName.Contains("beam") || sName.Contains("fog") || sName.Contains("clip"))
+				if(sName.Contains("fog") || sName.Contains("clip"))
 					bRender = false;
             }
 			return !bRender;
@@ -418,11 +418,13 @@ namespace engine
 			// this is very non-generic at this point but I don't know exactly how q3 sorts its faces/shapes for rendering
 			// and I don't care to figure it all out at this point. Just get something working for now.
 
-			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()) && !GetMainTexture().GetPath().Contains("models")) nVal = 0;
-			else if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()) && !GetMainTexture().GetPath().Contains("models") &&
-				!m_q3Shader.GetShaderName().Contains("flame")) nVal = 1;
+			string sShaderName = m_q3Shader.GetShaderName();
+
+			if (string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models")) nVal = 0;
+			else if (!string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models") &&
+				(!sShaderName.Contains("flame") && !sShaderName.Contains("beam"))) nVal = 1;
 			else if (GetMainTexture().GetPath().Contains("models")) nVal = 2;
-			else if (m_q3Shader.GetShaderName().Contains("flame")) nVal = 3;
+			else if (sShaderName.Contains("flame") || sShaderName.Contains("beam")) nVal = 3;
 			else nVal = 0;
 
 			return nVal;
@@ -549,7 +551,9 @@ namespace engine
 								{
                                     nLoc = GL.GetUniformLocation(ShaderProgram, "scroll" + Convert.ToString(i));
                                     stage.GetScrollValues(ref m_uniformFloat2);
-                                    GL.Uniform2(nLoc, 1, m_uniformFloat2);
+									if (m_uniformFloat2[0] < 0) m_uniformFloat2[0] *= -1;
+									if (m_uniformFloat2[1] < 0) m_uniformFloat2[1] *= -1;
+									GL.Uniform2(nLoc, 1, m_uniformFloat2);
 									break;
                                 }
 							case TCMOD.ETYPE.TURB:

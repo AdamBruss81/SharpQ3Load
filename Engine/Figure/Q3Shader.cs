@@ -415,6 +415,10 @@ namespace engine
                 {
                     sb.Append("outputColor = " + sub + " * outputColor + outputColor");
                 }
+                else if(sBlendFunc == "gl_dst_color gl_src_alpha")
+                {
+                    sb.Append("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w");
+                }
                 else if (stage.IsVertexColor())
                 {
                     sb.Append("outputColor += (" + sTexel + " * color * 2.0)");
@@ -447,8 +451,9 @@ namespace engine
                 else bAddAlpha = false;
             }
 
-            // don't do this for now. There are two problems. It's a hack I think. #2 I can't tell when to do it and when not
-            // to. 
+            // add alpha to deal with jpgs that used to be tgas and were converted and have a lot of black color that should be clear
+            // this does not look right but creates a good effect
+            // i don't know how quake or quake kenny does this correctly yet
             if (bAddAlpha)
             {
                 m_bAddAlpha = true;
@@ -582,6 +587,12 @@ namespace engine
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
                                 m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
+                            }
+                            else if(sInsideTargetShaderLine.Contains("alphagen"))
+                            {
+                                string sTrimmed = sInsideTargetShaderLine.Trim();
+                                string[] tokens = sTrimmed.Split(' ');
+                                m_lStages[m_lStages.Count - 1].SetAlphaGen(GetTokensAfterFirst(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("alphafunc"))
                             {

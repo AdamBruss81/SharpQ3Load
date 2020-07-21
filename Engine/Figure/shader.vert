@@ -11,10 +11,52 @@ out vec2 lightmapTexCoord;
 out vec4 color;
 out vec3 vertice;
 out vec2 tcgenEnvTexCoord;
+out float alphaGenSpecular;
 
 uniform mat4 modelview;
 uniform mat4 proj;
 uniform vec3 camPosition; 
+
+void CalculateTcGen(in vec3 campos, in vec3 position, in vec3 vertexnormal, out vec2 tcgen)
+{
+    vec3 viewer = campos - position;
+    viewer = normalize(viewer);
+
+    float d = dot(vertexNormal, viewer);
+
+    vec3 reflected = vertexnormal * 2.0 * d - viewer;
+
+    tcgen[0] = 0.5 + reflected[0] * 0.5;
+    tcgen[1] = 0.5 - reflected[1] * 0.5;
+}
+
+void CalculateAlphaGenSpec(in vec3 campos, in vec3 position, in vec3 vertexnormal, out float alpha)
+{
+    vec3 lightorigin = vec3(-960, 1980, 96);
+
+    vec3 lightdir = lightorigin - position;
+    lightdir = normalize(lightdir);
+    float d = dot(vertexnormal, lightdir);
+    vec3 reflected = vertexnormal * 2 * d - lightdir;
+    vec3 viewer = campos - position;
+    float ilen = sqrt(dot(viewer, viewer));
+    float l = dot(reflected, viewer);
+    l *= ilen;
+
+    if (l < 0) {
+		alpha = 0;
+	} 
+    else {
+		l = l*l;
+		l = l*l;
+		alpha = l * 255;
+		if (alpha > 255) 
+        {
+			alpha = 255;
+		}
+	}
+    alpha = alpha / 255;
+}
 
 void main(void)
 {
@@ -24,15 +66,8 @@ void main(void)
     vec3 viewer = camPosition - aPosition;
     viewer = normalize(viewer);
 
-    float d = dot(vertexNormal, viewer);
-
-    vec3 reflected;
-    reflected[0] = vertexNormal[0] * 2.0 * d - viewer[0];
-    reflected[1] = vertexNormal[1] * 2.0 * d - viewer[1];
-    reflected[2] = vertexNormal[2] * 2.0 * d - viewer[2];
-
-    tcgenEnvTexCoord[0] = 0.5 + reflected[0] * 0.5;
-    tcgenEnvTexCoord[1] = 0.5 - reflected[1] * 0.5; // because of reflection of verts we do at read time?
+    CalculateTcGen(camPosition, aPosition, vertexNormal, tcgenEnvTexCoord);
+    CalculateAlphaGenSpec(camPosition, aPosition, vertexNormal, alphaGenSpecular);
 
     color = aColor;
     vertice = aPosition;

@@ -388,6 +388,21 @@ namespace engine
                 string sTexel = "texel" + sIndex;
                 string sBlendFunc = stage.GetBlendFunc();
 
+                // alphaGen
+                if(stage.GetAlphaGenFunc() == "lightingspecular")
+                {
+                    // test
+                    //vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos));
+                    //sb.AppendLine("vec3 ec_normal = normalize(cross(dFdx(vertice), dFdy(vertice)));");
+                    /*sb.AppendLine("float ags;");
+                    sb.AppendLine("vec3 normal = normalize(cross(dFdx(vertice), dFdy(vertice)));");
+                    sb.AppendLine("CalculateAlphaGenSpec(camPosition, vertice, normal, ags);");
+                    sb.AppendLine(sTexel + ".w *= ags;");*/
+                    sb.AppendLine(sTexel + ".w *= alphaGenSpecular;");
+                }
+                // else if ... other alpha gen functions
+
+                // start forming outputColor
                 string sub = sTexel;
                 if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";               
 
@@ -429,10 +444,12 @@ namespace engine
                 }
 
                 sb.Append(";\r\n");
-                sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
 
+                // this is always the last altering line of a stage to make sure 
+                sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
+              
                 // alpha testing - for example makes skel in fatal instinct look much better
-                if(stage.GetAlphaFunc() == "ge128")
+                if (stage.GetAlphaFunc() == "ge128")
                 {
                     sb.AppendLine("if(outputColor.w < 0.5) discard;");
                 }

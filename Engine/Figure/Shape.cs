@@ -92,8 +92,36 @@ namespace engine
 			sb.AppendLine("in vec4 color;");
 			sb.AppendLine("in vec3 vertice;");
 			sb.AppendLine("in vec2 tcgenEnvTexCoord;");
+			sb.AppendLine("in float alphaGenSpecular;");
 			sb.AppendLine("");
-			
+
+			/*sb.AppendLine("void CalculateAlphaGenSpec(in vec3 campos, in vec3 position, in vec3 normal, out float alpha)");
+			sb.AppendLine("{");
+			sb.AppendLine("vec3 lightorigin = vec3(-960, 1980, 96);");
+			sb.AppendLine("vec3 lightdir = lightorigin - position;");
+			sb.AppendLine("lightdir = normalize(lightdir);");
+			sb.AppendLine("float d = dot(normal, lightdir);");
+			sb.AppendLine("vec3 reflected = normal * 2 * d - lightdir;");
+			sb.AppendLine("vec3 viewer = campos - position;");
+			sb.AppendLine("float ilen = sqrt(dot(viewer, viewer));");
+			sb.AppendLine("float l = dot(reflected, viewer);");
+			sb.AppendLine("l *= ilen;");
+
+			sb.AppendLine("if (l < 0) {");
+			sb.AppendLine("alpha = 0;");
+			sb.AppendLine("}");
+			sb.AppendLine("else {");
+			sb.AppendLine("l = l*l;");
+			sb.AppendLine("l = l*l;");
+			sb.AppendLine("alpha = l * 255;");
+			sb.AppendLine("if (alpha > 255)");
+			sb.AppendLine("{");
+			sb.AppendLine("alpha = 255;");
+			sb.AppendLine("}");
+			sb.AppendLine("}");
+			sb.AppendLine("alpha = alpha / 255;");
+			sb.AppendLine("}");*/
+		
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
 				// if there's a shader in the q3 shader scripts ...

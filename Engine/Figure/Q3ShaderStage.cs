@@ -71,7 +71,8 @@ namespace engine
         string m_sTCGEN_CS = "";
         string m_sAlphaGenFunc = "";
         bool m_bLightmap = false;
-        bool m_bLightmapFlag = false; 
+        bool m_bLightmapFlag = false;
+        bool m_bSkip = false; // for debugging
         TCTURB m_turb = new TCTURB();
         TCSCALE m_scale = new TCSCALE();
         TCSCROLL m_scroll = new TCSCROLL();
@@ -87,6 +88,7 @@ namespace engine
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
+        public bool Skip() { return m_bSkip; }
         public string GetTCGEN_CS() { return m_sTCGEN_CS; }
         public void SetTCGEN_CS(string s) { m_sTCGEN_CS = s; }
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
@@ -94,6 +96,7 @@ namespace engine
         public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
         public bool GetLightmapFlag() { return m_bLightmapFlag; }
         public void SetAlphaGen(string s) { m_sAlphaGenFunc = s; }
+        public void SetSkip(bool b) { m_bSkip = b; }
         public bool IsRGBGENIdentity()  
         {
             return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type));
@@ -279,12 +282,12 @@ namespace engine
 
             if (wf.func == "sin")
             {
-                float dCycleTimeMS = 1.0f / wf.freq * 1000.0f;
+                float dCycleTimeMS = 1.0f / (wf.freq * 2.0f) * 1000.0f;
                 // the point of this calculation is to convert from one range to another
                 // the first range is from 0 to the full cycle time
                 // the second range is from 0 to PI
                 // we want to convert the first range to the second so we can plug into sin
-                double dIntoSin = GameGlobals.GetElapsedMS() / dCycleTimeMS * Math.PI;
+                double dIntoSin = (GameGlobals.GetElapsedMS() + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
 
                 // after plugging into sin you just have to scale by the amplitude and then add the initial value
                 fVal = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase));
@@ -302,6 +305,16 @@ namespace engine
                 int n = Math.Sign(Math.Sin(Math.PI * 2 * GameGlobals.GetElapsedS() * wf.freq));
                 if (n >= 0) fVal = wf.fbase + wf.amp;
                 else fVal = wf.fbase;
+            }
+            else if(wf.func == "triangle")
+            {
+                float fHalfPeriod = 1 / wf.freq / 2;
+                fVal = wf.amp / fHalfPeriod * (fHalfPeriod - Math.Abs((GameGlobals.GetElapsedS() + wf.phase * fHalfPeriod) % (2 * fHalfPeriod) - fHalfPeriod)) + wf.fbase;
+
+                /*if (m_ParentShader.GetShaderName().Contains("proto_light_2k"))
+                {
+                    LOGGER.Debug("the rgbgen value is: " + fVal);
+                }*/
             }
 
             return fVal;

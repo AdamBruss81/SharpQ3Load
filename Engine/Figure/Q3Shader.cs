@@ -186,7 +186,7 @@ namespace engine
         public void GenerateGLSL(System.Text.StringBuilder sb)
         {
             // add samplers to frag shader based on stage count
-            for(int i = 0; i < m_lStages.Count; i++)
+            for (int i = 0; i < m_lStages.Count; i++)
             {
                 sb.AppendLine("uniform " + GetSampler2DName() + " texture" + Convert.ToString(i) + ";");
             }
@@ -196,24 +196,24 @@ namespace engine
             bool bAddTime = false;
 
             // add uniforms
-            for(int i = 0; i < m_lStages.Count; i++)
+            for (int i = 0; i < m_lStages.Count; i++)
             {
                 Q3ShaderStage stage = m_lStages[i];
                 string sIndex = Convert.ToString(i);
 
                 // rgbgen - at some point change rgbgen to a single value i think
-                if(!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
+                if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
                     sb.AppendLine("uniform vec3 rgbgen" + sIndex + ";");
                 }
 
                 // tcmod
-                if(stage.GetTCMODS().Count > 0) // there are tcmods
+                if (stage.GetTCMODS().Count > 0) // there are tcmods
                 {
                     bAddTime = true;
-                    for(int j = 0; j < stage.GetTCMODS().Count; j++) // this order doesn't matter for the uniform declarations
+                    for (int j = 0; j < stage.GetTCMODS().Count; j++) // this order doesn't matter for the uniform declarations
                     {
-                        switch(stage.GetTCMODS()[j].GetModType())
+                        switch (stage.GetTCMODS()[j].GetModType())
                         {
                             case TCMOD.ETYPE.SCALE: sb.AppendLine("uniform vec2 scale" + sIndex + ";"); break;
                             case TCMOD.ETYPE.SCROLL: sb.AppendLine("uniform vec2 scroll" + sIndex + ";"); break;
@@ -221,15 +221,15 @@ namespace engine
                             case TCMOD.ETYPE.STRETCH: sb.AppendLine("uniform float stretch" + sIndex + "[6];"); break;
                             case TCMOD.ETYPE.ROTATE: sb.AppendLine("uniform float rotate" + sIndex + "[6];"); break;
                         }
-                    }                    
-                }                
+                    }
+                }
             }
 
             sb.AppendLine("");
 
             // I'm trying to make these auto generated glsl shaders as minimal as possible to make debugging and reading them easier. So
             // only add this time uniform if it's actually used.
-            if(bAddTime) sb.AppendLine("uniform float timeS;");
+            if (bAddTime) sb.AppendLine("uniform float timeS;");
 
             // create main function
             sb.AppendLine("");
@@ -245,11 +245,11 @@ namespace engine
 
                 if (stage.GetTCMODS().Count > 0)
                 {
-                    if(stage.GetTCGEN_CS() == "environment")
+                    if (stage.GetTCGEN_CS() == "environment")
                         sb.AppendLine("vec2 " + sTexmod + " = tcgenEnvTexCoord;");
                     else
                         sb.AppendLine("vec2 " + sTexmod + " = mainTexCoord;");
-                }                
+                }
 
                 for (int j = 0; j < stage.GetTCMODS().Count; j++)
                 {
@@ -323,12 +323,12 @@ namespace engine
                 string sIndex = Convert.ToString(i);
 
                 if (stage.GetLightmap())
-                {        
+                {
                     m_lStageTextures.Add(m_pParent.GetLightmapTexture());
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", lightmapTexCoord);");
                 }
-                else if (!string.IsNullOrEmpty(stage.GetTexturePath())) 
+                else if (!string.IsNullOrEmpty(stage.GetTexturePath()))
                 {
                     m_lStageTextures.Add(new Texture(stage.GetTexturePath()));
                     bool bTGA = false;
@@ -341,12 +341,13 @@ namespace engine
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
                 }
-                else if(stage.IsAnimmap())
+                else if (stage.IsAnimmap())
                 {
                     m_lStageTextures.Add(stage.GetAnimmapTexture()); // initial texture, will change as time passes
 
                     string sTexCoordName = "mainTexCoord";
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
+
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
                 }
                 else
@@ -358,9 +359,9 @@ namespace engine
             sb.AppendLine("");
 
             // define rgbgen vec4s to use in outputColor below
-            for(int i = 0; i < m_lStages.Count; i++)
+            for (int i = 0; i < m_lStages.Count; i++)
             {
-                if(!m_lStages[i].IsRGBGENIdentity() && !m_lStages[i].IsVertexColor())
+                if (!m_lStages[i].IsRGBGENIdentity() && !m_lStages[i].IsVertexColor())
                 {
                     sb.AppendLine("vec4 rgbmod" + Convert.ToString(i) + " = vec4(rgbgen" + Convert.ToString(i) + ", 1.0);");
                 }
@@ -378,89 +379,85 @@ namespace engine
             // instead i have to add alpha myself. not sure how q3 actually does this
             // deciding when to do it is specific for now. see below
 
-            System.Text.StringBuilder sbOutputline = new System.Text.StringBuilder();           
-            for(int i = 0; i < m_lStages.Count; i++)
-            {                
+            System.Text.StringBuilder sbOutputline = new System.Text.StringBuilder();
+            for (int i = 0; i < m_lStages.Count; i++)
+            {
                 Q3ShaderStage stage = m_lStages[i];
+                if (stage.Skip()) continue;
                 string sLightmapScale = stage.GetLightmap() ? " * 3.0" : "";
-                 
+
                 string sIndex = Convert.ToString(i);
                 string sTexel = "texel" + sIndex;
                 string sBlendFunc = stage.GetBlendFunc();
 
                 // alphaGen
-                if(stage.GetAlphaGenFunc() == "lightingspecular")
+                if (stage.GetAlphaGenFunc() == "lightingspecular")
                 {
-                    // test
-                    //vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos));
-                    //sb.AppendLine("vec3 ec_normal = normalize(cross(dFdx(vertice), dFdy(vertice)));");
-                    /*sb.AppendLine("float ags;");
-                    sb.AppendLine("vec3 normal = normalize(cross(dFdx(vertice), dFdy(vertice)));");
-                    sb.AppendLine("CalculateAlphaGenSpec(camPosition, vertice, normal, ags);");
-                    sb.AppendLine(sTexel + ".w *= ags;");*/
                     sb.AppendLine(sTexel + ".w *= alphaGenSpecular;");
                 }
-                // else if ... other alpha gen functions
 
                 // start forming outputColor
                 string sub = sTexel;
-                if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor()) sub = "(" + sTexel + " * rgbmod" + sIndex + ")";               
+                if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
+                {
+                    sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
+                }
 
                 if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
                 {
-                    sb.Append("outputColor *= " + sub + sLightmapScale);
+                    sb.AppendLine("outputColor *= " + sub + sLightmapScale + ";");
                 }
                 else if (sBlendFunc == "gl_one gl_one" || sBlendFunc == "add") // src + dest
                 {
-                    sb.Append("outputColor += " + sub + sLightmapScale);
+                    sb.AppendLine("outputColor += " + sub + sLightmapScale + ";");
                 }
                 else if (sBlendFunc == "gl_src_alpha gl_one_minus_src_alpha" || sBlendFunc == "blend") // mix
                 {
-                    sb.Append("outputColor = mix(outputColor, " + sub + ", " + sub + ".w)");
+                    sb.AppendLine("outputColor = mix(outputColor, " + sub + ", " + sub + ".w);");
                 }
                 else if (sBlendFunc == "gl_dst_color gl_one_minus_dst_alpha")
-                {                    
-                    sb.Append("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w))");
+                {
+                    sb.AppendLine("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w));");
                 }
                 else if (sBlendFunc == "gl_one gl_zero")
                 {
-                    sb.Append("outputColor += (" + sub + ")");
+                    sb.AppendLine("outputColor += (" + sub + ");");
                 }
-                else if(sBlendFunc == "gl_dst_color gl_one")
+                else if (sBlendFunc == "gl_dst_color gl_one")
                 {
-                    sb.Append("outputColor = " + sub + " * outputColor + outputColor");
+                    sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor;");
                 }
-                else if(sBlendFunc == "gl_dst_color gl_src_alpha")
+                else if (sBlendFunc == "gl_dst_color gl_src_alpha")
                 {
-                    sb.Append("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w");
+                    sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w;");
                 }
                 else if (stage.IsVertexColor())
                 {
-                    sb.Append("outputColor += (" + sTexel + " * color * 2.0)");
+                    sb.AppendLine("outputColor += (" + sTexel + " * color * 2.0);");
                 }
                 else
                 {
-                    sb.Append("outputColor += (" + sub + ")" + sLightmapScale);
+                    sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
                 }
-
-                sb.Append(";\r\n");
 
                 // this is always the last altering line of a stage to make sure 
                 sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
-              
+
                 // alpha testing - for example makes skel in fatal instinct look much better
                 if (stage.GetAlphaFunc() == "ge128")
                 {
                     sb.AppendLine("if(outputColor.w < 0.5) discard;");
                 }
-                else if(stage.GetAlphaFunc() == "gt0")
+                else if (stage.GetAlphaFunc() == "gt0")
                 {
                     sb.AppendLine("if(outputColor.w <= 0) discard;");
                 }
-                else if(stage.GetAlphaFunc() == "lt128")
+                else if (stage.GetAlphaFunc() == "lt128")
                 {
                     sb.AppendLine("if(outputColor.w >= 0.5) discard;");
                 }
+
+                sb.AppendLine("");
 
                 if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
                 {
@@ -676,7 +673,17 @@ namespace engine
                                     {
                                         m_lStages[m_lStages.Count - 1].SetLightmap(true);
                                     }
-                                }                                 
+                                }   
+                                
+                                // this is a good spot to exit out of the shader reading process to debug shaders
+                                // exit out after stages one by one to test stages one by one
+                                if(m_sShaderName.Contains("proto_light_2k"))
+                                {
+                                    if(m_lStages.Count == 5)
+                                    {
+                                        //m_lStages[3].SetSkip(true);
+                                    }
+                                }
                             }
                         }
                         break;

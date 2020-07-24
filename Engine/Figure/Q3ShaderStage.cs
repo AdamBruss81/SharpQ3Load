@@ -70,6 +70,7 @@ namespace engine
         string m_sAlphaFunc = "";
         string m_sTCGEN_CS = "";
         string m_sAlphaGenFunc = "";
+        string m_sAnimmapIntervalInput = "";
         bool m_bLightmap = false;
         bool m_bLightmapFlag = false;
         bool m_bSkip = false; // for debugging
@@ -85,6 +86,8 @@ namespace engine
         int m_nCurAnimmapTextureIndex = 0;
         float m_fSecondsPerAnimmapTexture = 0f;
         float m_fLastAnimmapTextureChangeTime = 0f;
+        bool m_bSyncRGBGENandAnimmap = false;
+        float m_fPrevRGBGENWaveformVal = 0f;
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
@@ -101,17 +104,37 @@ namespace engine
         {
             return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type));
         }
+        public void SetCustomRenderRules()
+        {
+            // for sync of animmap and rgbgen waveforms ...
+            if(IsAnimmap() && (m_rgbgen.wf.func == "inversesawtooth" || m_rgbgen.wf.func == "sawtooth")) // expand this to sawtooth as well
+            {
+                if(m_sAnimmapIntervalInput == m_rgbgen.wf.freq.ToString())
+                {
+                    m_bSyncRGBGENandAnimmap = true;
+                }
+            }
+        }
 
         public bool IsAnimmap() { return m_lAnimmapTextures.Count > 0; }
 
         public Texture GetAnimmapTexture()
         {
-            if (m_fLastAnimmapTextureChangeTime == 0f) m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
-            else if (GameGlobals.GetElapsedS() - m_fLastAnimmapTextureChangeTime >= m_fSecondsPerAnimmapTexture)
+            if (!m_bSyncRGBGENandAnimmap)
             {
-                m_nCurAnimmapTextureIndex++;
-                if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
-                m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
+                if (m_fLastAnimmapTextureChangeTime == 0f) m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
+                else if (GameGlobals.GetElapsedS() - m_fLastAnimmapTextureChangeTime >= m_fSecondsPerAnimmapTexture)
+                {
+                    m_nCurAnimmapTextureIndex++;
+                    if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
+
+                    /*if (m_ParentShader.GetShaderName().Contains("computer_blocks17"))
+                    {
+                        LOGGER.Debug("animmap index changed to: " + m_nCurAnimmapTextureIndex);
+                    }*/
+
+                    m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
+                }
             }
 
             return m_lAnimmapTextures[m_nCurAnimmapTextureIndex];
@@ -168,6 +191,7 @@ namespace engine
                     }
                 }
                 m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToSingle(tokens[0]);
+                m_sAnimmapIntervalInput = tokens[0];
             }
         }
         public void SetLightmap(bool b) { m_bLightmap = b; }
@@ -278,7 +302,7 @@ namespace engine
         // this needs to factor in phase at some point
         private float CalculateWaveForm(WaveForm wf)
         {            
-            float fVal = 0f;
+            float fVal = 1f;
 
             if (wf.func == "sin")
             {
@@ -295,10 +319,28 @@ namespace engine
             else if (wf.func == "sawtooth")
             {
                 fVal = ((GameGlobals.GetElapsedS() * wf.freq) % 1f) * wf.amp;
+
+                if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
+                {
+                    // if the change is greater than half the amplitude assume the function cycled
+                    m_nCurAnimmapTextureIndex++;
+                    if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
+                }
+
+                m_fPrevRGBGENWaveformVal = fVal;
             }
             else if (wf.func == "inversesawtooth")
             {
                 fVal = (((1f - (GameGlobals.GetElapsedS() % 1f)) * (wf.freq)) % 1f) * wf.amp;
+
+                if(m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
+                {
+                    // if the change is greater than half the amplitude assume the function cycled
+                    m_nCurAnimmapTextureIndex++;
+                    if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
+                }
+
+                m_fPrevRGBGENWaveformVal = fVal;
             }
             else if(wf.func == "square")
             {
@@ -329,6 +371,7 @@ namespace engine
             if (m_rgbgen.type == "wave")
             {
                 rgb[0] = CalculateWaveForm(m_rgbgen.wf);
+                if (rgb[0] > 1.0f) rgb[0] = 1.0f; // I think I should do this. Not sure yet.
                 rgb[1] = rgb[0];
                 rgb[2] = rgb[0];                
             }

@@ -19,7 +19,9 @@ namespace engine
         List<Texture> m_lStageTextures = new List<Texture>(); // ordered to match stages in q3 shader top to bottom. 
         // this list will change after init for effects like animmap
         Shape m_pParent = null;
-        bool m_bAddAlpha = false;
+        bool m_bTrans = false;
+        bool m_bAlphaShadow = false;
+        bool m_bLava = false;
 
         // static methods
         public static string GetSampler2DName() { return "sampler2D"; }
@@ -28,11 +30,20 @@ namespace engine
         public Q3Shader(Shape parent)
         {
             m_pParent = parent;
-        }        
+        }     
+        
+        public bool GetTrans() { return m_bTrans; }
 
         public bool GetAddAlpha()
         {
-            return m_bAddAlpha;
+            bool bAA = false;
+
+            bAA = m_sCull == "disable" || m_sCull == "none";
+            if (!bAA) bAA = m_bAlphaShadow;
+            if (!bAA) bAA = m_bTrans;
+            if (m_bLava) bAA = false; // not sure why
+
+            return bAA;
         }
 
         public string GetShaderName() { return m_sShaderName; }
@@ -340,6 +351,11 @@ namespace engine
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex; // this can have started with tcgen environment already
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
+
+                    if(bTGA && GetAddAlpha())
+                    {
+                        AppendAddAlphaLine(sIndex, sb);                                               
+                    }
                 }
                 else if (stage.IsAnimmap())
                 {
@@ -349,6 +365,11 @@ namespace engine
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
+
+                    if(m_lStageTextures[m_lStageTextures.Count - 1].GetShouldBeTGA() && GetAddAlpha())
+                    {
+                        AppendAddAlphaLine(sIndex, sb);
+                    }
                 }
                 else
                 {
@@ -374,7 +395,7 @@ namespace engine
 
             sb.AppendLine("");
 
-            bool bAddAlpha = true; // this is for tgas that got converted to jpg by id before shipping
+            //bool bAddAlpha = true; // this is for tgas that got converted to jpg by id before shipping
             // if they were tgas, the blending would just work for free for the most part
             // instead i have to add alpha myself. not sure how q3 actually does this
             // deciding when to do it is specific for now. see below
@@ -415,6 +436,10 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = mix(outputColor, " + sub + ", " + sub + ".w);");
                 }
+                else if (sBlendFunc == "gl_one_minus_src_alpha gl_src_alpha")
+                {
+                    sb.AppendLine("outputColor = " + sub + " * (1 - " + sub + ".w) + outputColor * " + sub + ".w;");
+                }
                 else if (sBlendFunc == "gl_dst_color gl_one_minus_dst_alpha")
                 {
                     sb.AppendLine("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w));");
@@ -431,6 +456,7 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w;");
                 }
+                
                 else if (stage.IsVertexColor())
                 {
                     sb.AppendLine("outputColor += (" + sTexel + " * color * 2.0);");
@@ -440,8 +466,13 @@ namespace engine
                     sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
                 }
 
-                // this is always the last altering line of a stage to make sure 
+                // clamp colors that are over 1.0
                 sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
+
+                /*if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
+                {
+                }
+                else bAddAlpha = false;*/
 
                 // alpha testing - for example makes skel in fatal instinct look much better
                 if (stage.GetAlphaFunc() == "ge128")
@@ -457,30 +488,32 @@ namespace engine
                     sb.AppendLine("if(outputColor.w >= 0.5) discard;");
                 }
 
-                sb.AppendLine("");
-
-                if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
-                {
-                }
-                else bAddAlpha = false;
+                sb.AppendLine("");                
             }
 
             // add alpha to deal with jpgs that used to be tgas and were converted and have a lot of black color that should be clear
             // this does not look right but creates a good effect
             // i don't know how quake or quake kenny does this correctly yet
-            if (bAddAlpha)
+            /*if (bAddAlpha || m_bAddAlpha) // m_bAddAlpha can already be set to true for example if surfaceparm trans to set for the q3 shader
             {
-                m_bAddAlpha = true;
+                if(!m_bAddAlpha) m_bAddAlpha = true; 
 
                 // best
                 sb.AppendLine("float na = sqrt(0.299 * pow(outputColor.r, 2) + 0.587 * pow(outputColor.g, 2) + 0.114 * pow(outputColor.b, 2));");
                 sb.AppendLine("outputColor.w = na;");
-            }
+            }*/
 
             // end main
             sbOutputline.AppendLine("}");
 
             sb.Append(sbOutputline.ToString());
+        }
+
+        private void AppendAddAlphaLine(string sIndex, System.Text.StringBuilder sb)
+        {
+            string sTexel = "texel" + sIndex;
+            sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");
+            sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
         }
 
         /// <summary>
@@ -539,12 +572,24 @@ namespace engine
                                 {
                                     m_eStepType = EStepType.NONE;
                                 }
+                                if(sInsideTargetShaderLine.Contains("trans"))
+                                {
+                                    m_bTrans = true;
+                                }
+                                if(sInsideTargetShaderLine.Contains("alphashadow"))
+                                {
+                                    m_bAlphaShadow = true;
+                                }
+                                if(sInsideTargetShaderLine.Contains("lava"))
+                                {
+                                    m_bLava = true;
+                                }
                             }
                             else if (sInsideTargetShaderLine.Contains("cull"))
                             {
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
-                                m_sCull = GetTokensAfterFirst(tokens);
+                                m_sCull = GetTokensAfterFirst(tokens);                                
                             }
                             else if(sInsideTargetShaderLine.Contains("q3map_lightimage"))
                             {
@@ -677,13 +722,21 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("proto_light_2k"))
+                                if(m_sShaderName.Contains("chapthroat2"))
                                 {
-                                    if(m_lStages.Count == 5)
+                                    if(m_lStages.Count == 1)
                                     {
+                                        break;
+
+                                        // you can break out after reading some of the stages and test
+                                        // or you can set certain stages to skip rendering
+
+                                        //break;
                                         //m_lStages[3].SetSkip(true);
                                     }
                                 }
+
+                                m_lStages[m_lStages.Count - 1].SetCustomRenderRules();
                             }
                         }
                         break;

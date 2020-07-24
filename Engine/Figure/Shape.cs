@@ -441,6 +441,11 @@ namespace engine
          {
 			if (DontRender()) return;
 
+			if(m_q3Shader.GetShaderName().Contains("cybergrate3"))
+			{
+				int stop = 0;
+			}
+
 			// these apply to entire shader
 			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
 			{
@@ -462,46 +467,7 @@ namespace engine
 			ShaderHelper.UseProgram(ShaderProgram);
 
 			for (int i = 0; i < m_arVertices.Length; i++) m_arVertices[i] = 0;
-			GL.BindVertexArray(VertexArrayObject);
-
-			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
-			{ 
-				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
-				{
-					switch(i)
-					{
-						case 0: GL.ActiveTexture(TextureUnit.Texture0); break;
-						case 1: GL.ActiveTexture(TextureUnit.Texture1); break;
-						case 2: GL.ActiveTexture(TextureUnit.Texture2); break;
-						case 3: GL.ActiveTexture(TextureUnit.Texture3); break;
-						case 4: GL.ActiveTexture(TextureUnit.Texture4); break;
-					}
-					Texture tex = m_q3Shader.GetStageTexture(i);
-					if (tex != null)
-					{
-						m_q3Shader.GetStageTexture(i).bindMeRaw();
-
-						int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
-						GL.Uniform1(nLocation, i);
-					}
-                }
-			}
-			else
-			{
-				GL.ActiveTexture(TextureUnit.Texture0);
-				GetMainTexture().bindMeRaw();
-				GL.ActiveTexture(TextureUnit.Texture1);
-				if (m_lTextures.Count >= 2)
-				{
-					GetLightmapTexture().bindMeRaw();
-				}
-				else
-				{
-					GetMainTexture().bindMeRaw(); // placeholder
-				}
-				GL.ActiveTexture(TextureUnit.Texture2);
-				GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
-			}
+			GL.BindVertexArray(VertexArrayObject);			
 
 			// SET UNIFORMS ***
 			int nLoc;
@@ -588,11 +554,50 @@ namespace engine
 				}
 				nLoc = GL.GetUniformLocation(ShaderProgram, "camPosition");
 				GL.Uniform3(nLoc, 1, GameGlobals.m_CamPosition.VectFloat());
-			}            
+			}
+            // END SET UNIFORMS ***
 
-			// END SET UNIFORMS ***
+            // Activate textures - this needs to be before the uniforms above to make animmaps sync with waveforms
+            if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
+            {
+                for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+                {
+                    switch (i)
+                    {
+                        case 0: GL.ActiveTexture(TextureUnit.Texture0); break;
+                        case 1: GL.ActiveTexture(TextureUnit.Texture1); break;
+                        case 2: GL.ActiveTexture(TextureUnit.Texture2); break;
+                        case 3: GL.ActiveTexture(TextureUnit.Texture3); break;
+                        case 4: GL.ActiveTexture(TextureUnit.Texture4); break;
+                    }
+                    Texture tex = m_q3Shader.GetStageTexture(i);
+                    if (tex != null)
+                    {
+                        m_q3Shader.GetStageTexture(i).bindMeRaw();
 
-			ShaderHelper.printOpenGLError(m_q3Shader.GetShaderName());
+                        int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
+                        GL.Uniform1(nLocation, i);
+                    }
+                }
+            }
+            else
+            {
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GetMainTexture().bindMeRaw();
+                GL.ActiveTexture(TextureUnit.Texture1);
+                if (m_lTextures.Count >= 2)
+                {
+                    GetLightmapTexture().bindMeRaw();
+                }
+                else
+                {
+                    GetMainTexture().bindMeRaw(); // placeholder
+                }
+                GL.ActiveTexture(TextureUnit.Texture2);
+                GetMainTexture().bindMeRaw(); // placeholder, not sure this is needed
+            }
+
+            ShaderHelper.printOpenGLError(m_q3Shader.GetShaderName());
 
             float[] proj = new float[16];
 			float[] modelview = new float[16]; 

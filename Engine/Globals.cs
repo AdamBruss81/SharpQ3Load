@@ -184,8 +184,9 @@ namespace engine
 	{
 		public static System.Diagnostics.Stopwatch m_SW = new System.Diagnostics.Stopwatch();
 		public static utilities.D3Vect m_CamPosition = new utilities.D3Vect();
+		public static float m_fFrameStartElapsedS = 0f;
 
 		public static long GetElapsedMS() { return m_SW.ElapsedMilliseconds; }
-		public static float GetElapsedS() { return (float)m_SW.ElapsedMilliseconds / 1000.0f; }
+		public static float GetElapsedS() { return m_fFrameStartElapsedS; }
 	}
 }

@@ -38,10 +38,20 @@ namespace engine
         {
             bool bAA = false;
 
-            bAA = m_sCull == "disable" || m_sCull == "none";
-            if (!bAA) bAA = m_bAlphaShadow;
+            // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
+            bAA = m_sShaderName.Contains("teslacoil"); // for example see big power reactor in dm0
+
+            if(!bAA) bAA = m_bAlphaShadow;
             if (!bAA) bAA = m_bTrans;
-            if (m_bLava) bAA = false; // not sure why
+            if(!bAA)
+            {
+                if(m_lStages.Count == 1 && m_lStageTextures[0].GetShouldBeTGA())
+                {
+                    bAA = true;
+                }
+            }
+
+            if (m_bLava) bAA = false; // not sure why trans is set on lava shaders sometimes
 
             return bAA;
         }
@@ -114,11 +124,15 @@ namespace engine
                 else if (tokens[1].Contains("common"))
                     return new List<string>() { "common" };
                 else if (tokens[0].Contains("models"))
-                    return new List<string>() { "models" };
+                    return new List<string>() { "models", "sfx" };
                 else if (tokens[1].Contains("ctf"))
                     return new List<string>() { "ctf" };
                 else if (tokens[1].Contains("base_support"))
                     return new List<string>() { "base_support" };
+                else if (tokens[1].Contains("base_door"))
+                    return new List<string>() { "base_wall" };
+                /*else if (tokens[1].Contains("mapobjects"))
+                    return new List<string>() { "sfx" };*/
                 else
                     return new List<string>();
             }
@@ -150,7 +164,7 @@ namespace engine
 
         private bool IsMapTexture(string s)
         {
-            return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures") || s.Contains("models")) && !s.Contains("clampmap");
+            return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures") || s.Contains("models"));
         }
 
         public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL, ref bool bShouldBeTGA)
@@ -343,8 +357,9 @@ namespace engine
                 {
                     m_lStageTextures.Add(new Texture(stage.GetTexturePath()));
                     bool bTGA = false;
+                    m_lStageTextures[m_lStageTextures.Count - 1].SetClamp(stage.GetClampmap());
                     m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bTGA));
-                    m_lStageTextures[m_lStageTextures.Count - 1].SetShouldBeTGA(bTGA);
+                    m_lStageTextures[m_lStageTextures.Count - 1].SetShouldBeTGA(bTGA);                    
 
                     string sTexCoordName = "mainTexCoord";
                     if (stage.GetTCGEN_CS() == "environment") sTexCoordName = "tcgenEnvTexCoord";
@@ -522,6 +537,11 @@ namespace engine
         /// <returns></returns>
         public void ReadShader(string sPathFromVRML)
         {            
+            if(sPathFromVRML.Contains("portal_3"))
+            {
+                int stop = 0;
+            }
+
             List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
             string sNewPath = "";
 
@@ -628,10 +648,14 @@ namespace engine
                                 string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                                 if (tokens.Length == 2)
                                 {
-                                    if (tokens[0].Trim(new char[] { '\t' }) == "map")
+                                    if (tokens[0].Trim(new char[] { '\t' }) == "map" || tokens[0].Trim(new char[] { '\t' }) == "clampmap")
                                     {
                                         if (string.IsNullOrEmpty(sNewPath)) sNewPath = tokens[1];
                                         m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
+                                        if(sInsideTargetShaderLine.Contains("clampmap"))
+                                        {
+                                            m_lStages[m_lStages.Count - 1].SetClampmap(true);
+                                        }
                                     }
                                 }
                             }
@@ -722,19 +746,20 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("chapthroat2"))
+                                /*if(m_sShaderName.Contains("proto_light_2k"))
                                 {
-                                    if(m_lStages.Count == 1)
+                                    if(m_lStages.Count == 4)
                                     {
-                                        break;
+                                        //m_lStages[2].SetSkip(true);
+                                        //break;
 
                                         // you can break out after reading some of the stages and test
                                         // or you can set certain stages to skip rendering
 
                                         //break;
-                                        //m_lStages[3].SetSkip(true);
+                                        //m_lStages[2].SetSkip(true);
                                     }
-                                }
+                                }*/
 
                                 m_lStages[m_lStages.Count - 1].SetCustomRenderRules();
                             }

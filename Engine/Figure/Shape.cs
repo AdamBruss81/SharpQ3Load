@@ -407,27 +407,35 @@ namespace engine
 		
 		public int GetRenderOrder()
 		{
-			int nVal;
+			int nVal = 0;
+
 			// 0 means render first
 			// higher means render later
 
 			// 0 unshaded and not models
 			// 1 shaded but not flames or models
-			// 2 models
-			// 3 flames
+			// 2 shaded with transparency
+			// 3 models
+			// 4 flames
 
 			// this is very non-generic at this point but I don't know exactly how q3 sorts its faces/shapes for rendering
 			// and I don't care to figure it all out at this point. Just get something working for now.
 
 			string sShaderName = m_q3Shader.GetShaderName();
 
-			if (string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models")) nVal = 0;
+			/*if (string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models")) nVal = 0;
 			else if (!string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models") &&
-				(!sShaderName.Contains("flame") && !sShaderName.Contains("beam"))) nVal = 1;
-			else if (GetMainTexture().GetPath().Contains("models")) nVal = 2;
-			else if (sShaderName.Contains("flame") || sShaderName.Contains("beam")) nVal = 3;
-			else nVal = 0;
+				(!sShaderName.Contains("flame") && !sShaderName.Contains("beam")) && !m_q3Shader.GetAddAlpha()) nVal = 1;
+			else if (m_q3Shader.GetAddAlpha()) return 2;
+			else if (GetMainTexture().GetPath().Contains("models")) nVal = 3;
+			else if (sShaderName.Contains("flame") || sShaderName.Contains("beam")) nVal = 4;
+			else nVal = 0;*/
 
+			if (sShaderName.Contains("models")) nVal = 3;
+			if (!string.IsNullOrEmpty(sShaderName)) nVal = 4;
+            if (m_q3Shader.GetAddAlpha()) nVal = 5;
+			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 6;
+		
 			return nVal;
 		}
 
@@ -438,13 +446,13 @@ namespace engine
 		/// of texture units.
 		/// </summary>
 		public void Show()
-         {
-			if (DontRender()) return;
-
-			if(m_q3Shader.GetShaderName().Contains("cybergrate3"))
+        {
+			if(m_q3Shader.GetShaderName().Contains("console/console"))
 			{
 				int stop = 0;
 			}
+
+			if (DontRender()) return;
 
 			// these apply to entire shader
 			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
@@ -569,7 +577,8 @@ namespace engine
                         case 2: GL.ActiveTexture(TextureUnit.Texture2); break;
                         case 3: GL.ActiveTexture(TextureUnit.Texture3); break;
                         case 4: GL.ActiveTexture(TextureUnit.Texture4); break;
-                    }
+						case 5: GL.ActiveTexture(TextureUnit.Texture5); break;
+					}
                     Texture tex = m_q3Shader.GetStageTexture(i);
                     if (tex != null)
                     {

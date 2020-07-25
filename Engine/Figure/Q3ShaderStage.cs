@@ -74,6 +74,7 @@ namespace engine
         bool m_bLightmap = false;
         bool m_bLightmapFlag = false;
         bool m_bSkip = false; // for debugging
+        bool m_bClampmap = false;
         TCTURB m_turb = new TCTURB();
         TCSCALE m_scale = new TCSCALE();
         TCSCROLL m_scroll = new TCSCROLL();
@@ -95,6 +96,8 @@ namespace engine
         public string GetTCGEN_CS() { return m_sTCGEN_CS; }
         public void SetTCGEN_CS(string s) { m_sTCGEN_CS = s; }
         public void SetBlendFunc(string s) { m_sBlendFunc = s; }
+        public void SetClampmap(bool b) { m_bClampmap = b; }
+        public bool GetClampmap() { return m_bClampmap; }
         public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
         public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
         public bool GetLightmapFlag() { return m_bLightmapFlag; }
@@ -107,9 +110,9 @@ namespace engine
         public void SetCustomRenderRules()
         {
             // for sync of animmap and rgbgen waveforms ...
-            if(IsAnimmap() && (m_rgbgen.wf.func == "inversesawtooth" || m_rgbgen.wf.func == "sawtooth")) // expand this to sawtooth as well
+            if (IsAnimmap() && (m_rgbgen.wf.func == "inversesawtooth" || m_rgbgen.wf.func == "sawtooth")) // expand this to sawtooth as well
             {
-                if(m_sAnimmapIntervalInput == m_rgbgen.wf.freq.ToString())
+                if(Convert.ToSingle(m_sAnimmapIntervalInput) == m_rgbgen.wf.freq)
                 {
                     m_bSyncRGBGENandAnimmap = true;
                 }
@@ -127,11 +130,6 @@ namespace engine
                 {
                     m_nCurAnimmapTextureIndex++;
                     if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
-
-                    /*if (m_ParentShader.GetShaderName().Contains("computer_blocks17"))
-                    {
-                        LOGGER.Debug("animmap index changed to: " + m_nCurAnimmapTextureIndex);
-                    }*/
 
                     m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
                 }
@@ -286,7 +284,7 @@ namespace engine
             float degs;
             float sinValue, cosValue;
 
-            degs = m_rotate.degPerSecond * -1f * GameGlobals.GetElapsedS();
+            degs = m_rotate.degPerSecond * GameGlobals.GetElapsedS();
 
             sinValue = Convert.ToSingle(Math.Sin(Convert.ToDouble(degs) * utilities.GLB.DegToRad)); 
             cosValue = Convert.ToSingle(Math.Cos(Convert.ToDouble(degs) * utilities.GLB.DegToRad)); 
@@ -303,6 +301,7 @@ namespace engine
         private float CalculateWaveForm(WaveForm wf)
         {            
             float fVal = 1f;
+            float x = GameGlobals.GetElapsedS();
 
             if (wf.func == "sin")
             {
@@ -311,14 +310,14 @@ namespace engine
                 // the first range is from 0 to the full cycle time
                 // the second range is from 0 to PI
                 // we want to convert the first range to the second so we can plug into sin
-                double dIntoSin = (GameGlobals.GetElapsedMS() + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
+                double dIntoSin = (x * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
 
                 // after plugging into sin you just have to scale by the amplitude and then add the initial value
                 fVal = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase));
             }
             else if (wf.func == "sawtooth")
             {
-                fVal = ((GameGlobals.GetElapsedS() * wf.freq) % 1f) * wf.amp;
+                fVal = (x + wf.phase* wf.freq) % (1f / wf.freq) * wf.freq * wf.amp;
 
                 if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
                 {
@@ -331,9 +330,9 @@ namespace engine
             }
             else if (wf.func == "inversesawtooth")
             {
-                fVal = (((1f - (GameGlobals.GetElapsedS() % 1f)) * (wf.freq)) % 1f) * wf.amp;
+                fVal = wf.amp - (x + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp;
 
-                if(m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
+                if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
                 {
                     // if the change is greater than half the amplitude assume the function cycled
                     m_nCurAnimmapTextureIndex++;
@@ -344,20 +343,15 @@ namespace engine
             }
             else if(wf.func == "square")
             {
-                int n = Math.Sign(Math.Sin(Math.PI * 2 * GameGlobals.GetElapsedS() * wf.freq));
+                int n = Math.Sign(Math.Sin(Math.PI * 2 * (x + wf.phase * wf.freq) * wf.freq));
                 if (n >= 0) fVal = wf.fbase + wf.amp;
                 else fVal = wf.fbase;
             }
             else if(wf.func == "triangle")
             {
                 float fHalfPeriod = 1 / wf.freq / 2;
-                fVal = wf.amp / fHalfPeriod * (fHalfPeriod - Math.Abs((GameGlobals.GetElapsedS() + wf.phase * fHalfPeriod) % (2 * fHalfPeriod) - fHalfPeriod)) + wf.fbase;
-
-                /*if (m_ParentShader.GetShaderName().Contains("proto_light_2k"))
-                {
-                    LOGGER.Debug("the rgbgen value is: " + fVal);
-                }*/
-            }
+                fVal = wf.amp / fHalfPeriod * (fHalfPeriod - Math.Abs((x + wf.phase * fHalfPeriod) % (2 * fHalfPeriod) - fHalfPeriod)) + wf.fbase;
+            }   
 
             return fVal;
         }
@@ -371,7 +365,6 @@ namespace engine
             if (m_rgbgen.type == "wave")
             {
                 rgb[0] = CalculateWaveForm(m_rgbgen.wf);
-                if (rgb[0] > 1.0f) rgb[0] = 1.0f; // I think I should do this. Not sure yet.
                 rgb[1] = rgb[0];
                 rgb[2] = rgb[0];                
             }

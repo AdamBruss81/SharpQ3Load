@@ -23,6 +23,7 @@ namespace engine
         private uint[] m_pnTextures;
 		private string m_sInternalZipPath;
         bool m_bShouldBeTGA = false;
+        bool m_bClamp = false;
         
         public enum EFileType { PNG, TGA, JPG };
 
@@ -43,6 +44,7 @@ namespace engine
 		}  
 
         public void SetShouldBeTGA(bool b) { m_bShouldBeTGA = b; }
+        public void SetClamp(bool b) { m_bClamp = b; }
         public bool GetShouldBeTGA() { return m_bShouldBeTGA; }
 
         public void SetTexture(string sFullPath)
@@ -80,6 +82,12 @@ namespace engine
 
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+
+            if(m_bClamp)
+            {
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToBorder);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
+            }
        
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width,
                 image.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, bitmapdata.Scan0);

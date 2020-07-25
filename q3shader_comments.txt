@@ -1,0 +1,30 @@
+--QuakeSharp map loader--
+
+A quick note before these comments - my goal was never to have to hardcode things for certain shaders. I want a generic q3 to glsl shader conversion system. For example for the beams mentioned below I could probably
+hardcode something to make them look better but that would be annoying and only work in one case. All the work I've done so far has stressed generic solutions that will work across the q3 shaders.
+For example my system can handle x amount of q3 shader stages, rgbgens and waveforms without any customizing. 
+
+Q3 shader comments 
+
+Skies - Aren't implemented fully. They just scroll and and the texture repeats
+Deform vertexes - is not implemented(flags, lava deforming)
+Tcmod turb - doesn't work quite right. in q3 it makes the texture seem to swirl in a circle. in my game it's more of a high sine wave. 
+
+TGA that should be JPG problem - textures like flames which were probably tga originally and had transparency don't look exactly like they do in q3. They are jpg, no alpha channel, so I'm creating 
+alpha by sampling the rgb values. This works to some degree. 
+
+Tcgen environment - in my game something is wrong but it it works enough to be passable. For example on the screens in dm0 in q3, when you move around it changes more and you see more of the
+underlying texture. In my game it changes based on your position, but not in the same way as q3. Maybe my vertex normals are wrong in some cases. Tcgen seems to work better when the faces
+are on the floor and ceiling.
+
+The upper flickering lights in dm0(proto_light_2k) - these don't work right. they have two triangle wave textures that create a flicker effect in q3. but the brightness seems too high and looks too high in my
+game.
+
+Beams - these are an example of tga jpg problem I think. these are jpgs and have a lot of black on the bottom. in q3 this appears as white light. How? I have no idea yet. In my game it works somewhat
+because the top of the beam has some gray color that looks like light.
+
+kmlamps - the two lamps in dm0 don't look right in my game. I think this is because of the tcgen problem and the tga jpg transparency problem
+
+--- Note ---
+Things not mentioned above can be safely assumed to be working well enough
+

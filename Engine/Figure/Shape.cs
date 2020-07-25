@@ -412,24 +412,7 @@ namespace engine
 			// 0 means render first
 			// higher means render later
 
-			// 0 unshaded and not models
-			// 1 shaded but not flames or models
-			// 2 shaded with transparency
-			// 3 models
-			// 4 flames
-
-			// this is very non-generic at this point but I don't know exactly how q3 sorts its faces/shapes for rendering
-			// and I don't care to figure it all out at this point. Just get something working for now.
-
 			string sShaderName = m_q3Shader.GetShaderName();
-
-			/*if (string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models")) nVal = 0;
-			else if (!string.IsNullOrEmpty(sShaderName) && !GetMainTexture().GetPath().Contains("models") &&
-				(!sShaderName.Contains("flame") && !sShaderName.Contains("beam")) && !m_q3Shader.GetAddAlpha()) nVal = 1;
-			else if (m_q3Shader.GetAddAlpha()) return 2;
-			else if (GetMainTexture().GetPath().Contains("models")) nVal = 3;
-			else if (sShaderName.Contains("flame") || sShaderName.Contains("beam")) nVal = 4;
-			else nVal = 0;*/
 
 			if (sShaderName.Contains("models")) nVal = 3;
 			if (!string.IsNullOrEmpty(sShaderName)) nVal = 4;
@@ -447,11 +430,6 @@ namespace engine
 		/// </summary>
 		public void Show()
         {
-			if(m_q3Shader.GetShaderName().Contains("console/console"))
-			{
-				int stop = 0;
-			}
-
 			if (DontRender()) return;
 
 			// these apply to entire shader

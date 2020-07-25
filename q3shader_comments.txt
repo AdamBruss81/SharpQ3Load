@@ -4,7 +4,7 @@ A quick note before these comments - my goal was never to have to hardcode thing
 hardcode something to make them look better but that would be annoying and only work in one case. All the work I've done so far has stressed generic solutions that will work across the q3 shaders.
 For example my system can handle x amount of q3 shader stages, rgbgens and waveforms without any customizing. 
 
-Q3 shader comments 
+Q3 SHADER COMMENTS
 
 Skies - Aren't implemented fully. They just scroll and and the texture repeats
 Deform vertexes - is not implemented(flags, lava deforming)
@@ -24,6 +24,8 @@ Beams - these are an example of tga jpg problem I think. these are jpgs and have
 because the top of the beam has some gray color that looks like light.
 
 kmlamps - the two lamps in dm0 don't look right in my game. I think this is because of the tcgen problem and the tga jpg transparency problem
+
+The portal_sfx in dm0 rotates back and forth .1 each second or so. This is not documented in the shader manual but I could make it work. It's not working in my game at this time.
 
 --- Note ---
 Things not mentioned above can be safely assumed to be working well enough

@@ -39,7 +39,7 @@ namespace engine
             bool bAA = false;
 
             // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
-            bAA = m_sShaderName.Contains("teslacoil"); // for example see big power reactor in dm0
+            bAA = m_sShaderName.Contains("sfx/teslacoil") || m_sShaderName.Contains("console/centercon"); // for example see big power reactor in dm0
 
             if(!bAA) bAA = m_bAlphaShadow;
             if (!bAA) bAA = m_bTrans;
@@ -94,7 +94,7 @@ namespace engine
                 else if (tokens[1].Contains("skies"))
                     return new List<string>() { "sky" };
                 else if (tokens[1].Contains("sfx"))
-                    return new List<string>() { "sfx" };
+                    return new List<string>() { "sfx", "common" };
                 else if (tokens[1].Contains("skin"))
                     return new List<string>() { "skin" };
                 else if (tokens[1].Contains("organics"))
@@ -410,11 +410,6 @@ namespace engine
 
             sb.AppendLine("");
 
-            //bool bAddAlpha = true; // this is for tgas that got converted to jpg by id before shipping
-            // if they were tgas, the blending would just work for free for the most part
-            // instead i have to add alpha myself. not sure how q3 actually does this
-            // deciding when to do it is specific for now. see below
-
             System.Text.StringBuilder sbOutputline = new System.Text.StringBuilder();
             for (int i = 0; i < m_lStages.Count; i++)
             {
@@ -439,6 +434,7 @@ namespace engine
                     sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
                 }
 
+                // blend functions in q3
                 if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
                 {
                     sb.AppendLine("outputColor *= " + sub + sLightmapScale + ";");
@@ -471,6 +467,15 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w;");
                 }
+                else if(sBlendFunc == "gl_one gl_one_minus_src_alpha")
+                {
+                    sb.AppendLine("outputColor = " + sub + " + outputColor * (1 - " + sub + ".w);");
+                }
+                else if(sBlendFunc == "gl_zero gl_one_minus_src_color")
+                {
+                    sb.AppendLine("outputColor = outputColor * (1 - " + sub + ");");
+                }
+                // end blend functions
                 
                 else if (stage.IsVertexColor())
                 {
@@ -483,11 +488,6 @@ namespace engine
 
                 // clamp colors that are over 1.0
                 sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
-
-                /*if (m_lStageTextures[i] != null && m_lStageTextures[i].GetShouldBeTGA() && !string.IsNullOrEmpty(stage.GetBlendFunc()))
-                {
-                }
-                else bAddAlpha = false;*/
 
                 // alpha testing - for example makes skel in fatal instinct look much better
                 if (stage.GetAlphaFunc() == "ge128")
@@ -505,18 +505,6 @@ namespace engine
 
                 sb.AppendLine("");                
             }
-
-            // add alpha to deal with jpgs that used to be tgas and were converted and have a lot of black color that should be clear
-            // this does not look right but creates a good effect
-            // i don't know how quake or quake kenny does this correctly yet
-            /*if (bAddAlpha || m_bAddAlpha) // m_bAddAlpha can already be set to true for example if surfaceparm trans to set for the q3 shader
-            {
-                if(!m_bAddAlpha) m_bAddAlpha = true; 
-
-                // best
-                sb.AppendLine("float na = sqrt(0.299 * pow(outputColor.r, 2) + 0.587 * pow(outputColor.g, 2) + 0.114 * pow(outputColor.b, 2));");
-                sb.AppendLine("outputColor.w = na;");
-            }*/
 
             // end main
             sbOutputline.AppendLine("}");
@@ -699,7 +687,17 @@ namespace engine
                             {
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
-                                m_lStages[m_lStages.Count - 1].SetTCMODRotate(Convert.ToSingle(GetTokensAfterSecond(tokens)));
+
+                                string sRotate = GetTokensAfterSecond(tokens);
+                                float fRotate;
+                                if(Single.TryParse(sRotate, out fRotate))
+                                {
+                                    // the portal in dm0 has a rotate value of .1 .1. i think this means to rotate back and forth a tiny bit.saw
+                                    // for now just ignore this. maybe implement later. funny that the shader manual doesn't mention this.
+                                    // i find lots of little things the shader manual doesn't mention but are in the built in q3 maps.
+                                    // it's amusing because it gives you insight into the development process of q3 and id
+                                    m_lStages[m_lStages.Count - 1].SetTCMODRotate(fRotate);
+                                }                                
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod stretch"))
                             {

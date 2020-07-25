@@ -317,7 +317,7 @@ namespace engine
             }
             else if (wf.func == "sawtooth")
             {
-                fVal = (x + wf.phase* wf.freq) % (1f / wf.freq) * wf.freq * wf.amp;
+                fVal = (x + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp + wf.fbase;
 
                 if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
                 {
@@ -330,7 +330,7 @@ namespace engine
             }
             else if (wf.func == "inversesawtooth")
             {
-                fVal = wf.amp - (x + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp;
+                fVal = wf.amp - (x + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp + wf.fbase;
 
                 if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
                 {

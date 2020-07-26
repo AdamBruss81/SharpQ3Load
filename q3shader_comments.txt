@@ -7,7 +7,9 @@ For example my system can handle x amount of q3 shader stages, rgbgens and wavef
 Q3 SHADER COMMENTS
 
 Skies - Aren't implemented fully. They just scroll and and the texture repeats
+
 Deform vertexes - is not implemented(flags, lava deforming)
+
 Tcmod turb - doesn't work quite right. in q3 it makes the texture seem to swirl in a circle. in my game it's more of a high sine wave. 
 
 TGA that should be JPG problem - textures like flames which were probably tga originally and had transparency don't look exactly like they do in q3. They are jpg, no alpha channel, so I'm creating 
@@ -26,6 +28,13 @@ because the top of the beam has some gray color that looks like light.
 kmlamps - the two lamps in dm0 don't look right in my game. I think this is because of the tcgen problem and the tga jpg transparency problem
 
 The portal_sfx in dm0 rotates back and forth .1 each second or so. This is not documented in the shader manual but I could make it work. It's not working in my game at this time.
+
+Currently I don't do anything with the surfaceparms that indicate something is non-solid. I determine whether to collide with something on my own. I should use the shader params for this instead. It would
+save me on collision detection cost and be better overall.
+
+TCMOD transform is not supported yet.
+
+WATER : my first encounter with water was in dm2. i tried to make it look like in q3. it's pretty good and would look better with deform verts and tcmod transform implemented.
 
 --- Note ---
 Things not mentioned above can be safely assumed to be working well enough

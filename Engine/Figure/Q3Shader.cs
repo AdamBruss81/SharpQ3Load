@@ -22,6 +22,7 @@ namespace engine
         bool m_bTrans = false;
         bool m_bAlphaShadow = false;
         bool m_bLava = false;
+        bool m_bWater = false;
 
         // static methods
         public static string GetSampler2DName() { return "sampler2D"; }
@@ -45,7 +46,7 @@ namespace engine
             if (!bAA) bAA = m_bTrans;
             if(!bAA)
             {
-                if(m_lStages.Count == 1 && m_lStageTextures[0].GetShouldBeTGA())
+                if(m_lStages.Count == 1 && m_lStageTextures[0].GetShouldBeTGA() && m_lStages[0].GetBlendFunc() != "")
                 {
                     bAA = true;
                 }
@@ -406,7 +407,15 @@ namespace engine
             sb.AppendLine("");
 
             // define outputColor line
-            sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
+            if(m_bWater)
+            {
+                // the first water i encountered was dm2(calm_poollight). in the shader, it filters in the first stage. the problem is
+                // my initial color for outputColor is black. So nothing shows because the shader is transparent also.
+                // so start waters with white(testing)
+                sb.AppendLine("outputColor = vec4(102/255, 205/255, 170/255, 1.0);");
+            }
+            else 
+                sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
 
             sb.AppendLine("");
 
@@ -467,7 +476,7 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w;");
                 }
-                else if(sBlendFunc == "gl_one gl_one_minus_src_alpha")
+                else if(sBlendFunc == "gl_one gl_one_minus_src_alpha") 
                 {
                     sb.AppendLine("outputColor = " + sub + " + outputColor * (1 - " + sub + ".w);");
                 }
@@ -475,17 +484,19 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = outputColor * (1 - " + sub + ");");
                 }
-                // end blend functions
-                
-                else if (stage.IsVertexColor())
-                {
-                    sb.AppendLine("outputColor += (" + sTexel + " * color * 2.0);");
-                }
-                else
+                else if(!stage.IsVertexColor())
                 {
                     sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
                 }
 
+                if (stage.IsVertexColor()) // always do this if it is in the shader stage. see horned shader model in dm3
+                {
+                    if (sBlendFunc == "")
+                        sb.AppendLine("outputColor += (" + sTexel + " * color * 2.0);");
+                    else
+                        sb.AppendLine("outputColor *= (color * 2.0);");
+                }
+                
                 // clamp colors that are over 1.0
                 sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
 
@@ -516,7 +527,13 @@ namespace engine
         {
             string sTexel = "texel" + sIndex;
             sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");
-            sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
+            if(m_bWater)
+            {
+                sb.AppendLine("texelA" + sIndex + " *= 1.5;");
+                sb.AppendLine("texelA" + sIndex + " = clamp(texelA" + sIndex + ", 0.0, 1.0);");
+                sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
+            }
+            else sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
         }
 
         /// <summary>
@@ -525,11 +542,6 @@ namespace engine
         /// <returns></returns>
         public void ReadShader(string sPathFromVRML)
         {            
-            if(sPathFromVRML.Contains("portal_3"))
-            {
-                int stop = 0;
-            }
-
             List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
             string sNewPath = "";
 
@@ -591,6 +603,10 @@ namespace engine
                                 if(sInsideTargetShaderLine.Contains("lava"))
                                 {
                                     m_bLava = true;
+                                }
+                                if(sInsideTargetShaderLine.Contains("water"))
+                                {
+                                    m_bWater = true;
                                 }
                             }
                             else if (sInsideTargetShaderLine.Contains("cull"))
@@ -744,9 +760,9 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                /*if(m_sShaderName.Contains("proto_light_2k"))
+                                if(m_sShaderName.Contains("calm_poollight"))
                                 {
-                                    if(m_lStages.Count == 4)
+                                    if(m_lStages.Count == 1)
                                     {
                                         //m_lStages[2].SetSkip(true);
                                         //break;
@@ -757,7 +773,7 @@ namespace engine
                                         //break;
                                         //m_lStages[2].SetSkip(true);
                                     }
-                                }*/
+                                }
 
                                 m_lStages[m_lStages.Count - 1].SetCustomRenderRules();
                             }

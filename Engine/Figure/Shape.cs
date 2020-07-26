@@ -374,8 +374,8 @@ namespace engine
 			if (tex != null)
 			{
 				string sName = Path.GetFileName(tex.GetPath());
-				bNoClipping = sName.Contains("fog") ||
-					sName.Contains("beam") || sName.Contains("lava") || tex.GetPath().Contains("skies");
+				bNoClipping = (sName.Contains("fog") ||
+					sName.Contains("beam") || sName.Contains("lava") || tex.GetPath().Contains("skies")) && !tex.GetPath().Contains("gothic_wall");
 			}
 
 			return bNoClipping;

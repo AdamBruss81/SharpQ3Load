@@ -24,6 +24,7 @@ namespace engine
 		private string m_sInternalZipPath;
         bool m_bShouldBeTGA = false;
         bool m_bClamp = false;
+        bool m_bWideTexture = false; // if image is wider than high
         
         public enum EFileType { PNG, TGA, JPG };
 
@@ -43,9 +44,53 @@ namespace engine
 			    GL.DeleteTextures(1, m_pnTextures);
 		}  
 
+        public static utilities.D3Vect GetAverageColor(string sPath)
+        {
+            utilities.D3Vect dRGB = new utilities.D3Vect();
+            System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath);
+            int nCounter = 0;
+            for(int i = 0; i < bm.Width; i++)
+            {
+                for(int j = 0; j < bm.Height; j++)
+                {
+                    System.Drawing.Color pcol = bm.GetPixel(i, j);
+                    if(pcol.R != 0 || pcol.G != 0 || pcol.B != 0)
+                    {
+                        nCounter++;
+                        dRGB.x += pcol.R;
+                        dRGB.y += pcol.G;
+                        dRGB.z += pcol.B;
+                    }
+                }
+            }
+            return dRGB / nCounter;            
+        }
+
         public void SetShouldBeTGA(bool b) { m_bShouldBeTGA = b; }
         public void SetClamp(bool b) { m_bClamp = b; }
         public bool GetShouldBeTGA() { return m_bShouldBeTGA; }
+        public bool GetWide() { return m_bWideTexture; }
+
+        private static System.Drawing.Bitmap GetBitmapFromImageFile(string sFullPath)
+        {
+            System.Drawing.Bitmap image;
+
+            if (Path.GetExtension(sFullPath) == ".tga")
+            {
+                IImageFormat format;
+                using (var image2 = Image.Load(sFullPath, out format))
+                {
+                    MemoryStream memStr = new MemoryStream();
+                    image2.SaveAsPng(memStr);
+                    image = new System.Drawing.Bitmap(memStr);
+                    memStr.Dispose();
+                }
+            }
+            else
+                image = new System.Drawing.Bitmap(sFullPath);
+
+            return image;
+        }
 
         public void SetTexture(string sFullPath)
         {
@@ -53,20 +98,9 @@ namespace engine
 
 			LOGGER.Debug("Set texture to " + sFullPath);
 
-            System.Drawing.Bitmap image;
-            if (Path.GetExtension(sFullPath) == ".tga")
-            {
-                IImageFormat format;
-                using (var image2 = Image.Load(sFullPath, out format))
-                {                  
-                    MemoryStream memStr = new MemoryStream();
-                    image2.SaveAsPng(memStr);
-                    image = new System.Drawing.Bitmap(memStr);
-                    memStr.Dispose();
-                } 
-            }
-			else
-                image = new System.Drawing.Bitmap(sFullPath);
+            System.Drawing.Bitmap image = GetBitmapFromImageFile(sFullPath);
+
+            if (image.Width > image.Height) m_bWideTexture = true;
 
             image.RotateFlip(System.Drawing.RotateFlipType.Rotate180FlipX);
 
@@ -103,7 +137,7 @@ namespace engine
             image.UnlockBits(bitmapdata);
             image.Dispose();
 
-			File.Delete(sFullPath);
+			//File.Delete(sFullPath);
         }
 
         public void bindMeRaw()

@@ -15,7 +15,7 @@ namespace engine
         private Zipper m_zipper = new Zipper();
         string m_sShaderName = "";
         string m_sCull = "";
-        string m_sLightImage = "";
+        string m_sLightImageFullPath = "";
         List<Texture> m_lStageTextures = new List<Texture>(); // ordered to match stages in q3 shader top to bottom. 
         // this list will change after init for effects like animmap
         Shape m_pParent = null;
@@ -31,8 +31,8 @@ namespace engine
         public Q3Shader(Shape parent)
         {
             m_pParent = parent;
-        }     
-        
+        }
+
         public bool GetTrans() { return m_bTrans; }
 
         public bool GetAddAlpha()
@@ -40,16 +40,26 @@ namespace engine
             bool bAA = false;
 
             // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
-            bAA = m_sShaderName.Contains("sfx/teslacoil") || m_sShaderName.Contains("console/centercon"); // for example see big power reactor in dm0
+            bAA = m_sShaderName.Contains("sfx/teslacoil") || m_sShaderName.Contains("console/centercon") ||
+                m_sShaderName.Contains("teleporter/energy"); // for example see big power reactor in dm0
 
-            if(!bAA) bAA = m_bAlphaShadow;
+            if (!bAA) bAA = m_bAlphaShadow;
             if (!bAA) bAA = m_bTrans;
-            if(!bAA)
+            if (!bAA)
             {
-                if(m_lStages.Count == 1 && m_lStageTextures[0].GetShouldBeTGA() && m_lStages[0].GetBlendFunc() != "")
+                if (m_lStages.Count == 1 && m_lStageTextures[0].GetShouldBeTGA() && m_lStages[0].GetBlendFunc() != "")
                 {
                     bAA = true;
                 }
+            }
+            // i thought i wouldn't need to do the below check but some flame shaders don't have
+            // trans set
+            if (!bAA) bAA = m_sShaderName.Contains("sfx") && m_sShaderName.Contains("flame");
+
+            if (!bAA)
+            {
+                // more hardcoding for shaders that don't make it clear if they should have transparency
+                bAA = m_sShaderName.Contains("transparency") || m_sShaderName.Contains("widget");
             }
 
             if (m_bLava) bAA = false; // not sure why trans is set on lava shaders sometimes
@@ -58,6 +68,14 @@ namespace engine
         }
 
         public string GetShaderName() { return m_sShaderName; }
+
+        public Texture GetStageTexture(Q3ShaderStage stage)
+        {
+            if (stage.IsAnimmap()) return stage.GetAnimmapTexture();
+            else {
+                return m_lStageTextures[m_lStages.IndexOf(stage)];
+            }
+        }
 
         public Texture GetStageTexture(int iStage)
         {
@@ -342,6 +360,11 @@ namespace engine
 
             sb.AppendLine("");
 
+            if(m_sShaderName.Contains("teslacoil"))
+            {
+                int stop = 0;
+            }
+
             // define texture texels and create stage textures
             for (int i = 0; i < m_lStages.Count; i++)
             {
@@ -352,7 +375,10 @@ namespace engine
                 {
                     m_lStageTextures.Add(m_pParent.GetLightmapTexture());
 
-                    sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", lightmapTexCoord);");
+                    if (stage.GetTCGEN_CS() == "environment")                    
+                        sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", tcgenEnvTexCoord);");                    
+                    else 
+                        sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", lightmapTexCoord);");
                 }
                 else if (!string.IsNullOrEmpty(stage.GetTexturePath()))
                 {
@@ -391,6 +417,8 @@ namespace engine
                 {
                     m_lStageTextures.Add(null); // need a placeholder here, will check for null later
                 }
+
+                sb.AppendLine("");
             }
 
             sb.AppendLine("");
@@ -407,11 +435,19 @@ namespace engine
             sb.AppendLine("");
 
             // define outputColor line
-            if(m_bWater)
+            if(m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
+            {
+                utilities.D3Vect avColor = Texture.GetAverageColor(m_sLightImageFullPath);
+                sb.AppendLine("outputColor = vec4(" + Math.Round(avColor.x, 1) + "/255, " + Math.Round(avColor.y, 1) + "/255, " + Math.Round(avColor.z, 1) + "/255, 1.0);");
+            }
+            else if(m_bWater)
             {
                 // the first water i encountered was dm2(calm_poollight). in the shader, it filters in the first stage. the problem is
                 // my initial color for outputColor is black. So nothing shows because the shader is transparent also.
                 // so start waters with white(testing)
+                // also, there is no light image for calm_poollight but comments do say "green"
+                // maybe in this case you're supposed to start outputColor with the average color of
+                // the first texture used in the shader
                 sb.AppendLine("outputColor = vec4(102/255, 205/255, 170/255, 1.0);");
             }
             else 
@@ -520,20 +556,38 @@ namespace engine
             // end main
             sbOutputline.AppendLine("}");
 
+            // add helpful comments
+            sbOutputline.AppendLine("");
+            if (GetAddAlpha()) sbOutputline.AppendLine("// add alpha is enabled");
+            if (m_sLightImageFullPath != "") sbOutputline.AppendLine("// light image is " + m_sLightImageFullPath);
+
             sb.Append(sbOutputline.ToString());
         }
 
         private void AppendAddAlphaLine(string sIndex, System.Text.StringBuilder sb)
         {
             string sTexel = "texel" + sIndex;
-            sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");
-            if(m_bWater)
+            // create transparency float using formula
+            sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");            
+
+            // customize float based on shader
+            if(m_sShaderName.Contains("glass"))
             {
-                sb.AppendLine("texelA" + sIndex + " *= 1.5;");
-                sb.AppendLine("texelA" + sIndex + " = clamp(texelA" + sIndex + ", 0.0, 1.0);");
-                sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
+                sb.AppendLine("texelA" + sIndex + " *= 0.3;"); // make glass more transparent
             }
-            else sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
+            else if(m_sShaderName.Contains("lamp"))
+            {
+                sb.AppendLine("texelA" + sIndex + " *= 2.5;"); // make things a lot less transparent from original value
+                // in dm4 the skull lights have lightbulbs rendered in the lamp glass. i think this is completely in the q3 game
+                // there is no indication of this in the shaders so im not going to worry about it for now
+            }
+            else
+            {
+                sb.AppendLine("texelA" + sIndex + " *= 1.5;"); // make things a bit less transparent
+            }
+            // clamp float and set texel to it
+            sb.AppendLine("texelA" + sIndex + " = clamp(texelA" + sIndex + ", 0.0, 1.0);");
+            sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
         }
 
         /// <summary>
@@ -617,6 +671,9 @@ namespace engine
                             }
                             else if(sInsideTargetShaderLine.Contains("q3map_lightimage"))
                             {
+                                // this affects the initial color of outputColor
+                                // it sets it to the average color of the image
+                                 
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
 
@@ -624,7 +681,11 @@ namespace engine
                                 string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bJunk);
                                 if(File.Exists(sTexPath))
                                 {
-                                    m_sLightImage = tokens[1];
+                                    m_sLightImageFullPath = sTexPath;
+
+                                    /*m_lStages.Add(new Q3ShaderStage(this));
+                                    m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
+                                    m_lStages[m_lStages.Count - 1].SetBlendFunc("add");*/
                                 } 
                             }
 
@@ -733,14 +794,16 @@ namespace engine
                             }
                             else if(sInsideTargetShaderLine.Contains("$lightmap"))
                             {
-                                m_lStages[m_lStages.Count - 1].SetLightmapFlag(true);
+                                //m_lStages[m_lStages.Count - 1].SetLightmapFlag(true);
 
-                                if(m_sLightImage == "")
+                                /*if(m_sLightImage == "")
                                     m_lStages[m_lStages.Count - 1].SetLightmap(true);
                                 else
                                 {
                                     m_lStages[m_lStages.Count - 1].SetTexturePath(m_sLightImage);
-                                }
+                                }*/
+
+                                m_lStages[m_lStages.Count - 1].SetLightmap(true);
                             }
                             // end stage reading                            
                             else if (sInsideTargetShaderLine.Contains("}")) // end of stage
@@ -751,21 +814,21 @@ namespace engine
                                     break; // end of shader
                                 else
                                 {
-                                    if(m_lStages[m_lStages.Count - 1].GetLightmapFlag() && m_sLightImage != "" 
+                                    /*if(m_lStages[m_lStages.Count - 1].GetLightmapFlag() && m_sLightImage != "" 
                                         && m_lStages[m_lStages.Count - 1].GetTCGEN_CS() != "environment")
                                     {
                                         m_lStages[m_lStages.Count - 1].SetLightmap(true);
-                                    }
+                                    }*/
                                 }   
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("calm_poollight"))
+                                if(m_sShaderName.Contains("sfx/teslacoil"))
                                 {
-                                    if(m_lStages.Count == 1)
+                                    if(m_lStages.Count == 4)
                                     {
-                                        //m_lStages[2].SetSkip(true);
-                                        //break;
+                                        //m_lStages[0].SetSkip(true);
+                                        break;
 
                                         // you can break out after reading some of the stages and test
                                         // or you can set certain stages to skip rendering

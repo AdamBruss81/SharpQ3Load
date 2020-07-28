@@ -72,7 +72,7 @@ namespace engine
         string m_sAlphaGenFunc = "";
         string m_sAnimmapIntervalInput = "";
         bool m_bLightmap = false;
-        bool m_bLightmapFlag = false;
+        //bool m_bLightmapFlag = false;
         bool m_bSkip = false; // for debugging
         bool m_bClampmap = false;
         TCTURB m_turb = new TCTURB();
@@ -99,8 +99,8 @@ namespace engine
         public void SetClampmap(bool b) { m_bClampmap = b; }
         public bool GetClampmap() { return m_bClampmap; }
         public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
-        public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
-        public bool GetLightmapFlag() { return m_bLightmapFlag; }
+        //public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
+        //public bool GetLightmapFlag() { return m_bLightmapFlag; }
         public void SetAlphaGen(string s) { m_sAlphaGenFunc = s; }
         public void SetSkip(bool b) { m_bSkip = b; }
         public bool IsRGBGENIdentity()  
@@ -258,8 +258,16 @@ namespace engine
 
         public void GetScrollValues(ref float[] vals)
         {
-            vals[0] = m_scroll.s;
-            vals[1] = m_scroll.t;
+            if (m_ParentShader.GetStageTexture(this).GetWide())
+            {
+                vals[0] = -1 * m_scroll.s; // to get scrolling of scrolllight and techborder to work
+                vals[1] = -1 * m_scroll.t;
+            }
+            else
+            {
+                vals[0] = m_scroll.s;
+                vals[1] = m_scroll.t;
+            }
         }
 
         // first four values are 2 x 2 transform matrix, last two are a translation vector
@@ -313,7 +321,10 @@ namespace engine
                 double dIntoSin = (x * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
 
                 // after plugging into sin you just have to scale by the amplitude and then add the initial value
-                fVal = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase));
+                //fVal = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase));
+
+                fVal = Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase);
+                if (fVal <= 0) fVal = 0;
             }
             else if (wf.func == "sawtooth")
             {

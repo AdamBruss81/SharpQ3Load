@@ -8,12 +8,15 @@ Q3 SHADER COMMENTS
 
 Skies - Aren't implemented fully. They just scroll and and the texture repeats
 
-Deform vertexes - is not implemented(flags, lava deforming)
+Deform vertexes - is not implemented(flags, lava deforming) - autosprite does not work for example in the wall lady model on dm4. the orb looks nice but it doesn't rotate for your viewing angle.
 
 Tcmod turb - doesn't work quite right. in q3 it makes the texture seem to swirl in a circle. in my game it's more of a high sine wave. 
 
 TGA that should be JPG problem - textures like flames which were probably tga originally and had transparency don't look exactly like they do in q3. They are jpg, no alpha channel, so I'm creating 
 alpha by sampling the rgb values. This works to some degree. 
+
+Another issue with flames is that the two faces that make each flame up often occlude each other. I guess this is because both of them are transparent and I don't order the faces based on cam position. Not sure
+how to fix but it looks pretty bad sometimes. Do you have to sort based on cam position?
 
 Tcgen environment - in my game something is wrong but it it works enough to be passable. For example on the screens in dm0 in q3, when you move around it changes more and you see more of the
 underlying texture. In my game it changes based on your position, but not in the same way as q3. Maybe my vertex normals are wrong in some cases. Tcgen seems to work better when the faces
@@ -35,6 +38,11 @@ save me on collision detection cost and be better overall.
 TCMOD transform is not supported yet.
 
 WATER : my first encounter with water was in dm2. i tried to make it look like in q3. it's pretty good and would look better with deform verts and tcmod transform implemented.
+
+I seem to have broke something with the console in dm0. It now looks too dark all the time. Revisit.
+
+The tesla coils in dm4 look pretty good but the transparency isn't working exactly like q3. in face there is no transparency. but otherwise it looks good. i think what's happening is that the alpha values
+if just always greater than or equal to 1 due to how the textures are blended. maybe im doing something wrong.
 
 --- Note ---
 Things not mentioned above can be safely assumed to be working well enough

@@ -431,7 +431,7 @@ namespace engine
 		public void Show()
         {
 			if (DontRender()) return;
-
+					
 			// these apply to entire shader
 			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
 			{
@@ -503,9 +503,7 @@ namespace engine
 							case TCMOD.ETYPE.SCROLL:
 								{
                                     nLoc = GL.GetUniformLocation(ShaderProgram, "scroll" + Convert.ToString(i));
-                                    stage.GetScrollValues(ref m_uniformFloat2);
-									if (m_uniformFloat2[0] < 0) m_uniformFloat2[0] *= -1;
-									if (m_uniformFloat2[1] < 0) m_uniformFloat2[1] *= -1;
+                                    stage.GetScrollValues(ref m_uniformFloat2); 
 									GL.Uniform2(nLoc, 1, m_uniformFloat2);
 									break;
                                 }

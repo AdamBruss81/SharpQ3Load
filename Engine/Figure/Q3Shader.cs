@@ -437,8 +437,9 @@ namespace engine
             // define outputColor line
             if(m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
             {
-                utilities.D3Vect avColor = Texture.GetAverageColor(m_sLightImageFullPath);
-                sb.AppendLine("outputColor = vec4(" + Math.Round(avColor.x, 1) + "/255, " + Math.Round(avColor.y, 1) + "/255, " + Math.Round(avColor.z, 1) + "/255, 1.0);");
+                float[] fCol = Texture.GetAverageColor(m_sLightImageFullPath);
+                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 1) + "/255, " + Math.Round(fCol[1], 1) + 
+                    "/255, " + Math.Round(fCol[2], 1) + "/255, " + Math.Round(fCol[3], 1) + "/255);");
             }
             else if(m_bWater)
             {
@@ -448,7 +449,7 @@ namespace engine
                 // also, there is no light image for calm_poollight but comments do say "green"
                 // maybe in this case you're supposed to start outputColor with the average color of
                 // the first texture used in the shader
-                sb.AppendLine("outputColor = vec4(102/255, 205/255, 170/255, 1.0);");
+                sb.AppendLine("outputColor = vec4(102/255, 205/255, 170/255, 0.6);");
             }
             else 
                 sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
@@ -528,9 +529,9 @@ namespace engine
                 if (stage.IsVertexColor()) // always do this if it is in the shader stage. see horned shader model in dm3
                 {
                     if (sBlendFunc == "")
-                        sb.AppendLine("outputColor += (" + sTexel + " * color * 2.0);");
+                        sb.AppendLine("outputColor += (" + sTexel + " * color * 3.0);");
                     else
-                        sb.AppendLine("outputColor *= (color * 2.0);");
+                        sb.AppendLine("outputColor *= (color * 3.0);");
                 }
                 
                 // clamp colors that are over 1.0

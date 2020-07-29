@@ -9,6 +9,7 @@
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
 using System.IO;
+using System;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -44,9 +45,9 @@ namespace engine
 			    GL.DeleteTextures(1, m_pnTextures);
 		}  
 
-        public static utilities.D3Vect GetAverageColor(string sPath)
+        public static float[] GetAverageColor(string sPath)
         {
-            utilities.D3Vect dRGB = new utilities.D3Vect();
+            float[] fCol = { 0f, 0f, 0f, 0f };
             System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath);
             int nCounter = 0;
             for(int i = 0; i < bm.Width; i++)
@@ -57,13 +58,29 @@ namespace engine
                     if(pcol.R != 0 || pcol.G != 0 || pcol.B != 0)
                     {
                         nCounter++;
-                        dRGB.x += pcol.R;
-                        dRGB.y += pcol.G;
-                        dRGB.z += pcol.B;
+                        fCol[0] += pcol.R;
+                        fCol[1] += pcol.G;
+                        fCol[2] += pcol.B;
+                        if(Path.GetExtension(sPath) == ".tga")
+                            fCol[3] += pcol.A;
+                        else
+                        {
+                            //sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");
+                            fCol[3] += Convert.ToSingle(Math.Sqrt(0.299f * Math.Pow((float)pcol.R / 255f, 2) + 0.587f * Math.Pow((float)pcol.G / 255f, 2) + 0.114f * Math.Pow((float)pcol.B / 255f, 2)));
+                        }
                     }
                 }
             }
-            return dRGB / nCounter;            
+            fCol[0] /= nCounter;
+            fCol[1] /= nCounter;
+            fCol[2] /= nCounter;
+            if(Path.GetExtension(sPath) != ".tga")
+            {
+                fCol[3] *= 255;
+            }
+            fCol[3] /= nCounter;
+
+            return fCol;
         }
 
         public void SetShouldBeTGA(bool b) { m_bShouldBeTGA = b; }

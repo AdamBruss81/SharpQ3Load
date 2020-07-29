@@ -124,7 +124,7 @@ namespace engine
 				sb.AppendLine("}");
 				sb.AppendLine("else {");
 				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");
-				sb.AppendLine("outputColor = texel0 * color * 2.0;");
+				sb.AppendLine("outputColor = texel0 * color * 3.0;");
 				sb.AppendLine("}");
 				sb.AppendLine("}");
 			}

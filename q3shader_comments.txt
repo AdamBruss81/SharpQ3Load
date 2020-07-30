@@ -44,6 +44,8 @@ I seem to have broke something with the console in dm0. It now looks too dark al
 The tesla coils in dm4 look pretty good but the transparency isn't working exactly like q3. in face there is no transparency. but otherwise it looks good. i think what's happening is that the alpha values
 if just always greater than or equal to 1 due to how the textures are blended. maybe im doing something wrong.
 
+surfacelight - i don't do anything with this. i might be able to make the final outputColor of shaders with this brighter based on this value. it's not going to brighten areas around it but it would help
+
 --- Note ---
 Things not mentioned above can be safely assumed to be working well enough
 

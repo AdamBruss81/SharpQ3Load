@@ -125,7 +125,7 @@ namespace engine
 				sb.AppendLine("else {");
 				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");
 				sb.AppendLine("outputColor = texel0 * color * 3.0;");
-				sb.AppendLine("}");
+				sb.AppendLine("}"); 
 				sb.AppendLine("}");
 			}
 
@@ -417,8 +417,12 @@ namespace engine
 			if (sShaderName.Contains("models")) nVal = 3;
 			if (!string.IsNullOrEmpty(sShaderName)) nVal = 4;
             if (m_q3Shader.GetAddAlpha()) nVal = 5;
-			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 6;
-		
+			if (sShaderName.Contains("slamp2")) nVal = 6;
+			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 7;
+
+			// proto_zzztblu3 is for the coil in dm0
+			// slamp2 are the bulbs under the skull lights
+
 			return nVal;
 		}
 
@@ -470,57 +474,47 @@ namespace engine
             }
 			else
 			{
-				// rgbgen
-				for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
-				{
-					if(!m_q3Shader.GetStages()[i].IsRGBGENIdentity())
-					{
-						nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen" + Convert.ToString(i));
-						m_q3Shader.GetStages()[i].GetRGBGenValue(ref m_uniformFloat3);
-						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
-					}
-				}				
-
-				// tcmods
-				bool bTCMODS = false;
-				for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+                // tcmods - these need to be before the rgbgen at the moment because some of these calculations can 
+				// affect rgbgen
+                bool bTCMODS = false;
+                for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
                 {
                     Q3ShaderStage stage = m_q3Shader.GetStages()[i];
 
                     for (int j = 0; j < stage.GetTCMODS().Count; j++)
                     {
-						bTCMODS = true;
-						TCMOD mod = stage.GetTCMODS()[j];
-						switch(mod.GetModType())
-						{
-							case TCMOD.ETYPE.SCALE:
-								{
-									nLoc = GL.GetUniformLocation(ShaderProgram, "scale" + Convert.ToString(i));
+                        bTCMODS = true;
+                        TCMOD mod = stage.GetTCMODS()[j];
+                        switch (mod.GetModType())
+                        {
+                            case TCMOD.ETYPE.SCALE:
+                                {
+                                    nLoc = GL.GetUniformLocation(ShaderProgram, "scale" + Convert.ToString(i));
                                     stage.GetScaleValues(ref m_uniformFloat2);
                                     GL.Uniform2(nLoc, 1, m_uniformFloat2);
-									break;
+                                    break;
                                 }
-							case TCMOD.ETYPE.SCROLL:
-								{
+                            case TCMOD.ETYPE.SCROLL:
+                                {
                                     nLoc = GL.GetUniformLocation(ShaderProgram, "scroll" + Convert.ToString(i));
-                                    stage.GetScrollValues(ref m_uniformFloat2); 
-									GL.Uniform2(nLoc, 1, m_uniformFloat2);
-									break;
+                                    stage.GetScrollValues(ref m_uniformFloat2);
+                                    GL.Uniform2(nLoc, 1, m_uniformFloat2);
+                                    break;
                                 }
-							case TCMOD.ETYPE.TURB:
-								{
-									nLoc = GL.GetUniformLocation(ShaderProgram, "turb" + Convert.ToString(i));
-									stage.GetTurbValues(ref m_uniformFloat3);                                
-									GL.Uniform3(nLoc, 1, m_uniformFloat3);
-									break;
-								}
-							case TCMOD.ETYPE.STRETCH:
-								{
-									nLoc = GL.GetUniformLocation(ShaderProgram, "stretch" + Convert.ToString(i));
-									stage.GetStretchValues(ref m_uniformFloat6);
-									GL.Uniform1(nLoc, 6, m_uniformFloat6);
-									break;
-								}
+                            case TCMOD.ETYPE.TURB:
+                                {
+                                    nLoc = GL.GetUniformLocation(ShaderProgram, "turb" + Convert.ToString(i));
+                                    stage.GetTurbValues(ref m_uniformFloat3);
+                                    GL.Uniform3(nLoc, 1, m_uniformFloat3);
+                                    break;
+                                }
+                            case TCMOD.ETYPE.STRETCH:
+                                {
+                                    nLoc = GL.GetUniformLocation(ShaderProgram, "stretch" + Convert.ToString(i));
+                                    stage.GetStretchValues(ref m_uniformFloat6);
+                                    GL.Uniform1(nLoc, 6, m_uniformFloat6);
+                                    break;
+                                }
                             case TCMOD.ETYPE.ROTATE:
                                 {
                                     nLoc = GL.GetUniformLocation(ShaderProgram, "rotate" + Convert.ToString(i));
@@ -531,17 +525,31 @@ namespace engine
                         }
                     }
                 }
-				if (bTCMODS)
+                if (bTCMODS)
+                {
+                    nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
+                    GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
+                }
+
+                // rgbgen
+                for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
-					nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
-					GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
-				}
+					if(!m_q3Shader.GetStages()[i].IsRGBGENIdentity())
+					{
+						nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen" + Convert.ToString(i));
+						m_q3Shader.GetStages()[i].GetRGBGenValue(ref m_uniformFloat3);
+						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
+					}
+				}				
+
+				
+
 				nLoc = GL.GetUniformLocation(ShaderProgram, "camPosition");
 				GL.Uniform3(nLoc, 1, GameGlobals.m_CamPosition.VectFloat());
 			}
             // END SET UNIFORMS ***
 
-            // Activate textures - this needs to be before the uniforms above to make animmaps sync with waveforms
+            // Activate textures - this needs to be after the uniforms above to make animmaps sync with waveforms
             if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
             {
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)

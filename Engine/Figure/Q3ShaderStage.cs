@@ -87,8 +87,13 @@ namespace engine
         int m_nCurAnimmapTextureIndex = 0;
         float m_fSecondsPerAnimmapTexture = 0f;
         float m_fLastAnimmapTextureChangeTime = 0f;
+
         bool m_bSyncRGBGENandAnimmap = false;
+        bool m_bSyncRGBGENandTCMOD = false;
+
+        bool m_bSquareOnOff = true;
         float m_fPrevRGBGENWaveformVal = 0f;
+        float m_fPrevRGBGENandTCMODVal = 0f;
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
@@ -116,7 +121,21 @@ namespace engine
                 {
                     m_bSyncRGBGENandAnimmap = true;
                 }
+                // this was originally for the quake3 letter flashing sign but it helps with flames too
             }
+            // for sync of rgb and tcmod
+            if(m_stretch.wf.func == "sin" && m_rgbgen.wf.func == "square")
+            {
+                // originally for jump pads
+                if(m_stretch.wf.freq == m_rgbgen.wf.freq)
+                {
+                    m_bSyncRGBGENandTCMOD = true; // this and its use are really a special case hack
+                    // i should make this more generic. q3 has tables
+                }
+            }
+
+            // some hardcoding above for now. if this kind of thing keeps happening while loading maps I'll make it more
+            // generic
         }
 
         public bool IsAnimmap() { return m_lAnimmapTextures.Count > 0; }
@@ -275,8 +294,12 @@ namespace engine
         {
             float p = CalculateWaveForm(m_stretch.wf);
 
-            p = p * 1.5f; // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now
-            // without it the stretching doesn't go far enough in towards the center
+            if (m_ParentShader.GetShaderName().Contains("bounce"))
+                p = p * 1.2f;
+            else p = p * 1.6f;
+            
+            // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now
+            // without it the stretching doesn't go far enough in towards the center          
 
             vals[0] = p;
             vals[1] = 0;
@@ -321,9 +344,14 @@ namespace engine
                 double dIntoSin = (x * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
 
                 // after plugging into sin you just have to scale by the amplitude and then add the initial value
-                //fVal = Math.Abs(Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase));
+                float fSinValue = Convert.ToSingle(Math.Sin(dIntoSin));
 
-                fVal = Convert.ToSingle(Math.Sin(dIntoSin) * wf.amp + wf.fbase);
+                fVal = Convert.ToSingle(fSinValue * wf.amp + wf.fbase);
+
+                if (m_fPrevRGBGENandTCMODVal < fVal && fVal > 0) m_bSquareOnOff = false;
+                else m_bSquareOnOff = true;
+
+                m_fPrevRGBGENandTCMODVal = fVal;
                 if (fVal <= 0) fVal = 0;
             }
             else if (wf.func == "sawtooth")
@@ -354,9 +382,17 @@ namespace engine
             }
             else if(wf.func == "square")
             {
-                int n = Math.Sign(Math.Sin(Math.PI * 2 * (x + wf.phase * wf.freq) * wf.freq));
-                if (n >= 0) fVal = wf.fbase + wf.amp;
-                else fVal = wf.fbase;
+                if (m_bSyncRGBGENandTCMOD)
+                {
+                    if (m_bSquareOnOff) fVal = wf.fbase + wf.amp;
+                    else fVal = 0;
+                }
+                else
+                {
+                    int n = Math.Sign(Math.Sin(Math.PI * 2 * (x + wf.phase * wf.freq) * wf.freq));
+                    if (n >= 0) fVal = wf.fbase + wf.amp;
+                    else fVal = 0; // this seems to be right. see blinking red tower lights in dm0
+                }
             }
             else if(wf.func == "triangle")
             {

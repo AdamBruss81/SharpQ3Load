@@ -2,7 +2,7 @@
 
 A quick note before these comments - my goal was never to have to hardcode things for certain shaders. I want a generic q3 to glsl shader conversion system. For example for the beams mentioned below I could probably
 hardcode something to make them look better but that would be annoying and only work in one case. All the work I've done so far has stressed generic solutions that will work across the q3 shaders.
-For example my system can handle x amount of q3 shader stages, rgbgens and waveforms without any customizing. 
+For example my system can handle x amount of q3 shader stages, rgbgens and waveforms without any customizing. But there are still hardcodes for certain kinds of q3 map objects. 
 
 Q3 SHADER COMMENTS
 
@@ -21,6 +21,8 @@ how to fix but it looks pretty bad sometimes. Do you have to sort based on cam p
 Tcgen environment - in my game something is wrong but it it works enough to be passable. For example on the screens in dm0 in q3, when you move around it changes more and you see more of the
 underlying texture. In my game it changes based on your position, but not in the same way as q3. Maybe my vertex normals are wrong in some cases. Tcgen seems to work better when the faces
 are on the floor and ceiling.
+
+Alphagen also does not work right - it doesn't blend the changes as well as in q3. For an extreme example see the ceiling in dm5.
 
 The upper flickering lights in dm0(proto_light_2k) - these don't work right. they have two triangle wave textures that create a flicker effect in q3. but the brightness seems too high and looks too high in my
 game.
@@ -41,10 +43,10 @@ WATER : my first encounter with water was in dm2. i tried to make it look like i
 
 I seem to have broke something with the console in dm0. It now looks too dark all the time. Revisit.
 
-The tesla coils in dm4 look pretty good but the transparency isn't working exactly like q3. in face there is no transparency. but otherwise it looks good. i think what's happening is that the alpha values
-if just always greater than or equal to 1 due to how the textures are blended. maybe im doing something wrong.
-
 surfacelight - i don't do anything with this. i might be able to make the final outputColor of shaders with this brighter based on this value. it's not going to brighten areas around it but it would help
+
+water - the initial color for water shaders is set by me based on what it should look like in q3. i can't see where im supposed to source this from. also when under a water texture, if you look up at lights
+they dissappear. see brimstone abbey. this must be some rendering order issue. im not fixing this right now. moving on to more levels.
 
 --- Note ---
 Things not mentioned above can be safely assumed to be working well enough

@@ -370,13 +370,15 @@ namespace engine
 		{
 			bool bNoClipping = false;
 
-			Texture tex = GetMainTexture();
+			/*Texture tex = GetMainTexture();
 			if (tex != null)
 			{
 				string sName = Path.GetFileName(tex.GetPath());
 				bNoClipping = (sName.Contains("fog") ||
 					sName.Contains("beam") || sName.Contains("lava") || tex.GetPath().Contains("skies")) && !tex.GetPath().Contains("gothic_wall");
-			}
+			}*/
+
+			bNoClipping = m_q3Shader.GetNonSolid() || m_q3Shader.GetSky() || m_q3Shader.GetLava() || m_q3Shader.GetFog();
 
 			return bNoClipping;
 		}
@@ -412,13 +414,23 @@ namespace engine
 			// 0 means render first
 			// higher means render later
 
+			// i can probably improve on this a bit after reading the q3 shader manual's comments on sorting
+
 			string sShaderName = m_q3Shader.GetShaderName();
 
 			if (sShaderName.Contains("models")) nVal = 3;
 			if (!string.IsNullOrEmpty(sShaderName)) nVal = 4;
-            if (m_q3Shader.GetAddAlpha()) nVal = 5;
-			if (sShaderName.Contains("slamp2")) nVal = 6;
-			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 7;
+			if (m_q3Shader.GetAddAlpha())
+			{
+				if (m_q3Shader.GetSort() == "5")
+					nVal = 5;
+				else if (m_q3Shader.GetSort() == "6")
+					nVal = 6;
+				else
+					nVal = 5;
+			}
+			if (sShaderName.Contains("slamp2")) nVal = 7;
+			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
 			// slamp2 are the bulbs under the skull lights
@@ -437,7 +449,7 @@ namespace engine
 			if (DontRender()) return;
 					
 			// these apply to entire shader
-			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none")
+			if(m_q3Shader.GetCull() == "disable" || m_q3Shader.GetCull() == "none" || m_q3Shader.GetCull() == "twosided")
 			{
 				GL.PushAttrib(AttribMask.EnableBit);
 				GL.Disable(EnableCap.CullFace);
@@ -476,6 +488,7 @@ namespace engine
 			{
                 // tcmods - these need to be before the rgbgen at the moment because some of these calculations can 
 				// affect rgbgen
+				// tcmod scroll can also dictate animmap for example for launch pads
                 bool bTCMODS = false;
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
                 {
@@ -529,6 +542,9 @@ namespace engine
                 {
                     nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
                     GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
+
+                    //nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
+                    //GL.Uniform1(nLoc, GameGlobals.GetElapsedMS());
                 }
 
                 // rgbgen
@@ -541,8 +557,6 @@ namespace engine
 						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
 					}
 				}				
-
-				
 
 				nLoc = GL.GetUniformLocation(ShaderProgram, "camPosition");
 				GL.Uniform3(nLoc, 1, GameGlobals.m_CamPosition.VectFloat());

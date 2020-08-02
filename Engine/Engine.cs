@@ -188,6 +188,7 @@ namespace engine
 
 			GameGlobals.m_CamPosition = m_cam.Position;
 			GameGlobals.m_fFrameStartElapsedS = (float)GameGlobals.m_SW.ElapsedMilliseconds / 1000.0f;
+			GameGlobals.m_fFrameStartElapsedMS = GameGlobals.m_SW.ElapsedMilliseconds;
 
 			m_lStaticFigList.ShowAllFigures(m_GraphicsMode, m_cam);
 			m_dynamicFigList.ShowAllFigures(m_GraphicsMode, m_cam); 

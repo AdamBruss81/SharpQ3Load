@@ -90,10 +90,12 @@ namespace engine
 
         bool m_bSyncRGBGENandAnimmap = false;
         bool m_bSyncRGBGENandTCMOD = false;
+        bool m_bSyncTCMODandAnimmap = false;
 
         bool m_bSquareOnOff = true;
         float m_fPrevRGBGENWaveformVal = 0f;
         float m_fPrevRGBGENandTCMODVal = 0f;
+        float m_fPrevScrollAmountAtAnimmapChange = System.Single.MaxValue;
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
@@ -123,6 +125,7 @@ namespace engine
                 }
                 // this was originally for the quake3 letter flashing sign but it helps with flames too
             }
+
             // for sync of rgb and tcmod
             if(m_stretch.wf.func == "sin" && m_rgbgen.wf.func == "square")
             {
@@ -134,6 +137,22 @@ namespace engine
                 }
             }
 
+            bool bScroll = false;
+            for(int i = 0; i < m_TCMODS.Count; i++)
+            {
+                if(m_TCMODS[i].GetModType() == TCMOD.ETYPE.SCROLL)
+                {
+                    bScroll = true;
+                    break;
+                }
+            }         
+            if(IsAnimmap() && bScroll)
+            {
+                // assume these should be synced
+                //m_bSyncTCMODandAnimmap = true; // couldn't get this to work. revisit later. so launchpads won't look right for now.
+                // change animmap texture based on scroll status
+            }
+
             // some hardcoding above for now. if this kind of thing keeps happening while loading maps I'll make it more
             // generic
         }
@@ -142,7 +161,7 @@ namespace engine
 
         public Texture GetAnimmapTexture()
         {
-            if (!m_bSyncRGBGENandAnimmap)
+            if (!m_bSyncRGBGENandAnimmap && !m_bSyncTCMODandAnimmap)
             {
                 if (m_fLastAnimmapTextureChangeTime == 0f) m_fLastAnimmapTextureChangeTime = GameGlobals.GetElapsedS();
                 else if (GameGlobals.GetElapsedS() - m_fLastAnimmapTextureChangeTime >= m_fSecondsPerAnimmapTexture)
@@ -284,6 +303,22 @@ namespace engine
             }
             else
             {
+                if (m_bSyncTCMODandAnimmap) 
+                {
+                    /*long f = (long)m_scroll.t * GameGlobals.GetElapsedMS();
+
+                    if (m_fPrevScrollAmountAtAnimmapChange == System.Single.MaxValue)
+                    {
+                        m_fPrevScrollAmountAtAnimmapChange = f;
+                    }
+                    else if ((f - m_fPrevScrollAmountAtAnimmapChange) >= (1000f / m_scroll.t))
+                    {
+                        m_nCurAnimmapTextureIndex++;
+                        if (m_nCurAnimmapTextureIndex > m_lAnimmapTextures.Count - 1) m_nCurAnimmapTextureIndex = 0;
+
+                        m_fPrevScrollAmountAtAnimmapChange = f;
+                    }*/
+                }
                 vals[0] = m_scroll.s;
                 vals[1] = m_scroll.t;
             }

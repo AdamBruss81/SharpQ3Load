@@ -26,6 +26,7 @@ namespace engine
         bool m_bShouldBeTGA = false;
         bool m_bClamp = false;
         bool m_bWideTexture = false; // if image is wider than high
+        bool m_bTGA = false;
         
         public enum EFileType { PNG, TGA, JPG };
 
@@ -86,6 +87,10 @@ namespace engine
         public void SetShouldBeTGA(bool b) { m_bShouldBeTGA = b; }
         public void SetClamp(bool b) { m_bClamp = b; }
         public bool GetShouldBeTGA() { return m_bShouldBeTGA; }
+        public bool IsTGA()
+        {
+            return m_bTGA;
+        }
         public bool GetWide() { return m_bWideTexture; }
 
         private static System.Drawing.Bitmap GetBitmapFromImageFile(string sFullPath)
@@ -113,7 +118,9 @@ namespace engine
         {
             if (string.IsNullOrEmpty(sFullPath)) return; // for example fog
 
-			LOGGER.Debug("Set texture to " + sFullPath);
+            if(Path.GetExtension(sFullPath) == ".tga") m_bTGA = true;
+
+            LOGGER.Debug("Set texture to " + sFullPath);
 
             System.Drawing.Bitmap image = GetBitmapFromImageFile(sFullPath);
 

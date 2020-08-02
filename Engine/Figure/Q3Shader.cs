@@ -22,7 +22,12 @@ namespace engine
         bool m_bTrans = false;
         bool m_bAlphaShadow = false;
         bool m_bLava = false;
+        bool m_bSky = false;
+        bool m_bNonSolid = false;
         bool m_bWater = false;
+        bool m_bWaterGLZERO = true;
+        bool m_bFog = false;
+        string m_sSort = "";
 
         // static methods
         public static string GetSampler2DName() { return "sampler2D"; }
@@ -33,6 +38,15 @@ namespace engine
             m_pParent = parent;
         }
 
+        public string GetSort()
+        {
+            return m_sSort;
+        }
+        public bool GetLava() { return m_bLava; }
+        public bool GetFog() { return m_bFog; }
+        public bool GetNonSolid() { return m_bNonSolid; }
+        public bool GetSky() { return m_bSky; }
+
         public bool GetTrans() { return m_bTrans; }
 
         public bool GetAddAlpha()
@@ -41,13 +55,14 @@ namespace engine
 
             // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
             bAA = m_sShaderName.Contains("sfx/teslacoil") || m_sShaderName.Contains("console/centercon") ||
-                m_sShaderName.Contains("teleporter/energy"); // for example see big power reactor in dm0
+                m_sShaderName.Contains("teleporter/energy") || m_sShaderName.Contains("pj_light"); // for example see big power reactor in dm0
+            // pj_light is ball light in brimstone abbey
 
             if (!bAA) bAA = m_bAlphaShadow;
             if (!bAA) bAA = m_bTrans;
             if (!bAA)
             {
-                if (m_lStages.Count == 1 && m_lStageTextures[0].GetShouldBeTGA() && m_lStages[0].GetBlendFunc() != "")
+                if (m_lStages.Count == 1 && (m_lStageTextures[0].GetShouldBeTGA() || m_lStageTextures[0].IsTGA()) && m_lStages[0].GetBlendFunc() != "")
                 {
                     bAA = true;
                 }
@@ -222,6 +237,34 @@ namespace engine
             return sFullPath;
         }
 
+        private void DefineInitialOutputColor(System.Text.StringBuilder sb)
+        {
+            // define outputColor line
+            if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
+            {
+                float[] fCol = Texture.GetAverageColor(m_sLightImageFullPath);
+                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 1) + "/255.0, " + Math.Round(fCol[1], 1) +
+                    "/255.0, " + Math.Round(fCol[2], 1) + "/255.0, " + Math.Round(fCol[3], 1) + "/255.0);");
+            }
+            else if (m_bWater)
+            {
+                if (m_bWaterGLZERO)
+                {
+                    // more color and opaqueness because the blend functions are zeroing
+                    sb.AppendLine("outputColor = vec4(0.3, 0.6, 0.45, 0.2);");
+                }
+                else // gl_one
+                {
+                    // less color and opaqueness because the blend functions are adding
+                    sb.AppendLine("outputColor = vec4(0.1, 0.2, 0.15, 0.05);");
+                }
+            }
+            else
+            {
+                sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
+            }
+        }
+
         /// <summary>
         /// Convert quake3 shader into GLSL code. There is already some content in the glsl shader in the stringbuilder. See who calls this function.
         /// This functions puts in the q3 shader specific content.
@@ -360,11 +403,6 @@ namespace engine
 
             sb.AppendLine("");
 
-            if(m_sShaderName.Contains("teslacoil"))
-            {
-                int stop = 0;
-            }
-
             // define texture texels and create stage textures
             for (int i = 0; i < m_lStages.Count; i++)
             {
@@ -434,25 +472,21 @@ namespace engine
 
             sb.AppendLine("");
 
-            // define outputColor line
-            if(m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
+            if (m_bWater)
             {
-                float[] fCol = Texture.GetAverageColor(m_sLightImageFullPath);
-                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 1) + "/255, " + Math.Round(fCol[1], 1) + 
-                    "/255, " + Math.Round(fCol[2], 1) + "/255, " + Math.Round(fCol[3], 1) + "/255);");
+                for (int i = 0; i < m_lStages.Count; i++)
+                {
+                    if (m_lStages[i].GetBlendFunc() == "gl_dst_color gl_one")
+                    {
+                        // I don't know where to get the initial color for water from. I try to determine it from the blending functions
+                        // in the water shader. This is not ideal but it gets us something decent.
+                        m_bWaterGLZERO = false;
+                        break;
+                    }
+                }
             }
-            else if(m_bWater)
-            {
-                // the first water i encountered was dm2(calm_poollight). in the shader, it filters in the first stage. the problem is
-                // my initial color for outputColor is black. So nothing shows because the shader is transparent also.
-                // so start waters with white(testing)
-                // also, there is no light image for calm_poollight but comments do say "green"
-                // maybe in this case you're supposed to start outputColor with the average color of
-                // the first texture used in the shader
-                sb.AppendLine("outputColor = vec4(102/255, 205/255, 170/255, 0.6);");
-            }
-            else 
-                sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
+
+            DefineInitialOutputColor(sb);
 
             sb.AppendLine("");
 
@@ -478,7 +512,7 @@ namespace engine
                 if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
                     sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
-                }
+                }                
 
                 // blend functions in q3
                 if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
@@ -520,7 +554,7 @@ namespace engine
                 else if(sBlendFunc == "gl_zero gl_one_minus_src_color")
                 {
                     sb.AppendLine("outputColor = outputColor * (1 - " + sub + ");");
-                }
+                } // end blend functions
                 else if(!stage.IsVertexColor())
                 {
                     sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
@@ -554,6 +588,8 @@ namespace engine
                 sb.AppendLine("");                
             }
 
+            CustomizeFinalOutputColor(sb);
+
             // end main
             sbOutputline.AppendLine("}");
 
@@ -563,6 +599,17 @@ namespace engine
             if (m_sLightImageFullPath != "") sbOutputline.AppendLine("// light image is " + m_sLightImageFullPath);
 
             sb.Append(sbOutputline.ToString());
+        }
+
+        private void CustomizeFinalOutputColor(System.Text.StringBuilder sb)
+        {
+            if(m_sShaderName.Contains("pj_light"))
+            {
+                // the q3 shader for pj_light does not represent what it looks like in q3
+                // customizing it here
+                sb.AppendLine("outputColor.xyz *= 2.0;");
+                sb.AppendLine("outputColor.w = 0.5;");
+            }
         }
 
         private void AppendAddAlphaLine(string sIndex, System.Text.StringBuilder sb)
@@ -636,32 +683,52 @@ namespace engine
                                 // at end and valid stuff at beginning of line
                             }
 
-                            // read shader properties
+                            // read surface parameters
                             if (sInsideTargetShaderLine.Contains("surfaceparm"))
                             {
                                 if (sInsideTargetShaderLine.Contains("metalsteps"))
                                 {
                                     m_eStepType = EStepType.METAL;
                                 }
-                                if(sInsideTargetShaderLine.Contains("nosteps"))
+                                else if(sInsideTargetShaderLine.Contains("nosteps"))
                                 {
                                     m_eStepType = EStepType.NONE;
                                 }
-                                if(sInsideTargetShaderLine.Contains("trans"))
+                                else if(sInsideTargetShaderLine.Contains("trans"))
                                 {
                                     m_bTrans = true;
                                 }
-                                if(sInsideTargetShaderLine.Contains("alphashadow"))
+                                else if(sInsideTargetShaderLine.Contains("alphashadow"))
                                 {
                                     m_bAlphaShadow = true;
                                 }
-                                if(sInsideTargetShaderLine.Contains("lava"))
+                                else if(sInsideTargetShaderLine.Contains("lava"))
                                 {
                                     m_bLava = true;
                                 }
-                                if(sInsideTargetShaderLine.Contains("water"))
+                                else if(sInsideTargetShaderLine.Contains("nonsolid"))
+                                {
+                                    m_bNonSolid = true;
+                                }
+                                else if(sInsideTargetShaderLine.Contains("water"))
                                 {
                                     m_bWater = true;
+                                } 
+                                else if(sInsideTargetShaderLine.Contains("sky"))
+                                {
+                                    m_bSky = true;
+                                }
+                                else if(sInsideTargetShaderLine.Contains("fog"))
+                                {
+                                    m_bFog = true;
+                                }
+                            }
+                            else if (sInsideTargetShaderLine.Contains("sort"))
+                            {
+                                string[] tokens = sInsideTargetShaderLine.Trim().Split(' ');
+                                if (tokens.Length > 1)
+                                {
+                                    m_sSort = tokens[1];
                                 }
                             }
                             else if (sInsideTargetShaderLine.Contains("cull"))
@@ -683,10 +750,6 @@ namespace engine
                                 if(File.Exists(sTexPath))
                                 {
                                     m_sLightImageFullPath = sTexPath;
-
-                                    /*m_lStages.Add(new Q3ShaderStage(this));
-                                    m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
-                                    m_lStages[m_lStages.Count - 1].SetBlendFunc("add");*/
                                 } 
                             }
 
@@ -795,15 +858,6 @@ namespace engine
                             }
                             else if(sInsideTargetShaderLine.Contains("$lightmap"))
                             {
-                                //m_lStages[m_lStages.Count - 1].SetLightmapFlag(true);
-
-                                /*if(m_sLightImage == "")
-                                    m_lStages[m_lStages.Count - 1].SetLightmap(true);
-                                else
-                                {
-                                    m_lStages[m_lStages.Count - 1].SetTexturePath(m_sLightImage);
-                                }*/
-
                                 m_lStages[m_lStages.Count - 1].SetLightmap(true);
                             }
                             // end stage reading                            
@@ -813,23 +867,15 @@ namespace engine
 
                                 if (nCurlyCounter == 0)
                                     break; // end of shader
-                                else
-                                {
-                                    /*if(m_lStages[m_lStages.Count - 1].GetLightmapFlag() && m_sLightImage != "" 
-                                        && m_lStages[m_lStages.Count - 1].GetTCGEN_CS() != "environment")
-                                    {
-                                        m_lStages[m_lStages.Count - 1].SetLightmap(true);
-                                    }*/
-                                }   
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("sfx/teslacoil"))
+                                if(m_sShaderName.Contains("launchpad"))
                                 {
-                                    if(m_lStages.Count == 4)
+                                    if(m_lStages.Count == 3)
                                     {
                                         //m_lStages[0].SetSkip(true);
-                                        break;
+                                        //break;
 
                                         // you can break out after reading some of the stages and test
                                         // or you can set certain stages to skip rendering

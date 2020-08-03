@@ -134,7 +134,7 @@ namespace engine
 
 		public void InitializeLists()
 		{
-			m_q3Shader.ReadShader(GetMainTexture().GetPath());
+			m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
 
 			bool bUnused = false;
 			foreach (Texture t in m_lTextures)
@@ -379,6 +379,12 @@ namespace engine
 			}*/
 
 			bNoClipping = m_q3Shader.GetNonSolid() || m_q3Shader.GetSky() || m_q3Shader.GetLava() || m_q3Shader.GetFog();
+
+			if(m_q3Shader.GetShaderName().Contains("skin"))
+			{
+				bNoClipping = false; // special case. hopefully only one? no idea why this is non solid. annoying that i cant easily determine
+				// whether a shader should restrict movement or not
+			}
 
 			return bNoClipping;
 		}

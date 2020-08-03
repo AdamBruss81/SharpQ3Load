@@ -48,6 +48,10 @@ surfacelight - i don't do anything with this. i might be able to make the final 
 water - the initial color for water shaders is set by me based on what it should look like in q3. i can't see where im supposed to source this from. also when under a water texture, if you look up at lights
 they dissappear. see brimstone abbey. this must be some rendering order issue. im not fixing this right now. moving on to more levels.
 
+Mesh errors from bsp to vrml conversion:
+1. tongue in dm1 has a little section missing
+2. one arc in camping grounds has two straight sections instead of arcs. can see through bottom of this.
+
 --- Note ---
 Things not mentioned above can be safely assumed to be working well enough
 

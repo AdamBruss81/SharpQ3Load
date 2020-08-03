@@ -230,6 +230,17 @@ namespace engine
                         // the only texture in the game of this nature
                         if (sFullPath.Contains("nightsky_xian_dm1"))
                             sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
+                        else if (sFullPath.Contains("stars"))
+                        {
+                            // this is the lightimage for the dm10 sky. i think the sky is somehow broken up into multiple
+                            // images in env. see other images named space*. im just taking one for now
+                            // no indication in shaders or manual for how this works
+                            // i think for this particular case i need to add the lightimage as a first stage
+                            // and then blend into it with the clouds. but usually with lightimages you 
+                            // use them as the initial color for outputColor by taking average color.
+                            // im not going to hardcode something for this case at this time.
+                            sFullPath = m_zipper.ExtractSoundTextureOther("env/space1_bk.jpg");
+                        }
                     }
                 }
             }
@@ -243,8 +254,8 @@ namespace engine
             if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
             {
                 float[] fCol = Texture.GetAverageColor(m_sLightImageFullPath);
-                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 1) + "/255.0, " + Math.Round(fCol[1], 1) +
-                    "/255.0, " + Math.Round(fCol[2], 1) + "/255.0, " + Math.Round(fCol[3], 1) + "/255.0);");
+                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) +
+                    "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, " + Math.Round(fCol[3], 5) + "/255.0);");
             }
             else if (m_bWater)
             {
@@ -567,9 +578,10 @@ namespace engine
                     else
                         sb.AppendLine("outputColor *= (color * 3.0);");
                 }
-                
+
                 // clamp colors that are over 1.0
-                sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
+                if (stage.IsRGBGENIdentity() && stage.GetLightmap()) { }
+                else if(i < m_lStages.Count - 1) sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
 
                 // alpha testing - for example makes skel in fatal instinct look much better
                 if (stage.GetAlphaFunc() == "ge128")
@@ -610,6 +622,9 @@ namespace engine
                 sb.AppendLine("outputColor.xyz *= 2.0;");
                 sb.AppendLine("outputColor.w = 0.5;");
             }
+
+            // final clamp
+            sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
         }
 
         private void AppendAddAlphaLine(string sIndex, System.Text.StringBuilder sb)
@@ -642,7 +657,7 @@ namespace engine
         /// Reads the shader files and finds the right texture
         /// </summary>
         /// <returns></returns>
-        public void ReadShader(string sPathFromVRML)
+        public void ReadQ3Shader(string sPathFromVRML)
         {            
             List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
             string sNewPath = "";
@@ -741,7 +756,12 @@ namespace engine
                             {
                                 // this affects the initial color of outputColor
                                 // it sets it to the average color of the image
-                                 
+
+                                if (sInsideTargetShaderLine.Contains("stars"))
+                                {
+                                    int stop = 0;
+                                }
+
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
 
@@ -870,9 +890,9 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("launchpad"))
+                                if(m_sShaderName.Contains("pent_metal"))
                                 {
-                                    if(m_lStages.Count == 3)
+                                    if(m_lStages.Count == 2)
                                     {
                                         //m_lStages[0].SetSkip(true);
                                         //break;

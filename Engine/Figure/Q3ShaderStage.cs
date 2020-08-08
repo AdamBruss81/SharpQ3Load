@@ -95,7 +95,6 @@ namespace engine
         bool m_bSquareOnOff = true;
         float m_fPrevRGBGENWaveformVal = 0f;
         float m_fPrevRGBGENandTCMODVal = 0f;
-        float m_fPrevScrollAmountAtAnimmapChange = System.Single.MaxValue;
 
         public Q3ShaderStage(Q3Shader container) { m_ParentShader = container; }
 
@@ -222,7 +221,7 @@ namespace engine
                         m_lAnimmapTextures.Add(new Texture(sToken));
                         bool bShouldBeTGA = false;
                         string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
-                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture);
+                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture, bShouldBeTGA, m_ParentShader.GetShaderName());
                         if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
                     }
                 }

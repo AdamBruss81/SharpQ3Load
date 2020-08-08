@@ -153,8 +153,15 @@ namespace utilities
 			if (!string.IsNullOrEmpty(s))
 			{
 				if (sHelperStr == "")
+				{
 					Console.WriteLine(s);
-				else Console.WriteLine(s + " from " + sHelperStr);
+					//System.IO.File.WriteAllText("c:\\temp\\glout_release.txt", s);
+				}
+				else
+				{
+					Console.WriteLine(s + " from " + sHelperStr);
+					//System.IO.File.WriteAllText("c:\\temp\\glout_release.txt", s + " from " + sHelperStr);
+				}
 			}
 			return retCode;
 		}

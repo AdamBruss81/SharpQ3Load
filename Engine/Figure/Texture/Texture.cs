@@ -40,46 +40,63 @@ namespace engine
 
         public string GetPath() { return m_sInternalZipPath; }
 
-		public void Delete()
+        public void Delete()
 		{
             if(m_pnTextures != null)
 			    GL.DeleteTextures(1, m_pnTextures);
-		}  
+		}
 
-        public static float[] GetAverageColor(string sPath)
+        private static float CalculateAlphaNormalized(System.Drawing.Color pcol, string sShaderName)
+        {
+            float aVal = Convert.ToSingle(Math.Sqrt(0.299f * Math.Pow((float)pcol.R / 255f, 2) + 0.587f * Math.Pow((float)pcol.G / 255f, 2) + 0.114f * Math.Pow((float)pcol.B / 255f, 2)));
+
+            // customize float based on texture
+            if(sShaderName.Contains("glass_frame"))
+            {
+                //aVal *= 2.0f;
+            }
+            else if (sShaderName.Contains("glass"))
+            {
+                aVal *= 0.4f; // make glass more transparent
+            }
+            else if (sShaderName.Contains("lamp"))
+            {
+                // make things a lot less transparent from original value
+                // in dm4 the skull lights have lightbulbs rendered in the lamp glass
+
+                aVal *= 2.5f;
+            }
+            else
+            {
+                aVal *= 1.5f; // make things less transparent in general as well
+            }
+
+            if (aVal > 1.0f) aVal = 1.0f;
+            return aVal;
+        }
+
+        public static float[] GetAverageColor255(string sPath, bool bShouldBeTGA)
         {
             float[] fCol = { 0f, 0f, 0f, 0f };
-            System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath);
-            int nCounter = 0;
+            System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath, bShouldBeTGA, "");
+            float fCounter = 0;
             for(int i = 0; i < bm.Width; i++)
             {
                 for(int j = 0; j < bm.Height; j++)
                 {
                     System.Drawing.Color pcol = bm.GetPixel(i, j);
-                    if(pcol.R != 0 || pcol.G != 0 || pcol.B != 0)
-                    {
-                        nCounter++;
-                        fCol[0] += pcol.R;
-                        fCol[1] += pcol.G;
-                        fCol[2] += pcol.B;
-                        if(Path.GetExtension(sPath) == ".tga")
-                            fCol[3] += pcol.A;
-                        else
-                        {
-                            //sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");
-                            fCol[3] += Convert.ToSingle(Math.Sqrt(0.299f * Math.Pow((float)pcol.R / 255f, 2) + 0.587f * Math.Pow((float)pcol.G / 255f, 2) + 0.114f * Math.Pow((float)pcol.B / 255f, 2)));
-                        }
-                    }
+                    fCounter++;
+
+                    fCol[0] += pcol.R;
+                    fCol[1] += pcol.G;
+                    fCol[2] += pcol.B;                        
+                    fCol[3] += pcol.A;                        
                 }
             }
-            fCol[0] /= nCounter;
-            fCol[1] /= nCounter;
-            fCol[2] /= nCounter;
-            if(Path.GetExtension(sPath) != ".tga")
-            {
-                fCol[3] *= 255;
-            }
-            fCol[3] /= nCounter;
+            fCol[0] /= fCounter;
+            fCol[1] /= fCounter;
+            fCol[2] /= fCounter;
+            fCol[3] /= fCounter;
 
             return fCol;
         }
@@ -93,12 +110,21 @@ namespace engine
         }
         public bool GetWide() { return m_bWideTexture; }
 
-        private static System.Drawing.Bitmap GetBitmapFromImageFile(string sFullPath)
+        private static bool SpecialTexture(string sFullPath)
+        {
+            // incoming is jpg which should be tga
+            // in some cases i can't tell if i should set alpha values on the image or not
+            // this is frustrating
+
+            return sFullPath.Contains("liquids/proto_gruel3");
+        }
+
+        private static System.Drawing.Bitmap GetBitmapFromImageFile(string sFullPath, bool bShouldBeTGA, string sShaderName)
         {
             System.Drawing.Bitmap image;
 
             if (Path.GetExtension(sFullPath) == ".tga")
-            {
+            { // already tga
                 IImageFormat format;
                 using (var image2 = Image.Load(sFullPath, out format))
                 {
@@ -109,12 +135,38 @@ namespace engine
                 }
             }
             else
+            {                
                 image = new System.Drawing.Bitmap(sFullPath);
+
+                if (bShouldBeTGA && !SpecialTexture(sFullPath))
+                {
+                    System.Diagnostics.Debug.Assert(Path.GetExtension(sFullPath) == ".jpg");
+
+                    System.Drawing.Bitmap imageWithA = new System.Drawing.Bitmap(image.Width, image.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    // add alpha to image
+                    // loop bits in image and set their alpha value based on rgb values of bit
+
+                    for (int i = 0; i < image.Width; i++)
+                    {
+                        for (int j = 0; j < image.Height; j++)
+                        {
+                            System.Drawing.Color pcol = image.GetPixel(i, j);
+                            System.Diagnostics.Debug.Assert(pcol.A == 255);
+                            float fAlpha = CalculateAlphaNormalized(pcol, sShaderName);                           
+                            System.Drawing.Color tempCol = System.Drawing.Color.FromArgb((int)(fAlpha * 255f), pcol.R, pcol.G, pcol.B); 
+                            imageWithA.SetPixel(i, j, tempCol);
+                        }
+                    }
+
+                    image = imageWithA;
+                }
+            }
 
             return image;
         }
 
-        public void SetTexture(string sFullPath)
+        public void SetTexture(string sFullPath, bool bShouldBeTGA, string sShaderName)
         {
             if (string.IsNullOrEmpty(sFullPath)) return; // for example fog
 
@@ -122,7 +174,7 @@ namespace engine
 
             LOGGER.Debug("Set texture to " + sFullPath);
 
-            System.Drawing.Bitmap image = GetBitmapFromImageFile(sFullPath);
+            System.Drawing.Bitmap image = GetBitmapFromImageFile(sFullPath, bShouldBeTGA, sShaderName);
 
             if (image.Width > image.Height) m_bWideTexture = true;
 

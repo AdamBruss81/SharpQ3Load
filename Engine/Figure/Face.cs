@@ -140,7 +140,7 @@ namespace engine
 		/// </summary>      
 		public bool CanMove(D3Vect position, D3Vect dest, IntersectionInfo intersection, bool bTestAll)
 		{
-			if (!bTestAll && m_pParentShape != null && m_pParentShape.NoClipping()) return true;
+			if (!bTestAll && m_pParentShape != null && m_pParentShape.NonSolid()) return true;
 
 			bool bCanMove = false;
 

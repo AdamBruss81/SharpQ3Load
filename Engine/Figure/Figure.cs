@@ -31,7 +31,7 @@ namespace engine
 
 		const double m_dBoundingBoxDimension = 4.0;
 		private const int m_nBoundingBoxVersion = 6;
-		const double mcd_HalfWidth = 3.0;
+		const double mcd_HalfWidth = 2.0;
 		const double mcd_MaxEasyHopOverHeight = 0.3;
 		Mutex m_mutThreadShutdownChecker = new Mutex();
 

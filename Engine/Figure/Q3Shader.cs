@@ -11,7 +11,6 @@ namespace engine
 
         List<Q3ShaderStage> m_lStages = new List<Q3ShaderStage>();
         EStepType m_eStepType = EStepType.DEFAULT;
-        string m_sMainTextureFullPath = "";
         private Zipper m_zipper = new Zipper();
         string m_sShaderName = "";
         string m_sCull = "";
@@ -27,6 +26,7 @@ namespace engine
         bool m_bWater = false;
         bool m_bWaterGLZERO = true;
         bool m_bFog = false;
+        bool m_bLightImageShouldBeTGA = false;
         string m_sSort = "";
 
         // static methods
@@ -51,6 +51,9 @@ namespace engine
 
         public bool GetAddAlpha()
         {
+            /* i still need this function to know when to enable opengl pipeline blending for a shape's rendering */
+            // these checks are based on shader name and if there is only one stage
+
             bool bAA = false;
 
             // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
@@ -99,11 +102,6 @@ namespace engine
                 return m_lStages[iStage].GetAnimmapTexture();
             }
             else { return m_lStageTextures[iStage]; }
-        }
-
-        public string GetShaderBasedMainTextureFullPath()
-        {
-            return m_sMainTextureFullPath;
         }
 
         public string GetCull() { return m_sCull; }
@@ -251,18 +249,28 @@ namespace engine
         private void DefineInitialOutputColor(System.Text.StringBuilder sb)
         {
             // define outputColor line
-            if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
+            if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "") // the check on blendfunc here...
             {
-                float[] fCol = Texture.GetAverageColor(m_sLightImageFullPath);
-                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) +
-                    "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, " + Math.Round(fCol[3], 5) + "/255.0);");
+                float[] fCol = Texture.GetAverageColor255(m_sLightImageFullPath, m_bLightImageShouldBeTGA);
+
+                //sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, " + Math.Round(fCol[3], 5) + "/255.0);");
+
+                sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, 0.0);");
+
+                // for lightimage initial color, set alpha to fully opaque for now for testing
             }
             else if (m_bWater)
             {
+                // i may not need these anymore after my change to set the alpha of jpgs that should be tgas at texture creation time
+                // ###
+
+                //sb.AppendLine("outputColor = vec4(1.0, 1.0, 1.0, .3);");
+
                 if (m_bWaterGLZERO)
                 {
                     // more color and opaqueness because the blend functions are zeroing
-                    sb.AppendLine("outputColor = vec4(0.3, 0.6, 0.45, 0.2);");
+                    //sb.AppendLine("outputColor = vec4(0.3, 0.6, 0.45, 0.2);");
+                    sb.AppendLine("outputColor = vec4(1.0, 1.0, 1.0, .3);");
                 }
                 else // gl_one
                 {
@@ -272,6 +280,9 @@ namespace engine
             }
             else
             {
+                // im not totally sure this is still right after the change to set alpha of should-be tga jpgs
+                // ##
+
                 sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
             }
         }
@@ -434,7 +445,8 @@ namespace engine
                     m_lStageTextures.Add(new Texture(stage.GetTexturePath()));
                     bool bTGA = false;
                     m_lStageTextures[m_lStageTextures.Count - 1].SetClamp(stage.GetClampmap());
-                    m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bTGA));
+                    string sTemp = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bTGA);
+                    m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(sTemp, bTGA, m_sShaderName);
                     m_lStageTextures[m_lStageTextures.Count - 1].SetShouldBeTGA(bTGA);                    
 
                     string sTexCoordName = "mainTexCoord";
@@ -443,10 +455,10 @@ namespace engine
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
 
-                    if(bTGA && GetAddAlpha())
+                    /*if(bTGA && GetAddAlpha())
                     {
                         AppendAddAlphaLine(sIndex, sb);                                               
-                    }
+                    }*/
                 }
                 else if (stage.IsAnimmap())
                 {
@@ -457,10 +469,10 @@ namespace engine
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
 
-                    if(m_lStageTextures[m_lStageTextures.Count - 1].GetShouldBeTGA() && GetAddAlpha())
+                    /*if(m_lStageTextures[m_lStageTextures.Count - 1].GetShouldBeTGA() && GetAddAlpha())
                     {
                         AppendAddAlphaLine(sIndex, sb);
-                    }
+                    }*/
                 }
                 else
                 {
@@ -607,7 +619,7 @@ namespace engine
 
             // add helpful comments
             sbOutputline.AppendLine("");
-            if (GetAddAlpha()) sbOutputline.AppendLine("// add alpha is enabled");
+            if (GetAddAlpha()) sbOutputline.AppendLine("// open gl blending enabled");
             if (m_sLightImageFullPath != "") sbOutputline.AppendLine("// light image is " + m_sLightImageFullPath);
 
             sb.Append(sbOutputline.ToString());
@@ -619,7 +631,7 @@ namespace engine
             {
                 // the q3 shader for pj_light does not represent what it looks like in q3
                 // customizing it here
-                sb.AppendLine("outputColor.xyz *= 2.0;");
+                sb.AppendLine("outputColor.xyz *= 3.0;");
                 sb.AppendLine("outputColor.w = 0.5;");
             }
 
@@ -629,6 +641,10 @@ namespace engine
 
         private void AppendAddAlphaLine(string sIndex, System.Text.StringBuilder sb)
         {
+            // ##
+            // shouldn't need this function anymore since im setting the alpha of the bitmap textures at creation time     
+            // ##
+
             string sTexel = "texel" + sIndex;
             // create transparency float using formula
             sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");            
@@ -636,7 +652,7 @@ namespace engine
             // customize float based on shader
             if(m_sShaderName.Contains("glass"))
             {
-                sb.AppendLine("texelA" + sIndex + " *= 0.3;"); // make glass more transparent
+                sb.AppendLine("texelA" + sIndex + " *= 0.4;"); // make glass more transparent
             }
             else if(m_sShaderName.Contains("lamp"))
             {
@@ -660,7 +676,6 @@ namespace engine
         public void ReadQ3Shader(string sPathFromVRML)
         {            
             List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
-            string sNewPath = "";
 
             for (int i = 0; i < lsShaderFilenames.Count; i++)
             {
@@ -757,18 +772,14 @@ namespace engine
                                 // this affects the initial color of outputColor
                                 // it sets it to the average color of the image
 
-                                if (sInsideTargetShaderLine.Contains("stars"))
-                                {
-                                    int stop = 0;
-                                }
-
                                 string sTrimmed = sInsideTargetShaderLine.Trim();
                                 string[] tokens = sTrimmed.Split(' ');
 
-                                bool bJunk = false;
-                                string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bJunk);
+                                bool bShouldBeTGA = false;
+                                string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bShouldBeTGA);
                                 if(File.Exists(sTexPath))
                                 {
+                                    m_bLightImageShouldBeTGA = bShouldBeTGA;
                                     m_sLightImageFullPath = sTexPath;
                                 } 
                             }
@@ -799,7 +810,6 @@ namespace engine
                                 {
                                     if (tokens[0].Trim(new char[] { '\t' }) == "map" || tokens[0].Trim(new char[] { '\t' }) == "clampmap")
                                     {
-                                        if (string.IsNullOrEmpty(sNewPath)) sNewPath = tokens[1];
                                         m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
                                         if(sInsideTargetShaderLine.Contains("clampmap"))
                                         {
@@ -890,9 +900,9 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("pent_metal"))
+                                if(m_sShaderName.Contains("glass_frame"))
                                 {
-                                    if(m_lStages.Count == 2)
+                                    if(m_lStages.Count == 1)
                                     {
                                         //m_lStages[0].SetSkip(true);
                                         //break;
@@ -913,19 +923,7 @@ namespace engine
                 }
                 sr.Close();
 
-                if (!string.IsNullOrEmpty(sNewPath)) break;
-            }
-
-            if (!string.IsNullOrEmpty(sNewPath))
-            {
-                string sTemp = m_zipper.ExtractSoundTextureOther(sNewPath);
-                if (!File.Exists(sTemp))
-                {
-                    sTemp = System.IO.Path.ChangeExtension(sNewPath, "jpg");
-                    sTemp = m_zipper.ExtractSoundTextureOther(sTemp);
-                }
-
-                m_sMainTextureFullPath = sTemp;
+                if (!string.IsNullOrEmpty(m_sShaderName)) break;
             }
         }
     }

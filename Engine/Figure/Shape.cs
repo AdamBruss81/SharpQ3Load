@@ -12,7 +12,6 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics;
 using utilities;
 using obsvr;
 using OpenTK.Graphics.OpenGL;
@@ -136,17 +135,21 @@ namespace engine
 		{
 			m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
 
-			bool bUnused = false;
+			bool bShouldBeTGA = false;
 			foreach (Texture t in m_lTextures)
 			{
-				if (GetMainTexture() == t) {
-					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bUnused);
-					if(File.Exists(sNonShaderTexture))
-						t.SetTexture(sNonShaderTexture);
-					else
-						t.SetTexture(m_q3Shader.GetShaderBasedMainTextureFullPath());
-				} 
-				else t.SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath(), ref bUnused));
+				if (GetMainTexture() == t)
+				{
+					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
+					if (File.Exists(sNonShaderTexture))
+						t.SetTexture(sNonShaderTexture, bShouldBeTGA, m_q3Shader.GetShaderName());
+					// else: should be using q3 shader then. no need to set t to anything. it represents the shader.
+				}
+				else
+				{
+					// lightmap for non shader shape
+					t.SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath(), ref bShouldBeTGA), false, m_q3Shader.GetShaderName());
+				}
 			}     
 
             foreach (Face f in m_lFaces)
@@ -366,27 +369,31 @@ namespace engine
 			return !bRender;
         }
 
-		public bool NoClipping()
+		public bool NonSolid()
 		{
-			bool bNoClipping = false;
+			bool bNonSolid;
 
-			/*Texture tex = GetMainTexture();
-			if (tex != null)
-			{
-				string sName = Path.GetFileName(tex.GetPath());
-				bNoClipping = (sName.Contains("fog") ||
-					sName.Contains("beam") || sName.Contains("lava") || tex.GetPath().Contains("skies")) && !tex.GetPath().Contains("gothic_wall");
-			}*/
+			string s = m_q3Shader.GetShaderName();
 
-			bNoClipping = m_q3Shader.GetNonSolid() || m_q3Shader.GetSky() || m_q3Shader.GetLava() || m_q3Shader.GetFog();
+			bNonSolid = s.Contains("fog") ||
+				s.Contains("beam") ||
+				s.Contains("lava") || s.Contains("wires") ||
+				(s.Contains("skies") && !s.Contains("gothic_wall"));
+			
+			// this is too unreliable
+			/*bNoClipping = m_q3Shader.GetNonSolid() || m_q3Shader.GetSky() || m_q3Shader.GetLava() || m_q3Shader.GetFog();
 
-			if(m_q3Shader.GetShaderName().Contains("skin"))
+			if(m_q3Shader.GetShaderName().Contains("skin") || m_q3Shader.GetShaderName().Contains("bluemetal2_shiny_trans"))
 			{
 				bNoClipping = false; // special case. hopefully only one? no idea why this is non solid. annoying that i cant easily determine
 				// whether a shader should restrict movement or not
-			}
 
-			return bNoClipping;
+				// why the heck is a normal wall like bluemetal2 in dm0 marked nonsolid in shader???
+
+				// i may have to abort on this strategy of using nonsolid
+			}*/
+
+			return bNonSolid;
 		}
 
 		public Texture GetMainTexture()
@@ -475,7 +482,7 @@ namespace engine
 			ShaderHelper.UseProgram(ShaderProgram);
 
 			for (int i = 0; i < m_arVertices.Length; i++) m_arVertices[i] = 0;
-			GL.BindVertexArray(VertexArrayObject);			
+			GL.BindVertexArray(VertexArrayObject);
 
 			// SET UNIFORMS ***
 			int nLoc;
@@ -548,10 +555,7 @@ namespace engine
                 {
                     nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
                     GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
-
-                    //nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
-                    //GL.Uniform1(nLoc, GameGlobals.GetElapsedMS());
-                }
+				}
 
                 // rgbgen
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
@@ -572,7 +576,7 @@ namespace engine
             // Activate textures - this needs to be after the uniforms above to make animmaps sync with waveforms
             if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
             {
-                for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+				for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
                 {
                     switch (i)
                     {
@@ -583,14 +587,16 @@ namespace engine
                         case 4: GL.ActiveTexture(TextureUnit.Texture4); break;
 						case 5: GL.ActiveTexture(TextureUnit.Texture5); break;
 					}
-                    Texture tex = m_q3Shader.GetStageTexture(i);
+					Texture tex = m_q3Shader.GetStageTexture(i);
                     if (tex != null)
                     {
                         m_q3Shader.GetStageTexture(i).bindMeRaw();
+						ShaderHelper.printOpenGLError(m_q3Shader.GetShaderName());
 
-                        int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
+						int nLocation = GL.GetUniformLocation(ShaderProgram, "texture" + Convert.ToString(i));
                         GL.Uniform1(nLocation, i);
-                    }
+						ShaderHelper.printOpenGLError(m_q3Shader.GetShaderName());
+					}
                 }
             }
             else

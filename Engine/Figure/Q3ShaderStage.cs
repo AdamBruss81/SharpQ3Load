@@ -328,12 +328,11 @@ namespace engine
         {
             float p = CalculateWaveForm(m_stretch.wf);
 
-            if (m_ParentShader.GetShaderName().Contains("bounce"))
-                p = p * 1.2f;
-            else p = p * 1.6f;
-            
-            // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now
-            // without it the stretching doesn't go far enough in towards the center          
+            if (m_ParentShader.GetShaderName().Contains("bounce") || m_ParentShader.GetShaderName().Contains("jumppad"))
+                p = p * 1.2f; // not sure why needed but if fixes all bounce pads it seems
+            else 
+                p = p * 1.6f; // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now
+            // without it the stretching doesn't go far enough in towards the center                                 
 
             vals[0] = p;
             vals[1] = 0;
@@ -382,10 +381,14 @@ namespace engine
 
                 fVal = Convert.ToSingle(fSinValue * wf.amp + wf.fbase);
 
-                if (m_fPrevRGBGENandTCMODVal < fVal && fVal > 0) m_bSquareOnOff = false;
-                else m_bSquareOnOff = true;
+                if (m_bSyncRGBGENandTCMOD)
+                {
+                    if (m_fPrevRGBGENandTCMODVal < fVal && fVal > 0) m_bSquareOnOff = false;
+                    else m_bSquareOnOff = true;
 
-                m_fPrevRGBGENandTCMODVal = fVal;
+                    m_fPrevRGBGENandTCMODVal = fVal;
+                }
+
                 if (fVal <= 0) fVal = 0;
             }
             else if (wf.func == "sawtooth")

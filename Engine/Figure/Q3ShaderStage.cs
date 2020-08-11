@@ -47,7 +47,7 @@ namespace engine
         public override ETYPE GetModType() { return ETYPE.STRETCH; }
     }
 
-    class RGBGEN
+    class GEN
     {
         public string type = "";
         public WaveForm wf = new WaveForm();
@@ -69,10 +69,8 @@ namespace engine
         string m_sBlendFunc = "";
         string m_sAlphaFunc = "";
         string m_sTCGEN_CS = "";
-        string m_sAlphaGenFunc = "";
         string m_sAnimmapIntervalInput = "";
         bool m_bLightmap = false;
-        //bool m_bLightmapFlag = false;
         bool m_bSkip = false; // for debugging
         bool m_bClampmap = false;
         TCTURB m_turb = new TCTURB();
@@ -80,7 +78,8 @@ namespace engine
         TCSCROLL m_scroll = new TCSCROLL();
         TCROTATE m_rotate = new TCROTATE();
         TCSTRETCH m_stretch = new TCSTRETCH();
-        RGBGEN m_rgbgen = new RGBGEN();
+        GEN m_rgbgen = new GEN();
+        GEN m_alphagen = new GEN();
         Q3Shader m_ParentShader = null;
         List<TCMOD> m_TCMODS = new List<TCMOD>();
         List<Texture> m_lAnimmapTextures = new List<Texture>();
@@ -105,9 +104,7 @@ namespace engine
         public void SetClampmap(bool b) { m_bClampmap = b; }
         public bool GetClampmap() { return m_bClampmap; }
         public void SetAlphaFunc(string s) { m_sAlphaFunc = s; }
-        //public void SetLightmapFlag(bool b) { m_bLightmapFlag = b; }
-        //public bool GetLightmapFlag() { return m_bLightmapFlag; }
-        public void SetAlphaGen(string s) { m_sAlphaGenFunc = s; }
+        
         public void SetSkip(bool b) { m_bSkip = b; }
         public bool IsRGBGENIdentity()  
         {
@@ -177,27 +174,37 @@ namespace engine
 
         public List<TCMOD> GetTCMODS() { return m_TCMODS; }
 
+        public void SetAlphaGen(string s)
+        {
+            SetGEN(m_alphagen, s);
+        }
+
         public void SetRGBGEN(string s)
         {
-            string[] tokens = s.Split(' ');
+            SetGEN(m_rgbgen, s);
+        }
 
-            if (tokens.Length == 1) m_rgbgen.type = tokens[0];
+        private void SetGEN(GEN gen, string sInput)
+        {
+            string[] tokens = sInput.Split(' ');
+
+            if (tokens.Length == 1) gen.type = tokens[0];
             else
             {
-                m_rgbgen.type = tokens[0].ToLower();
-                m_rgbgen.wf.func = tokens[1].ToLower();
+                gen.type = tokens[0].ToLower();
+                gen.wf.func = tokens[1].ToLower();
 
                 // initial value
-                m_rgbgen.wf.fbase = System.Convert.ToSingle(tokens[2]);
+                gen.wf.fbase = System.Convert.ToSingle(tokens[2]);
 
                 // amplitude
-                m_rgbgen.wf.amp = System.Convert.ToSingle(tokens[3]);
+                gen.wf.amp = System.Convert.ToSingle(tokens[3]);
 
                 // phase. will use later. i think this is used to offset.
-                m_rgbgen.wf.phase = System.Convert.ToSingle(tokens[4]);
+                gen.wf.phase = System.Convert.ToSingle(tokens[4]);
 
                 // peaks per second
-                m_rgbgen.wf.freq = System.Convert.ToSingle(tokens[5]);
+                gen.wf.freq = System.Convert.ToSingle(tokens[5]);
             }
         }
 
@@ -205,7 +212,7 @@ namespace engine
 
         public string GetBlendFunc() { return m_sBlendFunc; }
         public string GetAlphaFunc() { return m_sAlphaFunc; }
-        public string GetAlphaGenFunc() { return m_sAlphaGenFunc; }
+        public string GetAlphaGenFunc() { return m_alphagen.type; }
 
         public void SetTexturePath(string s) { m_sTexturePath = s; }
         public void SetAnimmap(string s)
@@ -389,7 +396,7 @@ namespace engine
                     m_fPrevRGBGENandTCMODVal = fVal;
                 }
 
-                if (fVal <= 0) fVal = 0;
+                if (fVal <= 0) fVal = 0; 
             }
             else if (wf.func == "sawtooth")
             {
@@ -440,11 +447,22 @@ namespace engine
             return fVal;
         }
 
+        public float GetAlphaGenValue()
+        {
+            if (m_alphagen.type == "wave")
+            {
+                float f = CalculateWaveForm(m_alphagen.wf);
+                LOGGER.Debug("alphagen wave val: " + f);
+                return f;
+            }
+            throw new Exception("invalid alpha gen type: " + m_alphagen.type);
+        }
+
         public void GetRGBGenValue(ref float[] rgb)
         {
             rgb[0] = 1f; 
             rgb[1] = 1f; 
-            rgb[2] = 1f;          
+            rgb[2] = 1f;
 
             if (m_rgbgen.type == "wave")
             {

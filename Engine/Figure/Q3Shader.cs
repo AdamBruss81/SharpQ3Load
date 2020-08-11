@@ -64,8 +64,8 @@ namespace engine
             if (!bAA) bAA = m_bAlphaShadow;
             if (!bAA) bAA = m_bTrans;
             if (!bAA)
-            {
-                if (m_lStages.Count == 1 && (m_lStageTextures[0].GetShouldBeTGA() || m_lStageTextures[0].IsTGA()) && m_lStages[0].GetBlendFunc() != "")
+            {                
+                if ((m_lStages.Count == 1 && m_lStageTextures[0] != null) && (m_lStageTextures[0].GetShouldBeTGA() || m_lStageTextures[0].IsTGA()) && m_lStages[0].GetBlendFunc() != "")
                 {
                     bAA = true;
                 }
@@ -253,8 +253,6 @@ namespace engine
             {
                 float[] fCol = Texture.GetAverageColor255(m_sLightImageFullPath, m_bLightImageShouldBeTGA);
 
-                //sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, " + Math.Round(fCol[3], 5) + "/255.0);");
-
                 sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, 0.0);");
 
                 // for lightimage initial color, set alpha to fully opaque for now for testing
@@ -264,12 +262,9 @@ namespace engine
                 // i may not need these anymore after my change to set the alpha of jpgs that should be tgas at texture creation time
                 // ###
 
-                //sb.AppendLine("outputColor = vec4(1.0, 1.0, 1.0, .3);");
-
                 if (m_bWaterGLZERO)
                 {
                     // more color and opaqueness because the blend functions are zeroing
-                    //sb.AppendLine("outputColor = vec4(0.3, 0.6, 0.45, 0.2);");
                     sb.AppendLine("outputColor = vec4(1.0, 1.0, 1.0, .3);");
                 }
                 else // gl_one
@@ -313,8 +308,12 @@ namespace engine
                 // rgbgen - at some point change rgbgen to a single value i think
                 if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
-                    sb.AppendLine("uniform vec3 rgbgen" + sIndex + ";");
+                    sb.AppendLine("uniform vec4 rgbgen" + sIndex + ";");
                 }
+                if(stage.GetAlphaGenFunc() == "wave")
+                {
+                    sb.AppendLine("uniform float alphagen" + sIndex + ";");
+                }                 
 
                 // tcmod
                 if (stage.GetTCMODS().Count > 0) // there are tcmods
@@ -454,11 +453,6 @@ namespace engine
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex; // this can have started with tcgen environment already
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
-
-                    /*if(bTGA && GetAddAlpha())
-                    {
-                        AppendAddAlphaLine(sIndex, sb);                                               
-                    }*/
                 }
                 else if (stage.IsAnimmap())
                 {
@@ -468,11 +462,6 @@ namespace engine
                     if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex;
 
                     sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
-
-                    /*if(m_lStageTextures[m_lStageTextures.Count - 1].GetShouldBeTGA() && GetAddAlpha())
-                    {
-                        AppendAddAlphaLine(sIndex, sb);
-                    }*/
                 }
                 else
                 {
@@ -480,17 +469,6 @@ namespace engine
                 }
 
                 sb.AppendLine("");
-            }
-
-            sb.AppendLine("");
-
-            // define rgbgen vec4s to use in outputColor below
-            for (int i = 0; i < m_lStages.Count; i++)
-            {
-                if (!m_lStages[i].IsRGBGENIdentity() && !m_lStages[i].IsVertexColor())
-                {
-                    sb.AppendLine("vec4 rgbmod" + Convert.ToString(i) + " = vec4(rgbgen" + Convert.ToString(i) + ", 1.0);");
-                }
             }
 
             sb.AppendLine("");
@@ -529,14 +507,18 @@ namespace engine
                 {
                     sb.AppendLine(sTexel + ".w *= alphaGenSpecular;");
                 }
+                else if(stage.GetAlphaGenFunc() == "wave")
+                {
+                    sb.AppendLine(sTexel + ".w *= alphagen" + sIndex + ";");
+                }
 
                 // start forming outputColor
                 string sub = sTexel;
                 if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
-                    sub = "(" + sTexel + " * rgbmod" + sIndex + ")";
-                }                
-
+                    sub = "(" + sTexel + " * rgbgen" + sIndex + ")";
+                }
+               
                 // blend functions in q3
                 if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
                 {
@@ -570,19 +552,19 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w;");
                 }
-                else if(sBlendFunc == "gl_one gl_one_minus_src_alpha") 
+                else if (sBlendFunc == "gl_one gl_one_minus_src_alpha")
                 {
                     sb.AppendLine("outputColor = " + sub + " + outputColor * (1 - " + sub + ".w);");
                 }
-                else if(sBlendFunc == "gl_zero gl_one_minus_src_color")
+                else if (sBlendFunc == "gl_zero gl_one_minus_src_color")
                 {
                     sb.AppendLine("outputColor = outputColor * (1 - " + sub + ");");
                 } // end blend functions
-                else if(!stage.IsVertexColor())
+                else if (!stage.IsVertexColor())
                 {
                     sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
                 }
-
+                               
                 if (stage.IsVertexColor()) // always do this if it is in the shader stage. see horned shader model in dm3
                 {
                     if (sBlendFunc == "")
@@ -634,40 +616,14 @@ namespace engine
                 sb.AppendLine("outputColor.xyz *= 3.0;");
                 sb.AppendLine("outputColor.w = 0.5;");
             }
+            else if(m_sShaderName.Contains("jesuswall"))
+            {
+                sb.AppendLine("outputColor *= 4.0;"); // jesus is too dark so brighten him up
+            }
 
             // final clamp
             sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
-        }
-
-        private void AppendAddAlphaLine(string sIndex, System.Text.StringBuilder sb)
-        {
-            // ##
-            // shouldn't need this function anymore since im setting the alpha of the bitmap textures at creation time     
-            // ##
-
-            string sTexel = "texel" + sIndex;
-            // create transparency float using formula
-            sb.AppendLine("float texelA" + sIndex + " = sqrt(0.299 * pow(" + sTexel + ".r, 2) + 0.587 * pow(" + sTexel + ".g, 2) + 0.114 * pow(" + sTexel + ".b, 2));");            
-
-            // customize float based on shader
-            if(m_sShaderName.Contains("glass"))
-            {
-                sb.AppendLine("texelA" + sIndex + " *= 0.4;"); // make glass more transparent
-            }
-            else if(m_sShaderName.Contains("lamp"))
-            {
-                sb.AppendLine("texelA" + sIndex + " *= 2.5;"); // make things a lot less transparent from original value
-                // in dm4 the skull lights have lightbulbs rendered in the lamp glass. i think this is completely in the q3 game
-                // there is no indication of this in the shaders so im not going to worry about it for now
-            }
-            else
-            {
-                sb.AppendLine("texelA" + sIndex + " *= 1.5;"); // make things a bit less transparent
-            }
-            // clamp float and set texel to it
-            sb.AppendLine("texelA" + sIndex + " = clamp(texelA" + sIndex + ", 0.0, 1.0);");
-            sb.AppendLine(sTexel + ".w = texelA" + sIndex + ";");
-        }
+        }     
 
         /// <summary>
         /// Reads the shader files and finds the right texture
@@ -763,8 +719,7 @@ namespace engine
                             }
                             else if (sInsideTargetShaderLine.Contains("cull"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_sCull = GetTokensAfterFirst(tokens);                                
                             }
                             else if(sInsideTargetShaderLine.Contains("q3map_lightimage"))
@@ -772,8 +727,7 @@ namespace engine
                                 // this affects the initial color of outputColor
                                 // it sets it to the average color of the image
 
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
 
                                 bool bShouldBeTGA = false;
                                 string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bShouldBeTGA);
@@ -798,8 +752,7 @@ namespace engine
 
                             if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));                                
                             }
                             // read stage items
@@ -820,44 +773,37 @@ namespace engine
                             }
                             else if(sInsideTargetShaderLine.Contains("rgbgen"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetRGBGEN(GetTokensAfterFirst(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("blendfunc"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
                             }
                             else if(sInsideTargetShaderLine.Contains("alphagen"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetAlphaGen(GetTokensAfterFirst(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("alphafunc"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetAlphaFunc(GetTokensAfterFirst(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod scroll"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetTCModScroll(GetTokensAfterSecond(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod turb"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetTCModTurb(GetTokensAfterSecond(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod rotate"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
 
                                 string sRotate = GetTokensAfterSecond(tokens);
                                 float fRotate;
@@ -872,14 +818,12 @@ namespace engine
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod stretch"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetTCMODStretch(GetTokensAfterSecond(tokens));
                             }
                             else if (sInsideTargetShaderLine.Contains("tcmod scale"))
                             {
-                                string sTrimmed = sInsideTargetShaderLine.Trim();
-                                string[] tokens = sTrimmed.Split(' ');
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetTCModeScale(GetTokensAfterSecond(tokens));
                             }
                             else if(sInsideTargetShaderLine.Contains("tcgen environment"))
@@ -900,11 +844,11 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("glass_frame"))
+                                if(m_sShaderName.Contains("monkeyhead"))
                                 {
-                                    if(m_lStages.Count == 1)
+                                    if(m_lStages.Count == 2)
                                     {
-                                        //m_lStages[0].SetSkip(true);
+                                        //m_lStages[1].SetSkip(true);
                                         //break;
 
                                         // you can break out after reading some of the stages and test
@@ -925,6 +869,12 @@ namespace engine
 
                 if (!string.IsNullOrEmpty(m_sShaderName)) break;
             }
+        }
+
+        private string[] GetTokens(string sInsideTargetShaderLine)
+        {
+            string sTrimmed = sInsideTargetShaderLine.Trim();
+            return sTrimmed.Split(new Char[] { ' ', '\t' });
         }
     }
 }

@@ -557,15 +557,20 @@ namespace engine
                     GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
 				}
 
-                // rgbgen
+                // rgbgen and alphagen
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
 					if(!m_q3Shader.GetStages()[i].IsRGBGENIdentity())
 					{
-						nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen" + Convert.ToString(i));
+						nLoc = GL.GetUniformLocation(ShaderProgram, "rgbgen" + i);
 						m_q3Shader.GetStages()[i].GetRGBGenValue(ref m_uniformFloat3);
-						GL.Uniform3(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2]);
+						GL.Uniform4(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2], 1.0f);
 					}
+					if(m_q3Shader.GetStages()[i].GetAlphaGenFunc() == "wave")
+					{
+                        nLoc = GL.GetUniformLocation(ShaderProgram, "alphagen" + i);
+                        GL.Uniform1(nLoc, m_q3Shader.GetStages()[i].GetAlphaGenValue());
+                    }
 				}				
 
 				nLoc = GL.GetUniformLocation(ShaderProgram, "camPosition");

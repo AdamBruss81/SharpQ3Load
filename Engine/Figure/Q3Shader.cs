@@ -559,6 +559,14 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = outputColor * (" + sub + ");");
                 }
+                else if(sBlendFunc == "gl_zero gl_src_alpha")
+                {
+                    sb.AppendLine("outputColor = outputColor * (" + sub + ".w);");
+                }
+                else if (sBlendFunc == "gl_one gl_src_alpha")
+                {
+                    sb.AppendLine("outputColor = " + sub + " + outputColor * (" + sub + ".w);");
+                }
                 else if(sBlendFunc.Contains("gl_"))
                 {
                     throw new Exception("Unknown blend function encountered. Provide an implementation - " + sBlendFunc);

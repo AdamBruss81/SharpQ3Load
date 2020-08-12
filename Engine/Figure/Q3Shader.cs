@@ -21,6 +21,7 @@ namespace engine
         bool m_bTrans = false;
         bool m_bAlphaShadow = false;
         bool m_bLava = false;
+        bool m_bSlime = false;
         bool m_bSky = false;
         bool m_bNonSolid = false;
         bool m_bWater = false;
@@ -42,12 +43,6 @@ namespace engine
         {
             return m_sSort;
         }
-        public bool GetLava() { return m_bLava; }
-        public bool GetFog() { return m_bFog; }
-        public bool GetNonSolid() { return m_bNonSolid; }
-        public bool GetSky() { return m_bSky; }
-
-        public bool GetTrans() { return m_bTrans; }
 
         public bool GetAddAlpha()
         {
@@ -80,7 +75,7 @@ namespace engine
                 bAA = m_sShaderName.Contains("transparency") || m_sShaderName.Contains("widget");
             }
 
-            if (m_bLava) bAA = false; // not sure why trans is set on lava shaders sometimes
+            if (m_bLava || m_bSlime) bAA = false; // not sure why trans is set on lava shaders sometimes
 
             return bAA;
         }
@@ -559,12 +554,22 @@ namespace engine
                 else if (sBlendFunc == "gl_zero gl_one_minus_src_color")
                 {
                     sb.AppendLine("outputColor = outputColor * (1 - " + sub + ");");
-                } // end blend functions
+                } 
+                else if(sBlendFunc == "gl_zero gl_src_color")
+                {
+                    sb.AppendLine("outputColor = outputColor * (" + sub + ");");
+                }
+                else if(sBlendFunc.Contains("gl_"))
+                {
+                    throw new Exception("Unknown blend function encountered. Provide an implementation - " + sBlendFunc);
+                }                
                 else if (!stage.IsVertexColor())
                 {
+                    // default blend function is add
                     sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
                 }
-                               
+                // end blend functions
+
                 if (stage.IsVertexColor()) // always do this if it is in the shader stage. see horned shader model in dm3
                 {
                     if (sBlendFunc == "")
@@ -692,6 +697,10 @@ namespace engine
                                 {
                                     m_bLava = true;
                                 }
+                                else if (sInsideTargetShaderLine.Contains("slime"))
+                                {
+                                    m_bSlime = true;
+                                }
                                 else if(sInsideTargetShaderLine.Contains("nonsolid"))
                                 {
                                     m_bNonSolid = true;
@@ -753,10 +762,10 @@ namespace engine
                             if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
                             {
                                 string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));                                
+                                m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));
                             }
                             // read stage items
-                            else if(IsMapTexture(sInsideTargetShaderLine))  
+                            else if (IsMapTexture(sInsideTargetShaderLine))
                             {
                                 string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                                 if (tokens.Length == 2)
@@ -764,14 +773,14 @@ namespace engine
                                     if (tokens[0].Trim(new char[] { '\t' }) == "map" || tokens[0].Trim(new char[] { '\t' }) == "clampmap")
                                     {
                                         m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
-                                        if(sInsideTargetShaderLine.Contains("clampmap"))
+                                        if (sInsideTargetShaderLine.Contains("clampmap"))
                                         {
                                             m_lStages[m_lStages.Count - 1].SetClampmap(true);
                                         }
                                     }
                                 }
                             }
-                            else if(sInsideTargetShaderLine.Contains("rgbgen"))
+                            else if (sInsideTargetShaderLine.Contains("rgbgen"))
                             {
                                 string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetRGBGEN(GetTokensAfterFirst(tokens));
@@ -781,10 +790,13 @@ namespace engine
                                 string[] tokens = GetTokens(sInsideTargetShaderLine);
                                 m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
                             }
-                            else if(sInsideTargetShaderLine.Contains("alphagen"))
+                            else if (sInsideTargetShaderLine.Contains("alphagen"))
                             {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetAlphaGen(GetTokensAfterFirst(tokens));
+                                if (!sInsideTargetShaderLine.Contains("portal")) // don't handle portal
+                                {
+                                    string[] tokens = GetTokens(sInsideTargetShaderLine);
+                                    m_lStages[m_lStages.Count - 1].SetAlphaGen(GetTokensAfterFirst(tokens));
+                                }
                             }
                             else if (sInsideTargetShaderLine.Contains("alphafunc"))
                             {

@@ -495,9 +495,8 @@ namespace engine
                 // alphaGen
                 if (stage.GetAlphaGenFunc() == "lightingspecular")
                 {
-                    //sb.AppendLine(sTexel + ".w *= alphaGenSpecular;"); // this doesn't work well so leave out for now
-                    //the faces change color but not gradually. it changes too suddenly and also at the wrong time compared to q3
-                    //revisit later if desired. it might involve the vertex normals
+                    sb.AppendLine(sTexel + ".w *= alphaGenSpecular;"); // this doesn't work exactly right but it has 
+                    // a dramatic positive effect on some maps like the bouncy map(floor)
                 }
                 else if(stage.GetAlphaGenFunc() == "wave")
                 {

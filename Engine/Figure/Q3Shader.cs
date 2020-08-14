@@ -249,14 +249,9 @@ namespace engine
                 float[] fCol = Texture.GetAverageColor255(m_sLightImageFullPath, m_bLightImageShouldBeTGA);
 
                 sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, 0.0);");
-
-                // for lightimage initial color, set alpha to fully opaque for now for testing
             }
             else if (m_bWater)
             {
-                // i may not need these anymore after my change to set the alpha of jpgs that should be tgas at texture creation time
-                // ###
-
                 if (m_bWaterGLZERO)
                 {
                     // more color and opaqueness because the blend functions are zeroing
@@ -270,9 +265,6 @@ namespace engine
             }
             else
             {
-                // im not totally sure this is still right after the change to set alpha of should-be tga jpgs
-                // ##
-
                 sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
             }
         }
@@ -482,6 +474,9 @@ namespace engine
                 }
             }
 
+            sb.AppendLine("// ### " + m_lStages.Count + " STAGES ###");
+            sb.AppendLine("");
+
             DefineInitialOutputColor(sb);
 
             sb.AppendLine("");
@@ -500,7 +495,9 @@ namespace engine
                 // alphaGen
                 if (stage.GetAlphaGenFunc() == "lightingspecular")
                 {
-                    sb.AppendLine(sTexel + ".w *= alphaGenSpecular;");
+                    //sb.AppendLine(sTexel + ".w *= alphaGenSpecular;"); // this doesn't work well so leave out for now
+                    //the faces change color but not gradually. it changes too suddenly and also at the wrong time compared to q3
+                    //revisit later if desired. it might involve the vertex normals
                 }
                 else if(stage.GetAlphaGenFunc() == "wave")
                 {
@@ -508,73 +505,73 @@ namespace engine
                 }
 
                 // start forming outputColor
-                string sub = sTexel;
+                string sSource = sTexel;
                 if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
                 {
-                    sub = "(" + sTexel + " * rgbgen" + sIndex + ")";
+                    sSource = "(" + sTexel + " * rgbgen" + sIndex + ")";
                 }
                
                 // blend functions in q3
                 if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
                 {
-                    sb.AppendLine("outputColor *= " + sub + sLightmapScale + ";");
+                    sb.AppendLine("outputColor *= " + sSource + sLightmapScale + ";");
                 }
                 else if (sBlendFunc == "gl_one gl_one" || sBlendFunc == "add") // src + dest
                 {
-                    sb.AppendLine("outputColor += " + sub + sLightmapScale + ";");
+                    sb.AppendLine("outputColor += (" + sSource + ")" + sLightmapScale + ";");
                 }
                 else if (sBlendFunc == "gl_src_alpha gl_one_minus_src_alpha" || sBlendFunc == "blend") // mix
                 {
-                    sb.AppendLine("outputColor = mix(outputColor, " + sub + ", " + sub + ".w);");
+                    sb.AppendLine("outputColor = mix(outputColor, " + sSource + ", " + sSource + ".w);");
                 }
                 else if (sBlendFunc == "gl_one_minus_src_alpha gl_src_alpha")
                 {
-                    sb.AppendLine("outputColor = " + sub + " * (1 - " + sub + ".w) + outputColor * " + sub + ".w;");
+                    sb.AppendLine("outputColor = " + sSource + " * (1 - " + sSource + ".w) + outputColor * " + sSource + ".w;");
                 }
                 else if (sBlendFunc == "gl_dst_color gl_one_minus_dst_alpha")
                 {
-                    sb.AppendLine("outputColor = (" + sub + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w));");
+                    sb.AppendLine("outputColor = (" + sSource + " * outputColor" + sLightmapScale + " + outputColor * (1 - outputColor.w));");
                 }
                 else if (sBlendFunc == "gl_one gl_zero")
                 {
-                    sb.AppendLine("outputColor += (" + sub + ");");
+                    sb.AppendLine("outputColor += (" + sSource + ");");
                 }
                 else if (sBlendFunc == "gl_dst_color gl_one")
                 {
-                    sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor;");
+                    sb.AppendLine("outputColor = " + sSource + " * outputColor + outputColor;");
                 }
                 else if (sBlendFunc == "gl_dst_color gl_src_alpha")
                 {
-                    sb.AppendLine("outputColor = " + sub + " * outputColor + outputColor * " + sub + ".w;");
+                    sb.AppendLine("outputColor = " + sSource + " * outputColor + outputColor * " + sSource + ".w;");
                 }
                 else if (sBlendFunc == "gl_one gl_one_minus_src_alpha")
                 {
-                    sb.AppendLine("outputColor = " + sub + " + outputColor * (1 - " + sub + ".w);");
+                    sb.AppendLine("outputColor = " + sSource + " + outputColor * (1 - " + sSource + ".w);");
                 }
                 else if (sBlendFunc == "gl_zero gl_one_minus_src_color")
                 {
-                    sb.AppendLine("outputColor = outputColor * (1 - " + sub + ");");
+                    sb.AppendLine("outputColor = outputColor * (1 - " + sSource + ");");
                 } 
                 else if(sBlendFunc == "gl_zero gl_src_color")
                 {
-                    sb.AppendLine("outputColor = outputColor * (" + sub + ");");
+                    sb.AppendLine("outputColor = outputColor * (" + sSource + ");");
                 }
                 else if(sBlendFunc == "gl_zero gl_src_alpha")
                 {
-                    sb.AppendLine("outputColor = outputColor * (" + sub + ".w);");
+                    sb.AppendLine("outputColor = outputColor * (" + sSource + ".w);");
                 }
                 else if (sBlendFunc == "gl_one gl_src_alpha")
                 {
-                    sb.AppendLine("outputColor = " + sub + " + outputColor * (" + sub + ".w);");
+                    sb.AppendLine("outputColor = " + sSource + " + outputColor * (" + sSource + ".w);");
                 }
                 else if(sBlendFunc.Contains("gl_"))
                 {
-                    throw new Exception("Unknown blend function encountered. Provide an implementation - " + sBlendFunc);
+                    throw new Exception("Unknown blend function encountered. Provide an implementation for " + sBlendFunc);
                 }                
                 else if (!stage.IsVertexColor())
                 {
                     // default blend function is add
-                    sb.AppendLine("outputColor += (" + sub + ")" + sLightmapScale + ";");
+                    sb.AppendLine("outputColor += (" + sSource + ")" + sLightmapScale + ";");
                 }
                 // end blend functions
 
@@ -864,9 +861,9 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("monkeyhead"))
+                                if(m_sShaderName.Contains("patch10shiny"))
                                 {
-                                    if(m_lStages.Count == 2)
+                                    if(m_lStages.Count == 1)
                                     {
                                         //m_lStages[1].SetSkip(true);
                                         //break;

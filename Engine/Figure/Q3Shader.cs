@@ -49,12 +49,24 @@ namespace engine
             /* i still need this function to know when to enable opengl pipeline blending for a shape's rendering */
             // these checks are based on shader name and if there is only one stage
 
-            bool bAA = false;
+            bool bAA = false;            
 
             // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
             bAA = m_sShaderName.Contains("sfx/teslacoil") || m_sShaderName.Contains("console/centercon") ||
                 m_sShaderName.Contains("teleporter/energy") || m_sShaderName.Contains("pj_light"); // for example see big power reactor in dm0
             // pj_light is ball light in brimstone abbey
+
+            if (!bAA)
+            {
+                for (int i = 0; i < m_lStages.Count; i++)
+                {
+                    if (m_lStages[i].GetAlphaFunc() != "")
+                    {
+                        bAA = true;
+                        break;
+                    }
+                }
+            }
 
             if (!bAA) bAA = m_bAlphaShadow;
             if (!bAA) bAA = m_bTrans;
@@ -860,7 +872,7 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("patch10shiny"))
+                                if(m_sShaderName.Contains("pjgrate"))
                                 {
                                     if(m_lStages.Count == 1)
                                     {

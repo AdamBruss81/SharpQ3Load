@@ -66,6 +66,10 @@ namespace engine
 
                 aVal *= 2.5f;
             }
+            else if(sShaderName.Contains("pjgrate2"))
+            {
+                aVal *= 100; // special case. only remove black sections which should have alpha 0
+            }
             else
             {
                 aVal *= 1.5f; // make things less transparent in general as well
@@ -119,6 +123,28 @@ namespace engine
             return sFullPath.Contains("liquids/proto_gruel3");
         }
 
+        private static void AddAlphaToImage(ref System.Drawing.Bitmap image, string sShaderName)
+        {
+            System.Drawing.Bitmap imageWithA = new System.Drawing.Bitmap(image.Width, image.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            // add alpha to image
+            // loop bits in image and set their alpha value based on rgb values of bit
+
+            for (int i = 0; i < image.Width; i++)
+            {
+                for (int j = 0; j < image.Height; j++)
+                {
+                    System.Drawing.Color pcol = image.GetPixel(i, j);
+                    System.Diagnostics.Debug.Assert(pcol.A == 255);
+                    float fAlpha = CalculateAlphaNormalized(pcol, sShaderName);
+                    System.Drawing.Color tempCol = System.Drawing.Color.FromArgb((int)(fAlpha * 255f), pcol.R, pcol.G, pcol.B);
+                    imageWithA.SetPixel(i, j, tempCol);
+                }
+            }
+
+            image = imageWithA;
+        }
+
         private static System.Drawing.Bitmap GetBitmapFromImageFile(string sFullPath, bool bShouldBeTGA, string sShaderName)
         {
             System.Drawing.Bitmap image;
@@ -131,6 +157,14 @@ namespace engine
                     MemoryStream memStr = new MemoryStream();
                     image2.SaveAsPng(memStr);
                     image = new System.Drawing.Bitmap(memStr);
+
+                    if(sFullPath.Contains("pjgrate2")) // only real tga in the game that converts incorrectly from tga to png to bmp so add alpha manually
+                    {
+                        AddAlphaToImage(ref image, sShaderName);
+
+                        image.Save("c:\\temp\\pjgrate.bmp");
+                    }
+
                     memStr.Dispose();
                 }
             }
@@ -142,24 +176,7 @@ namespace engine
                 {
                     System.Diagnostics.Debug.Assert(Path.GetExtension(sFullPath) == ".jpg");
 
-                    System.Drawing.Bitmap imageWithA = new System.Drawing.Bitmap(image.Width, image.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    // add alpha to image
-                    // loop bits in image and set their alpha value based on rgb values of bit
-
-                    for (int i = 0; i < image.Width; i++)
-                    {
-                        for (int j = 0; j < image.Height; j++)
-                        {
-                            System.Drawing.Color pcol = image.GetPixel(i, j);
-                            System.Diagnostics.Debug.Assert(pcol.A == 255);
-                            float fAlpha = CalculateAlphaNormalized(pcol, sShaderName);                           
-                            System.Drawing.Color tempCol = System.Drawing.Color.FromArgb((int)(fAlpha * 255f), pcol.R, pcol.G, pcol.B); 
-                            imageWithA.SetPixel(i, j, tempCol);
-                        }
-                    }
-
-                    image = imageWithA;
+                    AddAlphaToImage(ref image, sShaderName);
                 }
             }
 

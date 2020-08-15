@@ -161,8 +161,6 @@ namespace engine
                     if(sFullPath.Contains("pjgrate2")) // only real tga in the game that converts incorrectly from tga to png to bmp so add alpha manually
                     {
                         AddAlphaToImage(ref image, sShaderName);
-
-                        image.Save("c:\\temp\\pjgrate.bmp");
                     }
 
                     memStr.Dispose();

@@ -376,27 +376,34 @@ namespace engine
 
             if (wf.func == "sin")
             {
-                float dCycleTimeMS = 1.0f / (wf.freq * 2.0f) * 1000.0f;
-                // the point of this calculation is to convert from one range to another
-                // the first range is from 0 to the full cycle time
-                // the second range is from 0 to PI
-                // we want to convert the first range to the second so we can plug into sin
-                double dIntoSin = (x * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
-
-                // after plugging into sin you just have to scale by the amplitude and then add the initial value
-                float fSinValue = Convert.ToSingle(Math.Sin(dIntoSin));
-
-                fVal = Convert.ToSingle(fSinValue * wf.amp + wf.fbase);
-
-                if (m_bSyncRGBGENandTCMOD)
+                if (wf.amp == 0) // teleporters in ctf 4
                 {
-                    if (m_fPrevRGBGENandTCMODVal < fVal && fVal > 0) m_bSquareOnOff = false;
-                    else m_bSquareOnOff = true;
-
-                    m_fPrevRGBGENandTCMODVal = fVal;
+                    fVal = wf.fbase * 1.3f;
                 }
+                else
+                {
+                    float dCycleTimeMS = 1.0f / (wf.freq * 2.0f) * 1000.0f;
+                    // the point of this calculation is to convert from one range to another
+                    // the first range is from 0 to the full cycle time
+                    // the second range is from 0 to PI
+                    // we want to convert the first range to the second so we can plug into sin
+                    double dIntoSin = (x * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
 
-                if (fVal <= 0) fVal = 0; 
+                    // after plugging into sin you just have to scale by the amplitude and then add the initial value
+                    float fSinValue = Convert.ToSingle(Math.Sin(dIntoSin));
+
+                    fVal = Convert.ToSingle(fSinValue * wf.amp + wf.fbase);
+
+                    if (m_bSyncRGBGENandTCMOD)
+                    {
+                        if (m_fPrevRGBGENandTCMODVal < fVal && fVal > 0) m_bSquareOnOff = false;
+                        else m_bSquareOnOff = true;
+
+                        m_fPrevRGBGENandTCMODVal = fVal;
+                    }
+
+                    if (fVal <= 0) fVal = 0;
+                }
             }
             else if (wf.func == "sawtooth")
             {

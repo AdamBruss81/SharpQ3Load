@@ -521,7 +521,35 @@ namespace engine
                 {
                     sSource = "(" + sTexel + " * rgbgen" + sIndex + ")";
                 }
+
+                bool bAlphaFuncPresent = stage.GetAlphaFunc() != "";
+
+                if (bAlphaFuncPresent) {
+                    sb.AppendLine("bool bPassAlphaTest_" + i + " = true;");
+
+                    // perform alpha func on texel and skip outputColor potentially
+                    if (stage.GetAlphaFunc() == "ge128")
+                    {
+                        sb.AppendLine("bPassAlphaTest_" + i + " = " + sSource + ".w >= 0.5;");
+                        if(m_lStages.Count == 1) sb.AppendLine("if(!bPassAlphaTest_" + i + ") { discard; }"); // for example for skel in fatal instinct
+                    }
+                    else if (stage.GetAlphaFunc() == "gt0")
+                    {
+                        sb.AppendLine("bPassAlphaTest_" + i + " = " + sSource + ".w > 0.0;");
+                        if (m_lStages.Count == 1) sb.AppendLine("if(!bPassAlphaTest_" + i + ") { discard; }");
+                    }
+                    else if (stage.GetAlphaFunc() == "lt128")
+                    {
+                        sb.AppendLine("bPassAlphaTest_" + i + " = " + sSource + ".w < 0.5;");
+                        if (m_lStages.Count == 1) sb.AppendLine("if(!bPassAlphaTest_" + i + ") { discard; }");
+                    }
+                }
                
+                if(bAlphaFuncPresent)
+                {
+                    sb.AppendLine("if(bPassAlphaTest_" + i + ") {");
+                }
+                
                 // blend functions in q3
                 if (sBlendFunc == "gl_dst_color gl_zero" || sBlendFunc == "filter") // src * dest
                 {
@@ -598,18 +626,9 @@ namespace engine
                 if (stage.IsRGBGENIdentity() && stage.GetLightmap()) { }
                 else if(i < m_lStages.Count - 1) sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
 
-                // alpha testing - for example makes skel in fatal instinct look much better
-                if (stage.GetAlphaFunc() == "ge128")
+                if(bAlphaFuncPresent)
                 {
-                    sb.AppendLine("if(outputColor.w < 0.5) discard;");
-                }
-                else if (stage.GetAlphaFunc() == "gt0")
-                {
-                    sb.AppendLine("if(outputColor.w <= 0) discard;");
-                }
-                else if (stage.GetAlphaFunc() == "lt128")
-                {
-                    sb.AppendLine("if(outputColor.w >= 0.5) discard;");
+                    sb.AppendLine("}");
                 }
 
                 sb.AppendLine("");                
@@ -872,7 +891,7 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("pjgrate"))
+                                if(m_sShaderName.Contains("blue_telep"))
                                 {
                                     if(m_lStages.Count == 1)
                                     {

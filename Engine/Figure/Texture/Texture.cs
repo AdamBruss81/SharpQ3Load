@@ -50,12 +50,7 @@ namespace engine
         {
             float aVal = Convert.ToSingle(Math.Sqrt(0.299f * Math.Pow((float)pcol.R / 255f, 2) + 0.587f * Math.Pow((float)pcol.G / 255f, 2) + 0.114f * Math.Pow((float)pcol.B / 255f, 2)));
 
-            // customize float based on texture
-            if(sShaderName.Contains("glass_frame"))
-            {
-                //aVal *= 2.0f;
-            }
-            else if (sShaderName.Contains("glass"))
+            if (sShaderName.Contains("glass"))
             {
                 aVal *= 0.4f; // make glass more transparent
             }

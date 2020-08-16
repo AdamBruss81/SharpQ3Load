@@ -376,7 +376,7 @@ namespace engine
 
             if (wf.func == "sin")
             {
-                if (wf.amp == 0) // teleporters in ctf 4
+                if (wf.amp == 0) // teleporters in ctf 4 
                 {
                     fVal = wf.fbase * 1.3f;
                 }

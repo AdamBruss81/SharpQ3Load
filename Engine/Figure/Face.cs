@@ -270,43 +270,49 @@ namespace engine
 		/// </summary>
 		public void DrawNormals()
 		{
-			for(int i = 0; i < m_edges.Count; i++)
+			/*for(int i = 0; i < m_edges.Count; i++)
 			{
 				DrawNormal(m_edges.GetInwardNormal(i), m_edges.GetMidpoint(i));
-			}
+			}*/
+
 			DrawNormal(GetNormal, m_d3MidPoint);
 		}
 
-		private void DrawNormal(D3Vect normal, D3Vect start)
+		public static void DrawNormalStatic(D3Vect normal, D3Vect startPt, double dVisualNormalScale, Color stemColor, Color capColor)
 		{
-			// draw line from midpoint to midpoint plus normal
-			D3Vect normEnd = start + normal * m_dVisualNormalScale;
+            // draw line from midpoint to midpoint plus normal
+            D3Vect normEnd = startPt + normal * dVisualNormalScale;
 
-			sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.LineBit | AttribMask.TextureBit);
+            sgl.PUSHATT(AttribMask.CurrentBit | AttribMask.LineBit | AttribMask.TextureBit);
 
-			GL.Disable(EnableCap.Texture2D);
-			GL.Color3(m_NormalStemColor.GetColor);
+            GL.Disable(EnableCap.Texture2D);
+            GL.Color3(stemColor.GetColor);
 
-			sgl.PUSHMAT();
-			// http://www.euclideanspace.com/maths/algebra/vectors/angleBetween/index.htm
-			D3Vect zup = new D3Vect(0, 0, 1);
-			double rotAngle = Math.Acos(D3Vect.DotProduct(normal, zup)) * GLB.RadToDeg;
-			if (Math.Abs(rotAngle) < 0.001) 
-				rotAngle = 0.0;
-			D3Vect rotAxis = new D3Vect(zup, normal);
-			GL.Translate(start[0], start[1], start[2]);
-			GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
-			Glut.glutSolidCylinder(0.05, (start - normEnd).Length, 7, 1);
-			sgl.POPMAT();
+            sgl.PUSHMAT();
+            // http://www.euclideanspace.com/maths/algebra/vectors/angleBetween/index.htm
+            D3Vect zup = new D3Vect(0, 0, 1);
+            double rotAngle = Math.Acos(D3Vect.DotProduct(normal, zup)) * GLB.RadToDeg;
+            if (Math.Abs(rotAngle) < 0.001)
+                rotAngle = 0.0;
+            D3Vect rotAxis = new D3Vect(zup, normal);
+            GL.Translate(startPt[0], startPt[1], startPt[2]);
+            GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
+            Glut.glutSolidCylinder(0.01, (startPt - normEnd).Length, 7, 1);
+            sgl.POPMAT();
 
-			GL.Color3(m_NormalCapColor.GetColor);
-			sgl.PUSHMAT();
-			GL.Translate(normEnd[0], normEnd[1], normEnd[2]);
-			GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
-			Glut.glutSolidCone(0.05, 0.3, 7, 1);
-			sgl.POPMAT();
+            GL.Color3(capColor.GetColor);
+            sgl.PUSHMAT();
+            GL.Translate(normEnd[0], normEnd[1], normEnd[2]);
+            GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
+            Glut.glutSolidCone(0.01, 0.3, 7, 1);
+            sgl.POPMAT();
 
-			sgl.POPATT();
+            sgl.POPATT();
+        }
+
+		public void DrawNormal(D3Vect normal, D3Vect start)
+		{
+			DrawNormalStatic(normal, start, m_dVisualNormalScale, m_NormalStemColor, m_NormalCapColor);			
 		}		   
 
 		/// <summary>

@@ -297,12 +297,16 @@ namespace engine
             sb.AppendLine("");
 
             bool bAddTime = false;
+            bool bMultipleAlphaFuncs = false;
+            int nNumAlphaFuncs = 0;
 
             // add uniforms
             for (int i = 0; i < m_lStages.Count; i++)
             {
                 Q3ShaderStage stage = m_lStages[i];
                 string sIndex = Convert.ToString(i);
+
+                if (stage.GetAlphaFunc() != "") nNumAlphaFuncs++;
 
                 // rgbgen - at some point change rgbgen to a single value i think
                 if (!stage.IsRGBGENIdentity() && !stage.IsVertexColor())
@@ -331,6 +335,8 @@ namespace engine
                     }
                 }
             }
+
+            bMultipleAlphaFuncs = nNumAlphaFuncs > 1;
 
             sb.AppendLine("");
 
@@ -522,30 +528,25 @@ namespace engine
                     sSource = "(" + sTexel + " * rgbgen" + sIndex + ")";
                 }
 
-                bool bAlphaFuncPresent = stage.GetAlphaFunc() != "";
-
-                if (bAlphaFuncPresent) {
+                if (bMultipleAlphaFuncs) {
                     sb.AppendLine("bool bPassAlphaTest_" + i + " = true;");
 
                     // perform alpha func on texel and skip outputColor potentially
                     if (stage.GetAlphaFunc() == "ge128")
                     {
                         sb.AppendLine("bPassAlphaTest_" + i + " = " + sSource + ".w >= 0.5;");
-                        if(m_lStages.Count == 1) sb.AppendLine("if(!bPassAlphaTest_" + i + ") { discard; }"); // for example for skel in fatal instinct
                     }
                     else if (stage.GetAlphaFunc() == "gt0")
                     {
                         sb.AppendLine("bPassAlphaTest_" + i + " = " + sSource + ".w > 0.0;");
-                        if (m_lStages.Count == 1) sb.AppendLine("if(!bPassAlphaTest_" + i + ") { discard; }");
                     }
                     else if (stage.GetAlphaFunc() == "lt128")
                     {
                         sb.AppendLine("bPassAlphaTest_" + i + " = " + sSource + ".w < 0.5;");
-                        if (m_lStages.Count == 1) sb.AppendLine("if(!bPassAlphaTest_" + i + ") { discard; }");
                     }
                 }
                
-                if(bAlphaFuncPresent)
+                if(bMultipleAlphaFuncs)
                 {
                     sb.AppendLine("if(bPassAlphaTest_" + i + ") {");
                 }
@@ -626,9 +627,25 @@ namespace engine
                 if (stage.IsRGBGENIdentity() && stage.GetLightmap()) { }
                 else if(i < m_lStages.Count - 1) sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
 
-                if(bAlphaFuncPresent)
+                if(bMultipleAlphaFuncs)
                 {
                     sb.AppendLine("}");
+                }
+                else
+                {
+                    // alpha testing - for example makes skel in fatal instinct look much better
+                    if (stage.GetAlphaFunc() == "ge128")
+                    {
+                        sb.AppendLine("if(outputColor.w < 0.5) discard;");
+                    }
+                    else if (stage.GetAlphaFunc() == "gt0")
+                    {
+                        sb.AppendLine("if(outputColor.w <= 0) discard;");
+                    }
+                    else if (stage.GetAlphaFunc() == "lt128")
+                    {
+                        sb.AppendLine("if(outputColor.w >= 0.5) discard;");
+                    }
                 }
 
                 sb.AppendLine("");                

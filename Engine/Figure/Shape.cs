@@ -34,6 +34,7 @@ namespace engine
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
 		private Zipper m_zipper = new Zipper();
 		Q3Shader m_q3Shader = null;
+		List<D3Vect> m_lVerticeNormals = new List<D3Vect>();
 
 		// shader utility members for performance
 		float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
@@ -211,6 +212,9 @@ namespace engine
 				}
 				vNormal = vNormal / nCounter;
 				vNormal.normalize();
+
+				vNormal.Negate();
+				m_lVerticeNormals.Add(vNormal);
 
 				m_arVertices[nBase + 11] = vNormal.x;
 				m_arVertices[nBase + 12] = vNormal.y;
@@ -453,6 +457,24 @@ namespace engine
 
         public List<Texture> GetTextures() { return m_lTextures; }
 
+		public void ShowWireframe()
+		{
+			if (!m_q3Shader.GetShaderName().Contains("kmlamp_white")) return;
+
+			for (int i = 0; i < m_lFaces.Count; i++)
+				m_lFaces[i].Draw(Engine.EGraphicsMode.WIREFRAME);
+
+			if (STATE.DrawFaceNormals)
+			{
+				//DrawFaceNormals();
+
+				for (int i = 0; i < m_lVerticeNormals.Count; i++)
+				{
+					Face.DrawNormalStatic(m_lVerticeNormals[i], m_lVertices[i], 0.1, new Color(100, 100, 0), new Color(50, 100, 150));
+				}
+			}
+		}
+
 		/// <summary>
 		/// Shows this shape. Loop over texture objects and set same number
 		/// of texture units.
@@ -647,7 +669,20 @@ namespace engine
                 GL.Disable(EnableCap.Blend);
             }
             // ***
+
+			if(STATE.DrawFaceNormals)
+			{
+				DrawFaceNormals();
+			}
         }
+
+		private void DrawFaceNormals()
+		{
+			for(int i = 0; i < m_lFaces.Count; i++)
+			{
+				m_lFaces[i].DrawNormals();
+			}
+		}
 
 		/// <summary>
 		/// Get all faces

@@ -333,14 +333,6 @@ namespace engine
 			sgl.POPATT();
 		}
 
-		public void DrawMapFaces(Engine.EGraphicsMode mode)
-		{
-			foreach(Face f in m_lMapFaces) 
-			{
-				f.Draw(mode);
-			}
-		}
-
 		/// <summary>
 		/// Checks if face intersects with this bounding box. If it does,
 		/// add the face to m_lMapFaces for future use in collision detection.

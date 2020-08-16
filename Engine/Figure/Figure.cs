@@ -164,11 +164,11 @@ namespace engine
 				sgl.PUSHATT(AttribMask.TextureBit | AttribMask.LineBit);
 				GL.Disable(EnableCap.Texture2D);
 				GL.LineWidth(1.2f);
-				for (int i = 0; i < m_lFaceContainingBoundingBoxes.Count; i++)
-				{
-					m_lFaceContainingBoundingBoxes[i].DrawMapFaces(mode);
-				}
-				sgl.POPATT();
+
+				for (int i = 0; i < m_lShapes.Count; i++)
+					m_lShapes[i].ShowWireframe();
+
+                sgl.POPATT();
 			}
 			else
 			{

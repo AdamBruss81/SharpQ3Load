@@ -142,6 +142,7 @@ namespace engine
                     break;
                 }
             }         
+
             if(IsAnimmap() && bScroll)
             {
                 // assume these should be synced
@@ -311,6 +312,8 @@ namespace engine
             {
                 if (m_bSyncTCMODandAnimmap) 
                 {
+                    // launch pad animation doesn't sync
+
                     /*long f = (long)m_scroll.t * GameGlobals.GetElapsedMS();
 
                     if (m_fPrevScrollAmountAtAnimmapChange == System.Single.MaxValue)

@@ -687,7 +687,7 @@ namespace engine
 			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
 
 			// jumppads
-			if (sTextureInfo.Contains("jumppad") || sTextureInfo.Contains("bounce"))
+			if (sTextureInfo.Contains("jumppad") || sTextureInfo.Contains("bounce") || sTextureInfo.Contains("jumpad"))
 			{
 				D3Vect jumpDir = intersection.Face.GetNewNormal;
 				jumpDir.Negate();

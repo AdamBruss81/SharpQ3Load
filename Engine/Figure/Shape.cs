@@ -121,6 +121,7 @@ namespace engine
 				sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
 				sb.AppendLine("vec4 lightmap_texel = texture(texture1, lightmapTexCoord);");
 				sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * 3.0, 0.0, 1.0);");
+				//sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel + main_tex_texel * color, 0.0, 1.0);");
 				sb.AppendLine("}");
 				sb.AppendLine("else {");
 				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");

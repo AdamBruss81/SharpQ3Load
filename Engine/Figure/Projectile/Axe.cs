@@ -41,7 +41,7 @@ namespace engine
 			m_srMapReader.Close();
 		}
 
-		public Axe(int figureIDNum, MovableCamera cam, Axe axe) : base(figureIDNum, cam, axe) {}
+		public Axe(MovableCamera cam, Axe axe) : base(cam, axe) {}
 
 		public override void Setup(MovableCamera cam)
 		{

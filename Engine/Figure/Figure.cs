@@ -34,6 +34,7 @@ namespace engine
 		const double mcd_HalfWidth = 2.0;
 		const double mcd_MaxEasyHopOverHeight = 0.3;
 		Mutex m_mutThreadShutdownChecker = new Mutex();
+		int m_nNumThreadsForCanMove = 0;
 
 		private const string m_sBoundingBoxHeader = "DEF BoundingBoxes {";
 		private const string m_sBoundingBoxHeaderBSPLeaf = "DEF BoundingBoxesBSPLeaf {";
@@ -52,14 +53,13 @@ namespace engine
 		Dictionary<string, Texture> m_textureObjects = new Dictionary<string, Texture>();
 		protected StreamReader m_srMapReader = null;
 		BoundingBox m_BSPRootBoundingBox = null;
-		HashSet<BoundingBox> m_hCollidedFaceContainingBoundingBoxesUtil = new HashSet<BoundingBox>();
+		HashSet<BoundingBox> m_hUtilBoxes = new HashSet<BoundingBox>();
 
 		private Edge m_RayCollider = new Edge();
 
 		private MapInfo m_map = new MapInfo();
 		private Zipper m_zipper = new Zipper();
 
-		private int m_figureID = -1;
 		private int m_nFaceCreationCounter = 0;
 		private int m_nInitializeProgress = 0;
 		private int m_nThreadShutdownCounter = 0;
@@ -77,16 +77,6 @@ namespace engine
 
 		private int m_nMapFileLineCounter = 0;
 
-		/// <summary>
-		/// Figure that will be placed in a "dynamicList" must have a
-		/// m_figureID set to a valid server-wide m_figureID.
-		/// </summary>
-		public Figure( int figureIDNum )
-		{
-			m_figureID = figureIDNum;
-			m_BSPRootBoundingBox = new BoundingBox(this);
-		}
-
 		public Figure()
 		{
 			m_lBoxColors.Add(new Color(255, 0, 0));
@@ -100,11 +90,6 @@ namespace engine
 			m_lBoxColors.Add(new Color(155, 48, 255));
 			m_lBoxColors.Add(new Color(238, 121, 159));
 			m_BSPRootBoundingBox = new BoundingBox(this);
-		}
-
-		public int GetFigureID 
-		{ 
-			get { return m_figureID; }
 		}
 
 		public int GetNumFaces
@@ -206,7 +191,7 @@ namespace engine
 			{
 				sOut = sOut + m_lLastBoxesInside[i].ToString() + "\n";
 			}
-			sOut = sOut + "Num Face Containing Boxes Checked: " + m_hCollidedFaceContainingBoundingBoxesUtil.Count + ", Traversal Count: " + m_nTraversalCounter + "\n";
+			sOut = sOut + "Num Face Containing Boxes Checked: " + m_hUtilBoxes.Count + ", Traversal Count: " + m_nTraversalCounter + "\n";
 
 			return sOut;
 		}
@@ -732,7 +717,7 @@ namespace engine
 		/// See which bsp bounding boxes the current ray collider is in.
 		/// Then gather the leaf bounding boxes.
 		/// </summary>
-		public void GatherLeafBoundingBoxesToTest(BoundingBox bContainer, HashSet<BoundingBox> hCollidedLeafBoundingBoxesUtil)
+		public void GatherLeafBoundingBoxesToTest(BoundingBox bContainer, HashSet<BoundingBox> hUtilBoxes)
 		{
 			if(bContainer.LineInside(m_RayCollider))
 			{
@@ -740,7 +725,7 @@ namespace engine
 				{
 					foreach(BoundingBox b in bContainer.GetFaceContainingBoxes())
 					{
-						hCollidedLeafBoundingBoxesUtil.Add(b);
+						hUtilBoxes.Add(b);
 					}
 				}
 				else
@@ -748,8 +733,8 @@ namespace engine
 					Debug.Assert(bContainer.SizeBSPBoxes() == 2);
 
 					m_nTraversalCounter++;
-                    GatherLeafBoundingBoxesToTest(bContainer.GetBSPBoxes()[0], hCollidedLeafBoundingBoxesUtil);
-                    GatherLeafBoundingBoxesToTest(bContainer.GetBSPBoxes()[1], hCollidedLeafBoundingBoxesUtil);
+                    GatherLeafBoundingBoxesToTest(bContainer.GetBSPBoxes()[0], hUtilBoxes);
+                    GatherLeafBoundingBoxesToTest(bContainer.GetBSPBoxes()[1], hUtilBoxes);
                 }
 			}
 		}
@@ -820,7 +805,7 @@ namespace engine
 			// thread this loop. it's very slow i think. when moving forward you do 10 reps of this loop
 			// when just standing still you do 5
 			// so for moving forward that's 10 you have to wait for. if i thread on my 4 proc laptop that goes
-			// down to 3 reps to wait for
+			// down to 4 reps to wait for
 			for (int i = 0; i < m_ld3Head.Count; i++)
 			{
 				m_RayCollider.Vertice1 = m_ld3Head[i];
@@ -831,13 +816,15 @@ namespace engine
 				// if this then check his bsp boxes and so on until there are no more bsp boxes and instead there are leaf boxes
 				// then loop those leaf boxes here 
 
-				m_hCollidedFaceContainingBoundingBoxesUtil.Clear();
+				m_hUtilBoxes.Clear();
 				m_nTraversalCounter = 0;
 
-				GatherLeafBoundingBoxesToTest(m_BSPRootBoundingBox, m_hCollidedFaceContainingBoundingBoxesUtil);
+				// find out which leaf bounding boxes we are in (slow)
+				GatherLeafBoundingBoxesToTest(m_BSPRootBoundingBox, m_hUtilBoxes);
 
-				foreach (BoundingBox b in m_hCollidedFaceContainingBoundingBoxesUtil)
+				foreach (BoundingBox b in m_hUtilBoxes)
 				{
+					// slow
 					if (b.LineInside(m_RayCollider))
 					{
 						if (STATE.DebuggingMode)
@@ -848,6 +835,7 @@ namespace engine
 							}
 						}
 
+						// slow
 						if (b.IsCollidingWithMapFaces(m_RayCollider, m_lAllIntersections))
 						{
 							bCollision = true;

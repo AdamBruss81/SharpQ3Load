@@ -42,7 +42,7 @@ namespace engine
 			m_srMapReader.Close();
 		}
 
-		public NinjaStar(int figureIDNum, MovableCamera cam, NinjaStar star) : base(figureIDNum, cam, star) { }
+		public NinjaStar(MovableCamera cam, NinjaStar star) : base(cam, star) { }
 
 		public override void Setup(MovableCamera cam)
 		{

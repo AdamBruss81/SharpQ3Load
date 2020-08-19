@@ -24,34 +24,11 @@ namespace engine
 
         public void Add( Figure f ) { m_lFigures.Add( f ); }
 
-        public bool Remove( int figureID )
-        {
-            for( int i = 0; i < m_lFigures.Count; i++ )
-            {
-                if ( m_lFigures[i].GetFigureID == figureID )
-                {
-                   m_lFigures.RemoveAt( i );
-                   return true;
-                }
-            }
-            return false;
-        }
-
         public void Clear(bool bDelete)
         {
 			if(bDelete) DeleteAll();
 
             m_lFigures.Clear();
-        }
-
-        public Figure getFigure(int figureID)
-        {
-            for ( int i = 0; i < m_lFigures.Count; i++ )
-            {
-                if (m_lFigures[i].GetFigureID == figureID)
-                    return m_lFigures[i];
-            }
-            return null;
         }
 
         public int Count( )

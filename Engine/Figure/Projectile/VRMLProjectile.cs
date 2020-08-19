@@ -20,7 +20,7 @@ namespace engine
 
 		public VRMLProjectile() { }
 
-		public VRMLProjectile(int figureID, MovableCamera cam, VRMLProjectile projectile) : base(figureID)
+		public VRMLProjectile(MovableCamera cam, VRMLProjectile projectile) : base()
 		{
 			this.m_lShapes = projectile.m_lShapes;
 			this.m_lMapFaceReferences = projectile.m_lMapFaceReferences;

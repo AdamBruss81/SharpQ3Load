@@ -121,7 +121,6 @@ namespace engine
 				sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
 				sb.AppendLine("vec4 lightmap_texel = texture(texture1, lightmapTexCoord);");
 				sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * 3.0, 0.0, 1.0);");
-				//sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel + main_tex_texel * color, 0.0, 1.0);");
 				sb.AppendLine("}");
 				sb.AppendLine("else {");
 				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");
@@ -230,26 +229,15 @@ namespace engine
 				m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
 			}
 
-			string autoGenereatedGLSL = "";
-
-			// create shape specific shaders here to use instead of ones on file
-			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
-			{
-				ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), CreateGLSLFragShader(), "");
-			}
-			else
-			{
-                // create buffers and shader program
-                autoGenereatedGLSL = CreateGLSLFragShader();
-                ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL, m_q3Shader.GetShaderName());          
-			}
+			string autoGenereatedGLSL = CreateGLSLFragShader();			
+			ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL, m_q3Shader.GetShaderName());
 
 #if DEBUG
 			if(!string.IsNullOrEmpty(autoGenereatedGLSL))
 				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".txt", autoGenereatedGLSL);
 #endif
 
-            VertexBufferObject = GL.GenBuffer();
+			VertexBufferObject = GL.GenBuffer();
             VertexArrayObject = GL.GenVertexArray();
             ElementBufferObject = GL.GenBuffer();
 
@@ -504,7 +492,6 @@ namespace engine
 
 			ShaderHelper.UseProgram(ShaderProgram);
 
-			for (int i = 0; i < m_arVertices.Length; i++) m_arVertices[i] = 0;
 			GL.BindVertexArray(VertexArrayObject);
 
 			// SET UNIFORMS ***

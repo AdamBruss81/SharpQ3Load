@@ -256,7 +256,7 @@ namespace engine
         private void DefineInitialOutputColor(System.Text.StringBuilder sb)
         {
             // define outputColor line
-            if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "") // the check on blendfunc here...
+            if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
             {
                 float[] fCol = Texture.GetAverageColor255(m_sLightImageFullPath, m_bLightImageShouldBeTGA);
 
@@ -908,9 +908,9 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("blue_telep"))
+                                if(m_sShaderName.Contains("comp3"))
                                 {
-                                    if(m_lStages.Count == 1)
+                                    if(m_lStages.Count == 2)
                                     {
                                         //m_lStages[1].SetSkip(true);
                                         //break;

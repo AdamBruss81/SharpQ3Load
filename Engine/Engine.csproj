@@ -135,7 +135,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Figure\shader.vert" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -148,8 +147,8 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>xcopy $(SolutionDir)Engine\Figure\*.frag $(SolutionDir)$(SolutionName)\$(PlatformName)\$(ConfigurationName) /y
-xcopy $(SolutionDir)Engine\Figure\*.vert $(SolutionDir)$(SolutionName)\$(PlatformName)\$(ConfigurationName) /y</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>

@@ -78,6 +78,108 @@ namespace engine
 			return m_q3Shader;
 		}
 
+		public string CreateGLSLVertShader()
+		{
+			System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+            sb.AppendLine("#version 430");
+            sb.AppendLine("");
+            sb.AppendLine("layout(location = 0) in vec3 aPosition;");
+            sb.AppendLine("layout(location = 1) in vec2 aTexCoord;");
+            sb.AppendLine("layout(location = 2) in vec2 aTexCoord2;");
+            sb.AppendLine("layout(location = 3) in vec4 aColor;");
+            sb.AppendLine("layout(location = 4) in vec3 vertexNormal;");
+            sb.AppendLine("");
+            sb.AppendLine("out vec2 mainTexCoord;");
+            sb.AppendLine("out vec2 lightmapTexCoord;");
+            sb.AppendLine("out vec4 color;");
+			sb.AppendLine("out vec3 vertice;");
+
+			bool bUsesTCGen = m_q3Shader.UsesTcgen();
+			bool bUsesAlphaGenspec = m_q3Shader.UsesAlphaGenspec();
+
+			if(bUsesTCGen)
+			{
+				sb.AppendLine("out vec2 tcgenEnvTexCoord;");
+			}
+			if(bUsesAlphaGenspec)
+			{
+				sb.AppendLine("out float alphaGenSpecular;");
+			}
+
+			sb.AppendLine("uniform mat4 modelview;");
+			sb.AppendLine("uniform mat4 proj;");
+			sb.AppendLine("uniform vec3 camPosition;");
+
+			if (bUsesTCGen)
+			{
+				sb.AppendLine("");
+				sb.AppendLine("void CalculateTcGen(in vec3 campos, in vec3 position, in vec3 vertexnormal, out vec2 tcgen)");
+				sb.AppendLine("{");
+				sb.AppendLine("vec3 viewer = campos - position;");
+				sb.AppendLine("viewer = normalize(viewer);");
+				sb.AppendLine("float d = dot(vertexNormal, viewer);");
+				sb.AppendLine("vec3 reflected = vertexnormal * 2.0 * d - viewer;");
+				sb.AppendLine("tcgen[0] = 0.5 + reflected[0] * 0.5;");
+				sb.AppendLine("tcgen[1] = 0.5 - reflected[1] * 0.5;");
+				sb.AppendLine("}");
+				sb.AppendLine("");
+			}
+
+			if(bUsesAlphaGenspec)
+			{
+				sb.AppendLine("");
+				sb.AppendLine("void CalculateAlphaGenSpec(in vec3 campos, in vec3 position, in vec3 vertexnormal, out float alpha)");
+				sb.AppendLine("{");
+				sb.AppendLine("vec3 lightorigin = vec3(-960, 1980, 96);");
+				//sb.AppendLine("vec3 lightorigin = vec3(960, 96, 1980);");
+				sb.AppendLine("vec3 lightdir = lightorigin - position;");
+				sb.AppendLine("lightdir = normalize(lightdir);");
+				sb.AppendLine("float d = dot(vertexnormal, lightdir);");
+				sb.AppendLine("vec3 reflected = vertexnormal * 2 * d - lightdir;");
+				sb.AppendLine("vec3 viewer = campos - position;");
+				sb.AppendLine("float ilen = sqrt(dot(viewer, viewer));");
+				sb.AppendLine("float l = dot(reflected, viewer);");
+				sb.AppendLine("l *= ilen;");
+				sb.AppendLine("if (l < 0) {");
+				sb.AppendLine("alpha = 0;");
+				sb.AppendLine("}");
+				sb.AppendLine("else {");
+				sb.AppendLine("l = l*l;");
+				sb.AppendLine("l = l*l;");
+				sb.AppendLine("alpha = l * 255;");
+				sb.AppendLine("if (alpha > 255) {");
+				sb.AppendLine("alpha = 255;");
+				sb.AppendLine("}");
+				sb.AppendLine("}");
+				sb.AppendLine("alpha = alpha / 255.0;");
+				sb.AppendLine("}");
+				sb.AppendLine("");
+			}
+
+			sb.AppendLine("void main(void)");
+			sb.AppendLine("{");
+			sb.AppendLine("mainTexCoord = aTexCoord;");
+			sb.AppendLine("lightmapTexCoord = aTexCoord2;");
+
+			if(bUsesTCGen)
+			{
+				sb.AppendLine("CalculateTcGen(camPosition, aPosition, vertexNormal, tcgenEnvTexCoord);");
+			}
+			if(bUsesAlphaGenspec)
+			{
+				sb.AppendLine("CalculateAlphaGenSpec(camPosition, aPosition, vertexNormal, alphaGenSpecular);");
+			}
+
+			sb.AppendLine("color = aColor;");
+			sb.AppendLine("vertice = aPosition;");
+			sb.AppendLine("gl_Position = proj * modelview * vec4(aPosition, 1.0);");
+
+			sb.AppendLine("}");
+
+			return sb.ToString();
+		}
+
 		public string CreateGLSLFragShader()
 		{			
 			System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -91,20 +193,14 @@ namespace engine
 			sb.AppendLine("in vec2 lightmapTexCoord;");			
 			sb.AppendLine("in vec4 color;");
 			sb.AppendLine("in vec3 vertice;");
-			sb.AppendLine("in vec2 tcgenEnvTexCoord;");
-			sb.AppendLine("in float alphaGenSpecular;");
+			if(m_q3Shader.UsesTcgen())
+				sb.AppendLine("in vec2 tcgenEnvTexCoord;");
+			if(m_q3Shader.UsesAlphaGenspec())
+				sb.AppendLine("in float alphaGenSpecular;");
 			sb.AppendLine("");			
 		
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-				// if there's a shader in the q3 shader scripts ...
-
-				// potential q3 shader variables like tcmod, rgbgen, etc
-
-				// helper variables like the game time
-
-				// texture uniform samplers
-
 				m_q3Shader.GenerateGLSL(sb);
 			}
 			else
@@ -229,12 +325,16 @@ namespace engine
 				m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
 			}
 
-			string autoGenereatedGLSL = CreateGLSLFragShader();			
-			ShaderProgram = ShaderHelper.CreateProgramFromContent(File.ReadAllText("shader.vert"), autoGenereatedGLSL, m_q3Shader.GetShaderName());
+			string autoGenereatedGLSL = CreateGLSLFragShader();
+			string autoGenereatedVertexShader = CreateGLSLVertShader();
+			ShaderProgram = ShaderHelper.CreateProgramFromContent(autoGenereatedVertexShader, autoGenereatedGLSL, m_q3Shader.GetShaderName());
 
 #if DEBUG
-			if(!string.IsNullOrEmpty(autoGenereatedGLSL))
-				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".txt", autoGenereatedGLSL);
+			if (!string.IsNullOrEmpty(autoGenereatedGLSL))
+			{
+				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".frag.txt", autoGenereatedGLSL);
+				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt", autoGenereatedVertexShader);
+			}
 #endif
 
 			VertexBufferObject = GL.GenBuffer();
@@ -386,7 +486,7 @@ namespace engine
 				// i may have to abort on this strategy of using nonsolid
 			}*/
 
-			return bNonSolid;
+                return bNonSolid;
 		}
 
 		public Texture GetMainTexture()
@@ -448,7 +548,7 @@ namespace engine
 
 		public void ShowWireframe()
 		{
-			if (!m_q3Shader.GetShaderName().Contains("kmlamp_white")) return;
+			if (!m_q3Shader.GetShaderName().Contains("liquids")) return;
 
 			for (int i = 0; i < m_lFaces.Count; i++)
 				m_lFaces[i].Draw(Engine.EGraphicsMode.WIREFRAME);

@@ -206,6 +206,24 @@ namespace engine
             return s.Contains("map") && (s.Contains("gfx") || s.Contains("textures") || s.Contains("models"));
         }
 
+        public bool UsesTcgen()
+        {
+            for(int i = 0; i < m_lStages.Count; i++)
+            {
+                if (m_lStages[i].GetTCGEN_CS() == "environment") return true;
+            }
+            return false;
+        }
+
+        public bool UsesAlphaGenspec()
+        {
+            for (int i = 0; i < m_lStages.Count; i++)
+            {
+                if (m_lStages[i].GetAlphaGenFunc() == "lightingspecular") return true;
+            }
+            return false;
+        }
+
         public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL, ref bool bShouldBeTGA)
         {
             string sFullPath;

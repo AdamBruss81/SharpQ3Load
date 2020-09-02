@@ -47,13 +47,13 @@ namespace engine
         public override ETYPE GetModType() { return ETYPE.STRETCH; }
     }
 
-    class GEN
+    public class GEN
     {
         public string type = "";
         public WaveForm wf = new WaveForm();
     }
 
-    class WaveForm
+    public class WaveForm
     {
         public string func;
         public float fbase = 0f;
@@ -185,7 +185,24 @@ namespace engine
             SetGEN(m_rgbgen, s);
         }
 
-        private void SetGEN(GEN gen, string sInput)
+        public static void SetWaveForm(WaveForm wf, string[] tokens, int nFirst)
+        {
+            wf.func = tokens[nFirst].ToLower();
+
+            // initial value
+            wf.fbase = System.Convert.ToSingle(tokens[nFirst+1]);
+
+            // amplitude
+            wf.amp = System.Convert.ToSingle(tokens[nFirst+2]);
+
+            // phase
+            wf.phase = System.Convert.ToSingle(tokens[nFirst+3]);
+
+            // peaks per second
+            wf.freq = System.Convert.ToSingle(tokens[nFirst+4]);
+        }
+
+        public static void SetGEN(GEN gen, string sInput)
         {
             string[] tokens = sInput.Split(' ');
 
@@ -193,19 +210,8 @@ namespace engine
             else
             {
                 gen.type = tokens[0].ToLower();
-                gen.wf.func = tokens[1].ToLower();
 
-                // initial value
-                gen.wf.fbase = System.Convert.ToSingle(tokens[2]);
-
-                // amplitude
-                gen.wf.amp = System.Convert.ToSingle(tokens[3]);
-
-                // phase. will use later. i think this is used to offset.
-                gen.wf.phase = System.Convert.ToSingle(tokens[4]);
-
-                // peaks per second
-                gen.wf.freq = System.Convert.ToSingle(tokens[5]);
+                SetWaveForm(gen.wf, tokens, 1);                
             }
         }
 

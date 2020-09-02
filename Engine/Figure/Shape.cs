@@ -110,6 +110,7 @@ namespace engine
 			sb.AppendLine("uniform mat4 modelview;");
 			sb.AppendLine("uniform mat4 proj;");
 			sb.AppendLine("uniform vec3 camPosition;");
+			sb.AppendLine("uniform float timeS;");
 
 			if (bUsesTCGen)
 			{
@@ -132,7 +133,6 @@ namespace engine
 				sb.AppendLine("void CalculateAlphaGenSpec(in vec3 campos, in vec3 position, in vec3 vertexnormal, out float alpha)");
 				sb.AppendLine("{");
 				sb.AppendLine("vec3 lightorigin = vec3(-960, 1980, 96);");
-				//sb.AppendLine("vec3 lightorigin = vec3(960, 96, 1980);");
 				sb.AppendLine("vec3 lightdir = lightorigin - position;");
 				sb.AppendLine("lightdir = normalize(lightdir);");
 				sb.AppendLine("float d = dot(vertexnormal, lightdir);");
@@ -157,7 +157,43 @@ namespace engine
 				sb.AppendLine("");
 			}
 
-			sb.AppendLine("void main(void)");
+			bool bDeformVWavePresent = false;
+			for(int i = 0; i < m_q3Shader.GetDeformVertexes().Count; i++)
+			{
+				if(m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.WAVE)
+				{
+					bDeformVWavePresent = true;
+					break;
+				}
+			}
+
+            if (bDeformVWavePresent)
+            {
+				// insert function to deform a vertex     
+
+				// wavefunc: sin, triangle, square, sawtooth or inversesawtooth : 0,1,2,3,4
+				sb.AppendLine("");
+				sb.AppendLine("void DeformVertexWave(in float div, in float wavefunc, in float base, in float amp, in float phase, in float freq, inout vec3 vertex)");
+			 	sb.AppendLine("{");
+				sb.AppendLine("if(wavefunc == 0f) {"); // just sin for now
+				sb.AppendLine("float divMult = -.261 * freq + .1861;");
+				// my vertices are a lot smaller than the bsp ones so i need to scale the div, amp and base				
+				sb.AppendLine("float off = ( vertex[0] + vertex[1] + vertex[2] ) * (div * divMult);");
+				sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0f);");
+				sb.AppendLine("float fIntoSin = (timeS + (phase + off) * freq) / fCycleTimeMS * 3.1415926f;");
+				sb.AppendLine("float fSinValue = sin(fIntoSin);");
+				sb.AppendLine("float fVal = fSinValue * (amp*0.0166) + (base*0.0166);");
+				sb.AppendLine("vec3 offset;");
+                sb.AppendLine("offset[0] = vertexNormal[0]*fVal;");
+				sb.AppendLine("offset[1] = vertexNormal[1]*fVal;");
+				sb.AppendLine("offset[2] = vertexNormal[2]*fVal;");
+                sb.AppendLine("vertex += offset;");
+				sb.AppendLine("}");
+				sb.AppendLine("}");
+				sb.AppendLine("");
+			}
+
+            sb.AppendLine("void main(void)");
 			sb.AppendLine("{");
 			sb.AppendLine("mainTexCoord = aTexCoord;");
 			sb.AppendLine("lightmapTexCoord = aTexCoord2;");
@@ -172,8 +208,25 @@ namespace engine
 			}
 
 			sb.AppendLine("color = aColor;");
-			sb.AppendLine("vertice = aPosition;");
-			sb.AppendLine("gl_Position = proj * modelview * vec4(aPosition, 1.0);");
+
+			if (bDeformVWavePresent)
+			{
+				sb.AppendLine("vec3 newPosition = aPosition;"); 
+				for (int i = 0 ; i < m_q3Shader.GetDeformVertexes().Count; i++)
+				{
+					DeformVertexes dv = m_q3Shader.GetDeformVertexes()[i];
+					float fWF = dv.m_wf.func == "sin" ? 0f : -1f;
+					sb.AppendLine("DeformVertexWave(" + dv.m_div + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
+
+					//sb.AppendLine("if(length(vertexNormal) > 0f) newPosition.x = 0;");
+
+					//break; // just do one deform per shader for now to simplify for testing
+				}
+			}
+
+			string sFinalPosName = bDeformVWavePresent ? "newPosition" : "aPosition";
+			sb.AppendLine("vertice = " + sFinalPosName + ";");
+			sb.AppendLine("gl_Position = proj * modelview * vec4(" + sFinalPosName + ", 1.0);");
 
 			sb.AppendLine("}");
 
@@ -364,7 +417,7 @@ namespace engine
             GL.EnableVertexAttribArray(3);
 
             GL.VertexAttribPointer(4, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 11 * sizeof(double));
-            GL.EnableVertexAttribArray(3);
+            GL.EnableVertexAttribArray(4);
 
             ShaderHelper.printOpenGLError("");
 
@@ -548,7 +601,7 @@ namespace engine
 
 		public void ShowWireframe()
 		{
-			if (!m_q3Shader.GetShaderName().Contains("liquids")) return;
+			if (!m_q3Shader.GetShaderName().Contains("lavahell")) return;
 
 			for (int i = 0; i < m_lFaces.Count; i++)
 				m_lFaces[i].Draw(Engine.EGraphicsMode.WIREFRAME);
@@ -570,6 +623,9 @@ namespace engine
 		/// </summary>
 		public void Show()
         {
+			// filter shape showing here for debugging
+			//if (!m_q3Shader.GetShaderName().Contains("lavahell")) return;
+
 			if (DontRender()) return;
 					
 			// these apply to entire shader
@@ -661,12 +717,11 @@ namespace engine
                         }
                     }
                 }
-                if (bTCMODS)
-                {
-                    nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
-                    GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
-				}
-
+                
+				// always send in time now because vertex shader can use it too
+                nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
+                GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
+				
                 // rgbgen and alphagen
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{

@@ -1,15 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Diagnostics;
 
 namespace engine
 {
+    public class DeformVertexes
+    {
+        public enum EDeformVType { INVALID, WAVE };
+
+        public EDeformVType m_eType = EDeformVType.INVALID;
+
+        public float m_div = 0f;
+        public WaveForm m_wf = new WaveForm();
+    }
+
     public class Q3Shader
     {
         public enum EStepType { DEFAULT, METAL, NONE };
 
         List<Q3ShaderStage> m_lStages = new List<Q3ShaderStage>();
+        List<DeformVertexes> m_lDeformVertexes = new List<DeformVertexes>();
         EStepType m_eStepType = EStepType.DEFAULT;
         private Zipper m_zipper = new Zipper();
         string m_sShaderName = "";
@@ -38,6 +48,8 @@ namespace engine
         {
             m_pParent = parent;
         }
+
+        public List<DeformVertexes> GetDeformVertexes() { return m_lDeformVertexes; }
 
         public string GetSort()
         {
@@ -522,7 +534,9 @@ namespace engine
             {
                 Q3ShaderStage stage = m_lStages[i];
                 if (stage.Skip()) continue;
-                string sLightmapScale = stage.GetLightmap() ? " * 3.0" : "";
+                
+                string sLightmapScale = stage.GetLightmap() ? " * " + GetLightmapScale() : "";
+                string sVertexColScale = GetVertexColScale();
 
                 string sIndex = Convert.ToString(i);
                 string sTexel = "texel" + sIndex;
@@ -636,9 +650,9 @@ namespace engine
                 if (stage.IsVertexColor()) // always do this if it is in the shader stage. see horned shader model in dm3
                 {
                     if (sBlendFunc == "")
-                        sb.AppendLine("outputColor += (" + sTexel + " * color * 3.0);");
+                        sb.AppendLine("outputColor += (" + sTexel + " * color * " + sVertexColScale + ");");
                     else
-                        sb.AppendLine("outputColor *= (color * 3.0);");
+                        sb.AppendLine("outputColor *= (color * " + sVertexColScale + ");");
                 }
 
                 // clamp colors that are over 1.0
@@ -680,6 +694,29 @@ namespace engine
             if (m_sLightImageFullPath != "") sbOutputline.AppendLine("// light image is " + m_sLightImageFullPath);
 
             sb.Append(sbOutputline.ToString());
+        }
+
+        private string GetVertexColScale()
+        {
+            if (m_sShaderName.Contains("base_wall/protobanner"))
+            {
+                return "2.0";
+            }
+            else return "3.0";
+        }
+
+        /// <summary>
+        /// This is experimental. Lighting does not work exactly like it does in q3. I scale lightmaps by 3.0. But it's too bright in some
+        /// cases. Try lowering it in those cases.
+        /// </summary>
+        /// <returns></returns>
+        private string GetLightmapScale()
+        {
+            if (m_sShaderName.Contains("base_wall/protobanner"))
+            {
+                return "2.0";
+            }
+            else return "3.0";
         }
 
         private void CustomizeFinalOutputColor(System.Text.StringBuilder sb)
@@ -815,6 +852,21 @@ namespace engine
                                     m_bLightImageShouldBeTGA = bShouldBeTGA;
                                     m_sLightImageFullPath = sTexPath;
                                 } 
+                            }
+                            else if(sInsideTargetShaderLine.Contains("deformvertexes"))
+                            {
+                                string[] tokens = sInsideTargetShaderLine.Trim().Split(new Char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                                DeformVertexes dv = new DeformVertexes();
+                                if(tokens.Length > 1)
+                                {
+                                    if (tokens[1] == "wave") // only handle wave for now
+                                    {
+                                        dv.m_div = Convert.ToSingle(tokens[2]);
+                                        dv.m_eType = DeformVertexes.EDeformVType.WAVE;
+                                        Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 3);
+                                        m_lDeformVertexes.Add(dv);
+                                    }
+                                }
                             }
 
                             // begin stage found

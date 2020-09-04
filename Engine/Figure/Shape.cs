@@ -94,6 +94,17 @@ namespace engine
             sb.AppendLine("out vec2 lightmapTexCoord;");
             sb.AppendLine("out vec4 color;");
 			sb.AppendLine("out vec3 vertice;");
+			sb.AppendLine("");
+
+			for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+			{
+				if (m_q3Shader.GetStages()[i].GetTCMODS().Count > 0)
+				{
+					sb.AppendLine("out vec2 texmod" + i + ";");
+				}
+			}
+
+			sb.AppendLine("");
 
 			bool bUsesTCGen = m_q3Shader.UsesTcgen();
 			bool bUsesAlphaGenspec = m_q3Shader.UsesAlphaGenspec();
@@ -107,12 +118,46 @@ namespace engine
 				sb.AppendLine("out float alphaGenSpecular;");
 			}
 
+			// uniforms
 			sb.AppendLine("uniform mat4 modelview;");
 			sb.AppendLine("uniform mat4 proj;");
 			sb.AppendLine("uniform vec3 camPosition;");
 			sb.AppendLine("uniform float timeS;");
 
-			if (bUsesTCGen)
+			bool bSendSinTable = false;
+
+			for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+			{
+				Q3ShaderStage stage = m_q3Shader.GetStages()[i];
+				string sIndex = i.ToString();
+
+				if (stage.GetTCMODS().Count > 0) // there are tcmods
+				{
+					for (int j = 0; j < stage.GetTCMODS().Count; j++) // this order doesn't matter for the uniform declarations
+					{
+						switch (stage.GetTCMODS()[j].GetModType())
+						{
+							case TCMOD.ETYPE.SCALE: sb.AppendLine("uniform vec2 scale" + sIndex + ";"); break;
+							case TCMOD.ETYPE.SCROLL: sb.AppendLine("uniform vec2 scroll" + sIndex + ";"); break;
+							case TCMOD.ETYPE.TURB:
+								{
+									sb.AppendLine("uniform vec3 turb" + sIndex + ";");
+									bSendSinTable = true;
+									break;
+								}
+							case TCMOD.ETYPE.STRETCH: sb.AppendLine("uniform float stretch" + sIndex + "[6];"); break;
+							case TCMOD.ETYPE.ROTATE: sb.AppendLine("uniform float rotate" + sIndex + "[6];"); break;
+						}
+					}
+				}
+			}
+
+            if (bSendSinTable)
+            {
+                sb.AppendLine("uniform float sinValues[1024];");
+            }
+
+            if (bUsesTCGen)
 			{
 				sb.AppendLine("");
 				sb.AppendLine("void CalculateTcGen(in vec3 campos, in vec3 position, in vec3 vertexnormal, out vec2 tcgen)");
@@ -193,9 +238,11 @@ namespace engine
 				sb.AppendLine("");
 			}
 
+			sb.AppendLine("");
             sb.AppendLine("void main(void)");
-			sb.AppendLine("{");
-			sb.AppendLine("mainTexCoord = aTexCoord;");
+			sb.AppendLine("{");            
+
+            sb.AppendLine("mainTexCoord = aTexCoord;");
 			sb.AppendLine("lightmapTexCoord = aTexCoord2;");
 
 			if(bUsesTCGen)
@@ -207,6 +254,97 @@ namespace engine
 				sb.AppendLine("CalculateAlphaGenSpec(camPosition, aPosition, vertexNormal, alphaGenSpecular);");
 			}
 
+			sb.AppendLine("");
+
+            // define tcmods
+            for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
+            {
+                Q3ShaderStage stage = m_q3Shader.GetStages()[i];
+                string sIndex = Convert.ToString(i);
+                string sTexmod = "texmod" + sIndex;
+
+				// init texmod
+                if (stage.GetTCMODS().Count > 0)
+                {
+                    if (stage.GetTCGEN_CS() == "environment")
+                        sb.AppendLine(sTexmod + " = tcgenEnvTexCoord;");
+                    else
+                        sb.AppendLine(sTexmod + " = mainTexCoord;");
+                }
+
+                for (int j = 0; j < stage.GetTCMODS().Count; j++)
+                {
+                    switch (stage.GetTCMODS()[j].GetModType())
+                    {
+                        case TCMOD.ETYPE.SCROLL:
+                            {
+                                if (m_q3Shader.GetShaderName().Contains("skies"))
+                                {
+                                    sb.AppendLine(sTexmod + ".x -= scroll" + sIndex + "[0] * timeS * 10;");
+                                    sb.AppendLine(sTexmod + ".y -= scroll" + sIndex + "[1] * timeS * 10;");
+                                }
+                                else
+                                {
+                                    sb.AppendLine(sTexmod + ".x -= scroll" + sIndex + "[0] * timeS;");
+                                    sb.AppendLine(sTexmod + ".y -= scroll" + sIndex + "[1] * timeS;");
+                                }
+                                break;
+                            }
+                        case TCMOD.ETYPE.SCALE:
+                            {
+                                if (m_q3Shader.GetShaderName().Contains("skies"))
+                                {
+                                    sb.AppendLine(sTexmod + ".x /= scale" + sIndex + "[0];");
+                                    sb.AppendLine(sTexmod + ".y /= scale" + sIndex + "[1];");
+                                }
+                                else
+                                {
+                                    sb.AppendLine(sTexmod + ".x *= scale" + sIndex + "[0];");
+                                    sb.AppendLine(sTexmod + ".y *= scale" + sIndex + "[1];");
+                                }
+                                break;
+                            }
+                        case TCMOD.ETYPE.STRETCH:
+                            {
+                                // 0 - 3 are the 2x2 transform matrix
+                                // 4-5 are the translate vector
+                                sb.AppendLine("float " + sTexmod + "_stretch_x = " + sTexmod + ".x;");
+                                sb.AppendLine("float " + sTexmod + "_stretch_y = " + sTexmod + ".y;");
+                                sb.AppendLine(sTexmod + ".x = " + sTexmod + "_stretch_x * stretch" + sIndex + "[0] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[1] + stretch" + sIndex + "[4];");
+                                sb.AppendLine(sTexmod + ".y = " + sTexmod + "_stretch_x * stretch" + sIndex + "[2] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[3] + stretch" + sIndex + "[5];");
+                                break;
+                            }
+                        case TCMOD.ETYPE.ROTATE:
+                            {
+                                // 0 - 3 are the 2x2 transform matrix
+                                // 4-5 are the translate vector
+                                sb.AppendLine("float " + sTexmod + "_rotate_x = " + sTexmod + ".x;");
+                                sb.AppendLine("float " + sTexmod + "_rotate_y = " + sTexmod + ".y;");
+                                sb.AppendLine(sTexmod + ".x = " + sTexmod + "_rotate_x * rotate" + sIndex + "[0] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[1] + rotate" + sIndex + "[4];");
+                                sb.AppendLine(sTexmod + ".y = " + sTexmod + "_rotate_x * rotate" + sIndex + "[2] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[3] + rotate" + sIndex + "[5];");
+                                break;
+                            }
+                        case TCMOD.ETYPE.TURB:
+                            {
+                                sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
+
+                                //sb.AppendLine(sTexmod + ".x += sin( ( (vertice.x + vertice.z) * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
+                                //sb.AppendLine(sTexmod + ".y += sin( (vertice.y * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
+
+                                //sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( vertice.x + vertice.z ) + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+                                //sb.AppendLine(sTexmod + ".y = " + sTexmod + ".y + sinValues[ int ( ( ( vertice.y ) + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+
+                                sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( vertice.x + vertice.z ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+                                sb.AppendLine(sTexmod + ".y = " + sTexmod + ".y + sinValues[ int ( ( ( vertice.y ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+
+                                break;
+                            }
+                    }
+                }
+            }
+
+			sb.AppendLine("");
+
 			sb.AppendLine("color = aColor;");
 
 			if (bDeformVWavePresent)
@@ -217,10 +355,6 @@ namespace engine
 					DeformVertexes dv = m_q3Shader.GetDeformVertexes()[i];
 					float fWF = dv.m_wf.func == "sin" ? 0f : -1f;
 					sb.AppendLine("DeformVertexWave(" + dv.m_div + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
-
-					//sb.AppendLine("if(length(vertexNormal) > 0f) newPosition.x = 0;");
-
-					//break; // just do one deform per shader for now to simplify for testing
 				}
 			}
 
@@ -246,15 +380,24 @@ namespace engine
 			sb.AppendLine("in vec2 lightmapTexCoord;");			
 			sb.AppendLine("in vec4 color;");
 			sb.AppendLine("in vec3 vertice;");
+
 			if(m_q3Shader.UsesTcgen())
 				sb.AppendLine("in vec2 tcgenEnvTexCoord;");
 			if(m_q3Shader.UsesAlphaGenspec())
 				sb.AppendLine("in float alphaGenSpecular;");
-			sb.AppendLine("");			
+			sb.AppendLine("");
+			
+			for(int i = 0; i < m_q3Shader.GetStages().Count; i++)
+			{
+				if(m_q3Shader.GetStages()[i].GetTCMODS().Count > 0)
+				{
+					sb.AppendLine("in vec2 texmod" + i + ";");
+				}
+			}
 		
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-				m_q3Shader.GenerateGLSL(sb);
+				m_q3Shader.ConvertQ3ShaderToGLSL(sb);
 			}
 			else
 			{
@@ -588,7 +731,7 @@ namespace engine
 				else
 					nVal = 5;
 			}
-			if (sShaderName.Contains("slamp2")) nVal = 7;
+			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
 			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
@@ -669,6 +812,7 @@ namespace engine
 				// affect rgbgen
 				// tcmod scroll can also dictate animmap for example for launch pads
                 bool bTCMODS = false;
+				bool bSendSinTable = false;
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
                 {
                     Q3ShaderStage stage = m_q3Shader.GetStages()[i];
@@ -698,6 +842,7 @@ namespace engine
                                     nLoc = GL.GetUniformLocation(ShaderProgram, "turb" + Convert.ToString(i));
                                     stage.GetTurbValues(ref m_uniformFloat3);
                                     GL.Uniform3(nLoc, 1, m_uniformFloat3);
+									bSendSinTable = true;
                                     break;
                                 }
                             case TCMOD.ETYPE.STRETCH:
@@ -721,6 +866,12 @@ namespace engine
 				// always send in time now because vertex shader can use it too
                 nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
                 GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
+
+				if(bSendSinTable)
+				{
+                    nLoc = GL.GetUniformLocation(ShaderProgram, "sinValues");
+                    GL.Uniform1(nLoc, 1024, GameGlobals.m_SinTable);
+                }
 				
                 // rgbgen and alphagen
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)

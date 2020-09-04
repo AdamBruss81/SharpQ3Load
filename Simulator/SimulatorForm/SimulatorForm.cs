@@ -95,6 +95,7 @@ namespace simulator
 			SetViewMode(true);
 
 			GameGlobals.m_SW.Start(); // start this once and let it go.
+			GameGlobals.InitTables();
 		}
 
 		private void Simulator_Load(object sender, EventArgs e)

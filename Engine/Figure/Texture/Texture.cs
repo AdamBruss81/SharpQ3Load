@@ -50,16 +50,21 @@ namespace engine
         {
             float aVal = Convert.ToSingle(Math.Sqrt(0.299f * Math.Pow((float)pcol.R / 255f, 2) + 0.587f * Math.Pow((float)pcol.G / 255f, 2) + 0.114f * Math.Pow((float)pcol.B / 255f, 2)));
 
+            // AFTER GETTING THE VERTEX NORMALS TO BE CORRECT, I HAVE COMMENTED OUT MOST OF THE TWEAKS HERE
+            // THE ONLY REMAINING ONE IS FOR PJGRATE2 WHICH NEEDS IT.
+
+            // revisit if something doesn't look good. maybe glass for example in dm0?
+
             if (sShaderName.Contains("glass"))
             {
-                aVal *= 0.4f; // make glass more transparent
+                //aVal *= 0.4f; // make glass more transparent
             }
             else if (sShaderName.Contains("lamp"))
             {
                 // make things a lot less transparent from original value
                 // in dm4 the skull lights have lightbulbs rendered in the lamp glass
 
-                aVal *= 2.5f;
+                //aVal *= 2.5f;
             }
             else if(sShaderName.Contains("pjgrate2"))
             {
@@ -67,7 +72,7 @@ namespace engine
             }
             else
             {
-                aVal *= 1.5f; // make things less transparent in general as well
+                //aVal *= 1.5f; // make things less transparent in general as well
             }
 
             if (aVal > 1.0f) aVal = 1.0f;

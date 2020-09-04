@@ -186,8 +186,18 @@ namespace engine
 		public static utilities.D3Vect m_CamPosition = new utilities.D3Vect();
 		public static float m_fFrameStartElapsedS = 0f;
 		public static long m_fFrameStartElapsedMS = 0;
+		public static float[] m_SinTable = new float[1024];
 
 		public static long GetElapsedMS() { return m_fFrameStartElapsedMS; }
 		public static float GetElapsedS() { return m_fFrameStartElapsedS; }
+
+		public static void InitTables()
+		{
+			for (int i = 0; i < 1024; i++)
+			{
+				// sin( DEG2RAD( i * 360.0f / ( ( float ) ( FUNCTABLE_SIZE - 1 ) ) ) );
+				m_SinTable[i] = (float)Math.Sin(utilities.GLB.GoDegToRad(i * 360.0 / 1023.0));
+			}
+		}
 	}
 }

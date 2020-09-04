@@ -316,7 +316,7 @@ namespace engine
         /// This functions puts in the q3 shader specific content.
         /// </summary>
         /// <param name="sb"></param>
-        public void GenerateGLSL(System.Text.StringBuilder sb)
+        public void ConvertQ3ShaderToGLSL(System.Text.StringBuilder sb)
         {
             // add samplers to frag shader based on stage count
             for (int i = 0; i < m_lStages.Count; i++)
@@ -327,6 +327,7 @@ namespace engine
             sb.AppendLine("");
 
             bool bAddTime = false;
+            bool bSendSinTable = false;
             bool bMultipleAlphaFuncs = false;
             int nNumAlphaFuncs = 0;
 
@@ -346,116 +347,17 @@ namespace engine
                 if(stage.GetAlphaGenFunc() == "wave")
                 {
                     sb.AppendLine("uniform float alphagen" + sIndex + ";");
-                }                 
-
-                // tcmod
-                if (stage.GetTCMODS().Count > 0) // there are tcmods
-                {
-                    bAddTime = true;
-                    for (int j = 0; j < stage.GetTCMODS().Count; j++) // this order doesn't matter for the uniform declarations
-                    {
-                        switch (stage.GetTCMODS()[j].GetModType())
-                        {
-                            case TCMOD.ETYPE.SCALE: sb.AppendLine("uniform vec2 scale" + sIndex + ";"); break;
-                            case TCMOD.ETYPE.SCROLL: sb.AppendLine("uniform vec2 scroll" + sIndex + ";"); break;
-                            case TCMOD.ETYPE.TURB: sb.AppendLine("uniform vec3 turb" + sIndex + ";"); break;
-                            case TCMOD.ETYPE.STRETCH: sb.AppendLine("uniform float stretch" + sIndex + "[6];"); break;
-                            case TCMOD.ETYPE.ROTATE: sb.AppendLine("uniform float rotate" + sIndex + "[6];"); break;
-                        }
-                    }
-                }
+                }                                 
             }
 
             bMultipleAlphaFuncs = nNumAlphaFuncs > 1;
 
             sb.AppendLine("");
 
-            // I'm trying to make these auto generated glsl shaders as minimal as possible to make debugging and reading them easier. So
-            // only add this time uniform if it's actually used.
-            if (bAddTime) sb.AppendLine("uniform float timeS;");
-
             // create main function
             sb.AppendLine("");
             sb.AppendLine("void main()");
-            sb.AppendLine("{");
-
-            // define tcmods
-            for (int i = 0; i < m_lStages.Count; i++)
-            {
-                Q3ShaderStage stage = m_lStages[i];
-                string sIndex = Convert.ToString(i);
-                string sTexmod = "texmod" + sIndex;
-
-                if (stage.GetTCMODS().Count > 0)
-                {
-                    if (stage.GetTCGEN_CS() == "environment")
-                        sb.AppendLine("vec2 " + sTexmod + " = tcgenEnvTexCoord;");
-                    else
-                        sb.AppendLine("vec2 " + sTexmod + " = mainTexCoord;");
-                }
-
-                for (int j = 0; j < stage.GetTCMODS().Count; j++)
-                {
-                    switch (stage.GetTCMODS()[j].GetModType())
-                    {
-                        case TCMOD.ETYPE.SCROLL:
-                            {
-                                if (GetShaderName().Contains("skies"))
-                                {
-                                    sb.AppendLine(sTexmod + ".x -= scroll" + sIndex + "[0] * timeS * 10;");
-                                    sb.AppendLine(sTexmod + ".y -= scroll" + sIndex + "[1] * timeS * 10;");
-                                }
-                                else
-                                {
-                                    sb.AppendLine(sTexmod + ".x -= scroll" + sIndex + "[0] * timeS;");
-                                    sb.AppendLine(sTexmod + ".y -= scroll" + sIndex + "[1] * timeS;");
-                                }
-                                break;
-                            }
-                        case TCMOD.ETYPE.SCALE:
-                            {
-                                if (GetShaderName().Contains("skies"))
-                                {
-                                    sb.AppendLine(sTexmod + ".x /= scale" + sIndex + "[0];");
-                                    sb.AppendLine(sTexmod + ".y /= scale" + sIndex + "[1];");
-                                }
-                                else
-                                {
-                                    sb.AppendLine(sTexmod + ".x *= scale" + sIndex + "[0];");
-                                    sb.AppendLine(sTexmod + ".y *= scale" + sIndex + "[1];");
-                                }
-                                break;
-                            }
-                        case TCMOD.ETYPE.STRETCH:
-                            {
-                                // 0 - 3 are the 2x2 transform matrix
-                                // 4-5 are the translate vector
-                                sb.AppendLine("float " + sTexmod + "_stretch_x = " + sTexmod + ".x;");
-                                sb.AppendLine("float " + sTexmod + "_stretch_y = " + sTexmod + ".y;");
-                                sb.AppendLine(sTexmod + ".x = " + sTexmod + "_stretch_x * stretch" + sIndex + "[0] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[1] + stretch" + sIndex + "[4];");
-                                sb.AppendLine(sTexmod + ".y = " + sTexmod + "_stretch_x * stretch" + sIndex + "[2] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[3] + stretch" + sIndex + "[5];");
-                                break;
-                            }
-                        case TCMOD.ETYPE.ROTATE:
-                            {
-                                // 0 - 3 are the 2x2 transform matrix
-                                // 4-5 are the translate vector
-                                sb.AppendLine("float " + sTexmod + "_rotate_x = " + sTexmod + ".x;");
-                                sb.AppendLine("float " + sTexmod + "_rotate_y = " + sTexmod + ".y;");
-                                sb.AppendLine(sTexmod + ".x = " + sTexmod + "_rotate_x * rotate" + sIndex + "[0] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[1] + rotate" + sIndex + "[4];");
-                                sb.AppendLine(sTexmod + ".y = " + sTexmod + "_rotate_x * rotate" + sIndex + "[2] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[3] + rotate" + sIndex + "[5];");
-                                break;
-                            }
-                        case TCMOD.ETYPE.TURB:
-                            {
-                                sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
-                                sb.AppendLine(sTexmod + ".x += sin( ( (vertice.x + vertice.z) * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
-                                sb.AppendLine(sTexmod + ".y += sin( (vertice.y * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
-                                break;
-                            }
-                    }
-                }
-            }
+            sb.AppendLine("{");            
 
             sb.AppendLine("");
 

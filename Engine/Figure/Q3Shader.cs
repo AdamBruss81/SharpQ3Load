@@ -323,6 +323,12 @@ namespace engine
                     sb.AppendLine("outputColor = vec4(0.1, 0.2, 0.15, 0.05);");
                 }
             }
+            else if(m_sShaderName.Contains("jesuswall"))
+            {
+                // special case for now. i think i should actually be doing this for all models which use rgbgen vertex
+                // then i probably wouldn't have to scale their colors up later
+                sb.AppendLine("outputColor = vec4(1.0);"); // black out outputColor to start
+            }
             else
             {
                 sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
@@ -650,7 +656,7 @@ namespace engine
             }
             else if(m_sShaderName.Contains("jesuswall"))
             {
-                sb.AppendLine("outputColor *= 4.0;"); // jesus is too dark so brighten him up
+                //sb.AppendLine("outputColor *= 4.0;"); // jesus is too dark so brighten him up
             }
 
             // final clamp
@@ -774,7 +780,7 @@ namespace engine
                                 } 
                             }
                             else if(sInsideTargetShaderLine.Contains("deformvertexes"))
-                            {
+                            {                                
                                 string[] tokens = sInsideTargetShaderLine.Trim().Split(new Char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                                 DeformVertexes dv = new DeformVertexes();
                                 if(tokens.Length > 1)
@@ -912,7 +918,12 @@ namespace engine
                             }
                             else if(sInsideTargetShaderLine.Contains("$lightmap"))
                             {
-                                m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                                // for example the jesus wall has a lightmap stage but there is no lightmap
+                                // try ignoring this then
+                                if (m_pParent.GetLightmapTexture() != null)
+                                    m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                                else 
+                                    m_lStages[m_lStages.Count - 1].SetSkip(true);
                             }
                             // end stage reading                            
                             else if (sInsideTargetShaderLine.Contains("}")) // end of stage
@@ -924,12 +935,12 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("killblockgeomtrn"))
+                                if(m_sShaderName.Contains("jesuswall"))
                                 {
                                     if(m_lStages.Count == 1)
                                     {
                                         //m_lStages[1].SetSkip(true);
-                                        /*/*/break;
+                                        //break;
 
                                         // you can break out after reading some of the stages and test
                                         // or you can set certain stages to skip rendering

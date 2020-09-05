@@ -4,14 +4,32 @@ using System.IO;
 
 namespace engine
 {
+    public class DVBulge
+    {
+        public float m_bulgeWidth = 0f;
+        public float m_bulgeHeight = 0f;
+        public float m_bulgeSpeed = 0f;
+    }
+
+    public class DVMove
+    {
+        public float m_x = 0f;
+        public float m_y = 0f;
+        public float m_z = 0f;
+    }
+
     public class DeformVertexes
     {
-        public enum EDeformVType { INVALID, WAVE };
+        public enum EDeformVType { INVALID, WAVE, BULGE, MOVE };
 
         public EDeformVType m_eType = EDeformVType.INVALID;
 
         public float m_div = 0f;
+
         public WaveForm m_wf = new WaveForm();
+
+        public DVBulge m_Bulge = null;
+        public DVMove m_Move = null;
     }
 
     public class Q3Shader
@@ -768,6 +786,32 @@ namespace engine
                                         Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 3);
                                         m_lDeformVertexes.Add(dv);
                                     }
+                                    else if(tokens[1] == "bulge")
+                                    {
+                                        // deformvertexes bulge 3 10 1
+                                        dv.m_Bulge = new DVBulge();
+                                        dv.m_Bulge.m_bulgeWidth = Convert.ToSingle(tokens[2]);
+                                        dv.m_Bulge.m_bulgeHeight = Convert.ToSingle(tokens[3]);
+                                        dv.m_Bulge.m_bulgeSpeed = Convert.ToSingle(tokens[4]);
+                                        dv.m_eType = DeformVertexes.EDeformVType.BULGE;
+                                        m_lDeformVertexes.Add(dv);
+                                    }
+                                    else if(tokens[1] == "move")
+                                    {
+                                        // deformVertexes move 0 0 3   sin 0 5 0 0.1
+                                        dv.m_Move = new DVMove();
+                                        dv.m_Move.m_x = Convert.ToSingle(tokens[2]);
+                                        dv.m_Move.m_y = Convert.ToSingle(tokens[3]);
+                                        dv.m_Move.m_z = Convert.ToSingle(tokens[4]);
+                                        dv.m_eType = DeformVertexes.EDeformVType.MOVE;
+                                        Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 5);
+                                        m_lDeformVertexes.Add(dv);
+                                    }   
+                                    else
+                                    {                                        
+                                        if (tokens[1] != "autosprite" && tokens[1] != "autosprite2" && tokens[1] != "normal") // not doing autosprite  or normal right now  
+                                            throw new Exception("Found deformvertexes with type " + tokens[1]);
+                                    }
                                 }
                             }
 
@@ -880,12 +924,12 @@ namespace engine
                                 
                                 // this is a good spot to exit out of the shader reading process to debug shaders
                                 // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("comp3"))
+                                if(m_sShaderName.Contains("killblockgeomtrn"))
                                 {
-                                    if(m_lStages.Count == 2)
+                                    if(m_lStages.Count == 1)
                                     {
                                         //m_lStages[1].SetSkip(true);
-                                        //break;
+                                        /*/*/break;
 
                                         // you can break out after reading some of the stages and test
                                         // or you can set certain stages to skip rendering

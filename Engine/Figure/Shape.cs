@@ -152,6 +152,25 @@ namespace engine
 				}
 			}
 
+            bool bDeformVWavePresent = false;
+            bool bDeformBulgePresent = false;
+			bool bDeformMovePresent = false;
+            for (int i = 0; i < m_q3Shader.GetDeformVertexes().Count; i++)
+            {
+                if (m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.WAVE)
+                {
+                    bDeformVWavePresent = true;
+                }
+                if (m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.BULGE)
+                {
+                    bDeformBulgePresent = true;
+                }
+				if(m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.MOVE)
+				{
+					bDeformMovePresent = true; 					
+				}
+            }
+
             if (bSendSinTable)
             {
                 sb.AppendLine("uniform float sinValues[1024];");
@@ -200,17 +219,7 @@ namespace engine
 				sb.AppendLine("alpha = alpha / 255.0;");
 				sb.AppendLine("}");
 				sb.AppendLine("");
-			}
-
-			bool bDeformVWavePresent = false;
-			for(int i = 0; i < m_q3Shader.GetDeformVertexes().Count; i++)
-			{
-				if(m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.WAVE)
-				{
-					bDeformVWavePresent = true;
-					break;
-				}
-			}
+			}			
 
             if (bDeformVWavePresent)
             {
@@ -238,7 +247,38 @@ namespace engine
 				sb.AppendLine("");
 			}
 
-			sb.AppendLine("");
+			if(bDeformBulgePresent)
+			{				
+				sb.AppendLine("void BulgeVertexes(in float width, in float height, in float speed, inout vec3 vertex)");
+				sb.AppendLine("{");
+				sb.AppendLine("float now = timeS * speed * 0.25f;");
+				sb.AppendLine("float off = 3.1415926f * 2 * (aTexCoord[0] * width + now);");
+				sb.AppendLine("float scale = sin(off) * (height*.025);");
+				sb.AppendLine("vertex += vertexNormal * scale;");
+				sb.AppendLine("}");
+            }
+
+			if(bDeformMovePresent)
+			{
+				// insert function to move a vertex     
+
+				// wavefunc: sin, triangle, square, sawtooth or inversesawtooth : 0,1,2,3,4
+
+				sb.AppendLine("void MoveVertexes(in float x, in float y, in float z, in float wavefunc, in float base, in float amp, in float phase, in float freq, inout vec3 vertex)");
+				sb.AppendLine("{");
+				sb.AppendLine("if(wavefunc == 0f) {"); // just sin for now
+                sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0f);");
+                sb.AppendLine("float fIntoSin = (timeS + phase * freq) / fCycleTimeMS * 3.1415926f;");
+                sb.AppendLine("float fSinValue = sin(fIntoSin);");
+                sb.AppendLine("float scale = fSinValue * (amp*0.0166) + (base*0.0166);");
+				sb.AppendLine("vec3 moveVec = vec3(x, y, z);");
+				sb.AppendLine("moveVec *= scale;");
+				sb.AppendLine("vertex += moveVec;");
+				sb.AppendLine("}");
+                sb.AppendLine("}");
+			}
+
+            sb.AppendLine("");
             sb.AppendLine("void main(void)");
 			sb.AppendLine("{");            
 
@@ -347,18 +387,39 @@ namespace engine
 
 			sb.AppendLine("color = aColor;");
 
-			if (bDeformVWavePresent)
+			if (bDeformVWavePresent || bDeformBulgePresent || bDeformMovePresent)
 			{
 				sb.AppendLine("vec3 newPosition = aPosition;"); 
 				for (int i = 0 ; i < m_q3Shader.GetDeformVertexes().Count; i++)
 				{
 					DeformVertexes dv = m_q3Shader.GetDeformVertexes()[i];
-					float fWF = dv.m_wf.func == "sin" ? 0f : -1f;
-					sb.AppendLine("DeformVertexWave(" + dv.m_div + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
+
+					if (dv.m_eType == DeformVertexes.EDeformVType.WAVE)
+					{
+						float fWF = dv.m_wf.func == "sin" ? 0f : -1f;
+						if (fWF != 0f)
+						{
+							throw new Exception("Encountered non sin deformvertexes wave");
+						}
+						sb.AppendLine("DeformVertexWave(" + dv.m_div + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
+					}
+					else if(dv.m_eType == DeformVertexes.EDeformVType.BULGE)
+					{
+						sb.AppendLine("BulgeVertexes(" + dv.m_Bulge.m_bulgeWidth + ", " + dv.m_Bulge.m_bulgeHeight + ", " + dv.m_Bulge.m_bulgeSpeed + ", newPosition);");
+					}
+					else if(dv.m_eType == DeformVertexes.EDeformVType.MOVE)
+					{
+                        float fWF = dv.m_wf.func == "sin" ? 0f : -1f;
+                        if (fWF != 0f)
+                        {
+                            throw new Exception("Encountered non sin deformmove wave");
+                        }
+						sb.AppendLine("MoveVertexes(" + dv.m_Move.m_x + ", " + dv.m_Move.m_y + ", " + dv.m_Move.m_z + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
+					}
 				}
 			}
 
-			string sFinalPosName = bDeformVWavePresent ? "newPosition" : "aPosition";
+			string sFinalPosName = (bDeformVWavePresent | bDeformBulgePresent | bDeformMovePresent) ? "newPosition" : "aPosition";
 			sb.AppendLine("vertice = " + sFinalPosName + ";");
 			sb.AppendLine("gl_Position = proj * modelview * vec4(" + sFinalPosName + ", 1.0);");
 
@@ -732,7 +793,8 @@ namespace engine
 					nVal = 5;
 			}
 			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
-			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3")) nVal = 8;
+			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3") || 
+				sShaderName.Contains("teleporter/energy") || sShaderName.Contains("bot_flare")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
 			// slamp2 are the bulbs under the skull lights
@@ -743,8 +805,9 @@ namespace engine
         public List<Texture> GetTextures() { return m_lTextures; }
 
 		public void ShowWireframe()
-		{
-			if (!m_q3Shader.GetShaderName().Contains("lavahell")) return;
+        {
+			// for debugging can only show certain shapes here
+            if (!m_q3Shader.GetShaderName().Contains("killblockgeomtrn")) return;
 
 			for (int i = 0; i < m_lFaces.Count; i++)
 				m_lFaces[i].Draw(Engine.EGraphicsMode.WIREFRAME);
@@ -767,7 +830,7 @@ namespace engine
 		public void Show()
         {
 			// filter shape showing here for debugging
-			//if (!m_q3Shader.GetShaderName().Contains("lavahell")) return;
+			//if (!m_q3Shader.GetShaderName().Contains("killblockgeomtrn")) return;
 
 			if (DontRender()) return;
 					

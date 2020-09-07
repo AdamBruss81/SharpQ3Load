@@ -874,7 +874,6 @@ namespace engine
                 // tcmods - these need to be before the rgbgen at the moment because some of these calculations can 
 				// affect rgbgen
 				// tcmod scroll can also dictate animmap for example for launch pads
-                bool bTCMODS = false;
 				bool bSendSinTable = false;
                 for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
                 {
@@ -882,7 +881,6 @@ namespace engine
 
                     for (int j = 0; j < stage.GetTCMODS().Count; j++)
                     {
-                        bTCMODS = true;
                         TCMOD mod = stage.GetTCMODS()[j];
                         switch (mod.GetModType())
                         {

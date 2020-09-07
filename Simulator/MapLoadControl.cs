@@ -23,12 +23,14 @@ using System.Diagnostics;
 using utilities;
 
 namespace simulator
-{
+{		
 	/// <summary>
 	/// Progress Control for map loading
 	/// </summary>
 	public partial class MapLoadControl : UserControl
 	{
+		delegate void StringParameterDelegate(string value);
+
 		int m_nMaxLineCount = 0;
 		int m_nMaxShapes = 0;
 		int m_nMaxBoundingBoxes = 0;
@@ -42,7 +44,9 @@ namespace simulator
 		bool m_bDoneCreatingBoundingBoxes = false;
 		bool m_bInitializedBoxFlag = false;
 		bool m_bLoading = false;
+		MapUpdater m_pUpdater = null;
 		string m_sDetails = "";
+		Zipper m_zip = new Zipper();
 
 		WaitCursor m_WaitCursor = null;
 
@@ -52,6 +56,7 @@ namespace simulator
 		public MapLoadControl()
 		{
 			InitializeComponent();
+			m_pUpdater = new MapUpdater(this);
 		}
 
 		/// <summary>
@@ -133,12 +138,11 @@ namespace simulator
 			{
 				m_progress.Value = nVal;
 				m_lblPercentage.Text = Convert.ToString(m_progress.Value) + "%";
-				Refresh();
 			}
 		}
 
 		/// <summary>
-		/// Ready for next map loada
+		/// Ready for next map load
 		/// </summary>
 		public void Reset()
 		{
@@ -160,12 +164,79 @@ namespace simulator
 			m_progress.Value = 0;
 		}
 
+		public void UpdateProgress(string sMsg)
+		{
+			if (InvokeRequired)
+			{
+				//Invoke(new MethodInvoker(UpdateProgress));
+
+				Invoke(new StringParameterDelegate(UpdateProgress), new object[] { sMsg });
+			}
+			else
+			{
+				if(!string.IsNullOrEmpty(sMsg))
+				{
+					m_sDetails = sMsg;
+				}
+
+				string sDetails = GetDetails();
+				if (m_lblDetail.Text != sDetails) m_lblDetail.Text = sDetails;
+				m_nSleepCounter++;
+				if (m_nSleepCounter % 25 == 0) m_nNumPeriods++;
+				if (m_nNumPeriods > 4) m_nNumPeriods = 0;
+				if (m_nSleepCounter == Int64.MaxValue) m_nSleepCounter = 0;
+
+				/*LOGGER.Debug("Progress bar loop cycle: m_bDoneLoadingMap=" + Convert.ToString(m_bDoneLoadingMap) + ", " +
+					"m_bDoneInitializingLists=" + Convert.ToString(m_bDoneInitializingLists) +
+					", m_bDoneCreatingBoundingBoxes=" + Convert.ToString(m_bDoneCreatingBoundingBoxes)); */
+
+				//Thread.Sleep(100);
+
+				FigureList lFigList = SimulatorForm.static_theEngine.GetStaticFigList;
+
+				if (lFigList.Count() > 0)
+				{
+					if (m_WaitCursor == null) m_WaitCursor = new WaitCursor();
+
+					if (!m_bInitializedBoxFlag && !m_bDoneCreatingBoundingBoxes)
+					{
+						m_bDoneCreatingBoundingBoxes = lFigList[0].GetUpToDateBoundingBoxes;
+						LOGGER.Info("Setting m_bDoneCreatingBoundingBoxes to " + Convert.ToString(m_bDoneCreatingBoundingBoxes));
+						m_bInitializedBoxFlag = true;
+					}
+
+					if (!m_bDoneLoadingMap)
+					{
+						SetProgressBar(m_nMaxLineCount, lFigList[0].GetMapReadLinePosition, m_nProgressiveProgressBarMin, m_nProgressCutoffLoad);
+					}
+					else if (!m_bDoneCreatingBoundingBoxes)
+					{
+						if (m_nMaxBoundingBoxes == 0) m_nMaxBoundingBoxes = lFigList[0].GetNumBoundingBoxes;
+						if (m_nProgressiveProgressBarMin == 0) m_nProgressiveProgressBarMin = m_nProgressCutoffLoad;
+						SetProgressBar(m_nMaxBoundingBoxes, 1, m_nProgressiveProgressBarMin, m_nProgressCutoffBoxes);
+					}
+					else if (!m_bDoneInitializingLists)
+					{
+						if (m_nMaxShapes == 0) m_nMaxShapes = lFigList[0].GetNumShapes;
+						if (m_nProgressiveProgressBarMin == 0) m_nProgressiveProgressBarMin = m_nProgressCutoffLoad + 1;
+						else if (m_nProgressiveProgressBarMin == m_nProgressCutoffLoad) m_nProgressiveProgressBarMin = m_nProgressCutoffBoxes;
+						SetProgressBar(m_nMaxShapes, lFigList[0].GetDisplayListCreationProgress, m_nProgressiveProgressBarMin, m_progress.Maximum);
+					}
+
+					//Refresh();
+				}
+			}
+		}
+
 		/// <summary>
 		/// Start Progress
 		/// </summary>
-		public void Begin()
+		public void Begin_MainThread()
 		{
 			LOGGER.Info("Entered Begin function in maploadprogress control");
+
+			m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("levelshots/" + 
+				System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg"));
 
 			m_bLoading = true;
 
@@ -176,54 +247,17 @@ namespace simulator
 			m_nMaxLineCount = (int)utilities.stringhelper.CountLinesInFile(SimulatorForm.static_theMap.GetMapPathOnDisk);
 
 			FigureList lFigList = SimulatorForm.static_theEngine.GetStaticFigList;
-			Figure fig = null;
+			m_pUpdater.Subscribe(lFigList[0].GetSubject);
 
 			LOGGER.Info("Entering while loop of mapload progress control");
+
 			while (!m_bDoneLoadingMap || !m_bDoneInitializingLists || !m_bDoneCreatingBoundingBoxes)
-			{
-				string sDetails = GetDetails();
-				if (m_lblDetail.Text != sDetails) m_lblDetail.Text = sDetails;
-				m_nSleepCounter++;
-				if(m_nSleepCounter % 25 == 0) m_nNumPeriods++;				
-				if (m_nNumPeriods > 4) m_nNumPeriods = 0;
-				if (m_nSleepCounter == Int64.MaxValue) m_nSleepCounter = 0;
-
-				LOGGER.Debug("Progress bar loop cycle: m_bDoneLoadingMap=" + Convert.ToString(m_bDoneLoadingMap) + ", " + 
-					"m_bDoneInitializingLists=" + Convert.ToString(m_bDoneInitializingLists) +
-					", m_bDoneCreatingBoundingBoxes=" + Convert.ToString(m_bDoneCreatingBoundingBoxes));
-
+			{				
 				Thread.Sleep(20);
-				if (lFigList.Count() > 0)
-				{
-					if (m_WaitCursor == null) m_WaitCursor = new WaitCursor();
-
-					fig = lFigList[0];
-					if (!m_bInitializedBoxFlag && !m_bDoneCreatingBoundingBoxes)
-					{						
-						m_bDoneCreatingBoundingBoxes = fig.GetUpToDateBoundingBoxes;
-						LOGGER.Info("Setting m_bDoneCreatingBoundingBoxes to " + Convert.ToString(m_bDoneCreatingBoundingBoxes));
-						m_bInitializedBoxFlag = true;
-					}
-
-					if (!m_bDoneLoadingMap)
-					{
-						SetProgressBar(m_nMaxLineCount, fig.GetMapReadLinePosition, m_nProgressiveProgressBarMin, m_nProgressCutoffLoad);
-					}
-					else if (!m_bDoneCreatingBoundingBoxes)
-					{
-						if (m_nMaxBoundingBoxes == 0) m_nMaxBoundingBoxes = fig.GetNumBoundingBoxes;
-						if (m_nProgressiveProgressBarMin == 0) m_nProgressiveProgressBarMin = m_nProgressCutoffLoad;
-						SetProgressBar(m_nMaxBoundingBoxes, 1, m_nProgressiveProgressBarMin, m_nProgressCutoffBoxes);
-					}
-					else if (!m_bDoneInitializingLists)
-					{
-						if (m_nMaxShapes == 0) m_nMaxShapes = fig.GetNumShapes;
-						if (m_nProgressiveProgressBarMin == 0) m_nProgressiveProgressBarMin = m_nProgressCutoffLoad + 1;
-						else if (m_nProgressiveProgressBarMin == m_nProgressCutoffLoad) m_nProgressiveProgressBarMin = m_nProgressCutoffBoxes;
-						SetProgressBar(m_nMaxShapes, fig.GetDisplayListCreationProgress, m_nProgressiveProgressBarMin, m_progress.Maximum);
-					}
-				}
+				Application.DoEvents();				
 			}
+
+			Reset();
 
 			if (m_WaitCursor != null) m_WaitCursor.Dispose();
 
@@ -232,4 +266,23 @@ namespace simulator
 			LOGGER.Info("Exiting Begin function in maploadprogress control.");
 		}
 	}
+
+    public class MapUpdater : Observer
+    {
+        MapLoadControl m_pMLC = null;
+
+        public MapUpdater(MapLoadControl mlc)
+        {
+            m_pMLC = mlc;
+        }
+
+        public override void Update(Change pChange)
+        {
+            // m_pMLC.Update() ...
+            if (pChange.GetCode == (int)(Figure.ESignals.SHAPE_READ))
+            {
+                m_pMLC.UpdateProgress(pChange.GetMsg);
+            }
+        }
+    }
 }

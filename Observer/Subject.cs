@@ -65,29 +65,29 @@ namespace obsvr
 
 		public void Notify(int nCode)
 		{
-			Notify(this, nCode, true);
+			Notify(this, nCode, "", true);
 		}
 
-		public void Notify(Subject pOriginatingSubject, int nCode, bool bOnlyIssueUpdates)
+		public void Notify(Subject pOriginatingSubject, int nCode, string sMessage, bool bOnlyIssueUpdates)
 		{
 			if (!bOnlyIssueUpdates ) 
 			{
 				if (!g_bDelayNotifications ) 
 				{
 					g_bDelayNotifications = true;
-					Notify(pOriginatingSubject, nCode, false);
+					Notify(pOriginatingSubject, nCode, sMessage, false);
 					while (!(g_lAccumulatedChanges.Count == 0)) 
 					{
 						Change pChange = g_lAccumulatedChanges[0];
 						// call this notification will spawn other notifies - these will get added to g_lAccumulatedChanges
-						pChange.GetCallerSubject.Notify(pChange.GetOriginatingSubject, pChange.GetCode, true);
+						pChange.GetCallerSubject.Notify(pChange.GetOriginatingSubject, pChange.GetCode, pChange.GetMsg, true);
 						g_lAccumulatedChanges.RemoveAt(0);
 					}
 					g_bDelayNotifications = false;
 				}
 				else 
 				{
-					Change aChange = new Change(this, pOriginatingSubject, nCode);
+					Change aChange = new Change(this, pOriginatingSubject, nCode, sMessage);
 					g_lAccumulatedChanges.Add(aChange);
 				}
 			}
@@ -96,7 +96,7 @@ namespace obsvr
 				// we jump through some hoops here to make sure that subscribes and unsubscribes can happen as a result
 				// of Update calls and everything is still okay
 				m_bNotifying = true;
-				Change aChange = new Change(this, pOriginatingSubject, nCode);
+				Change aChange = new Change(this, pOriginatingSubject, nCode, sMessage);
 				foreach(Observer ob in m_lObservers)
 				{
 					if(m_lpTempObserversDetached.IndexOf(ob) != -1)

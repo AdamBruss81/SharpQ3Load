@@ -233,13 +233,10 @@ namespace simulator
 		{
 			LOGGER.Info("Entered load map completed function");
 
-			//Wgl.wglMakeCurrent(m_mainDC, m_mainRC);
 			m_openGLControl.MakeCurrent();
 
 			m_bLoadingMap = false;
 			m_bClosed = false;
-
-			m_controlMapProgress.Reset();
 
 			SetViewMode(true);
 
@@ -383,7 +380,7 @@ namespace simulator
 
 				SetViewMode(false);
 				LOGGER.Info("About to call Begin() on map progress form");
-				m_controlMapProgress.Begin();
+				m_controlMapProgress.Begin_MainThread();
 				LOGGER.Info("Finished with map progress begin");
 
 				SetCursor(false, false);

@@ -56,13 +56,13 @@ namespace simulator
             this.m_tlContainer.BackColor = System.Drawing.Color.Black;
             this.m_tlContainer.ColumnCount = 3;
             this.m_tlContainer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 32F));
-            this.m_tlContainer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 36F));
+            this.m_tlContainer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.m_tlContainer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 32F));
             this.m_tlContainer.Location = new System.Drawing.Point(368, 356);
             this.m_tlContainer.Name = "m_tlContainer";
             this.m_tlContainer.RowCount = 3;
             this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 70F));
+            this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 800F));
             this.m_tlContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.m_tlContainer.Size = new System.Drawing.Size(500, 231);
             this.m_tlContainer.TabIndex = 2;

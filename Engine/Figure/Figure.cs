@@ -34,7 +34,6 @@ namespace engine
 		const double mcd_HalfWidth = 2.0;
 		const double mcd_MaxEasyHopOverHeight = 0.3;
 		Mutex m_mutThreadShutdownChecker = new Mutex();
-		int m_nNumThreadsForCanMove = 0;
 
 		private const string m_sBoundingBoxHeader = "DEF BoundingBoxes {";
 		private const string m_sBoundingBoxHeaderBSPLeaf = "DEF BoundingBoxesBSPLeaf {";
@@ -54,6 +53,7 @@ namespace engine
 		protected StreamReader m_srMapReader = null;
 		BoundingBox m_BSPRootBoundingBox = null;
 		HashSet<BoundingBox> m_hUtilBoxes = new HashSet<BoundingBox>();
+		Mutex m_mutProgress = new Mutex();
 
 		private Edge m_RayCollider = new Edge();
 
@@ -131,7 +131,12 @@ namespace engine
 
 		public int GetDisplayListCreationProgress
 		{
-			get { return m_nInitializeProgress; }
+			get {
+				m_mutProgress.WaitOne();
+				int n = m_nInitializeProgress;
+				m_mutProgress.ReleaseMutex();
+				return n;
+			}
 		}
 
 		public bool GetUpToDateBoundingBoxes
@@ -479,7 +484,12 @@ namespace engine
 			foreach(Shape s in m_lShapes)
 			{
 				s.InitializeLists();
-				m_nInitializeProgress++;
+
+				m_mutProgress.WaitOne();
+				m_nInitializeProgress++;				
+				m_mutProgress.ReleaseMutex();
+
+				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
 			}
 
 			m_lShapes.Sort(CompareShapes);

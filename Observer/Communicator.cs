@@ -22,13 +22,18 @@ namespace obsvr
 
 		public void Notify(int nCode)
 		{
-			m_pSubject.Notify(m_pSubject, nCode, true);
+			m_pSubject.Notify(m_pSubject, nCode, "", true);
 		}
 
-		public void Notify(Subject pOriginatingSubject, int nCode, bool bOnlyIssueUpdates)
+		public void Notify(string sMessage, int nCode)
+		{
+			m_pSubject.Notify(m_pSubject, nCode, sMessage, true);
+		}
+
+		/*private void Notify(Subject pOriginatingSubject, int nCode, bool bOnlyIssueUpdates)
 		{
 			m_pSubject.Notify(pOriginatingSubject, nCode, bOnlyIssueUpdates);
-		}
+		}*/
 
 		public Subject GetSubject
 		{

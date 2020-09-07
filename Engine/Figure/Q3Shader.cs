@@ -350,8 +350,6 @@ namespace engine
 
             sb.AppendLine("");
 
-            bool bAddTime = false;
-            bool bSendSinTable = false;
             bool bMultipleAlphaFuncs = false;
             int nNumAlphaFuncs = 0;
 

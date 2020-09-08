@@ -32,9 +32,12 @@ namespace engine
         List<D3Vect> m_lVertices = new List<D3Vect>();
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
         List<D3Vect> m_lVerticeColors = new List<D3Vect>();
-		private Zipper m_zipper = new Zipper();
 		Q3Shader m_q3Shader = null;
 		List<D3Vect> m_lVerticeNormals = new List<D3Vect>();
+		List<List<List<int>>> m_lSubShapes = new List<List<List<int>>>(); // for dividing up shapes into sub shapes to fix transparency issues on rendering
+																		  // could also be used later to control properties of jumppads
+		D3Vect m_d3MidPoint = null;
+		bool m_bSubShape = false;
 
 		// shader utility members for performance
 		float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
@@ -50,6 +53,7 @@ namespace engine
         int ElementBufferObject;
 		// ===
 
+		// consts
 		const string m_sVerticeColorHeader = "color Color { color [";
 		const string m_sTextureCoordinatesHeader = "TextureCoordinate { point [";
 		const string m_sChannelOneTextureCoordinatesHeader = "texCoord  TextureCoordinate { point [";
@@ -60,6 +64,25 @@ namespace engine
 		ETextureType m_TextureType;
 
         public Shape() { m_q3Shader = new Q3Shader(this); }
+
+		public List<Face> GetMapFaces() { return m_lFaces; }
+
+		/// <summary>
+		/// Copy constructor
+		/// </summary>
+		/// <param name="s">source to copy from to this</param>
+		public Shape(Shape s)
+		{
+			m_lTextures = new List<Texture>();
+			m_lTextures.AddRange(s.m_lTextures);
+			//m_lFaces.AddRange(s.m_lFaces); // going to create new faces
+			//m_lCoordinateIndexes.AddRange(s.m_lCoordinateIndexes); going to set this later
+			m_lVertices.AddRange(s.m_lVertices);
+			m_lTexCoordinates.AddRange(s.m_lTexCoordinates);
+			m_lVerticeColors.AddRange(s.m_lVerticeColors);
+			m_TextureType = s.m_TextureType;
+			m_q3Shader = new Q3Shader(this);			
+		}
 
 		public void Delete()
 		{
@@ -73,12 +96,21 @@ namespace engine
 			}
 		}
 
+		public void SetSubShape(bool b) { m_bSubShape = b; }
+
+		public List<List<List<int>>> GetSubShapes() { return m_lSubShapes; }
+
 		public Q3Shader GetQ3Shader()
 		{
 			return m_q3Shader;
 		}
 
-		public string CreateGLSLVertShader()
+		public void SetCoordIndices(List<List<int>> lSubShapeIndices) 
+		{ 
+			m_lCoordinateIndexes = lSubShapeIndices;			
+        }
+
+		private string CreateGLSLVertShader()
 		{
 			System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
@@ -659,9 +691,9 @@ namespace engine
 				throw new Exception("Error in reading shape data from file");
 		}
 
-		private void CreateFaces(List<Face> lFaceReferences)
+		public void CreateFaces(List<Face> lFaceReferences)
 		{
-			List<D3Vect> faceVerts = new List<D3Vect>(); ;
+			List<D3Vect> faceVerts = new List<D3Vect>();
 			List<List<DPoint>> faceTexCoords = new List<List<DPoint>>();
 			faceTexCoords.Add(new List<DPoint>());
 			if (m_lTextures.Count > 1) faceTexCoords.Add(new List<DPoint>());
@@ -692,6 +724,17 @@ namespace engine
 					faceTexCoords[1].Clear();
 				faceVertColors.Clear();
 			}
+
+			if(m_bSubShape)
+			{
+                // calculate mid point based on faces
+                m_d3MidPoint = new D3Vect();
+                for (int i = 0; i < m_lFaces.Count; i++)
+                {
+                    m_d3MidPoint += m_lFaces[i].GetMidpoint();
+                }
+                m_d3MidPoint /= m_lFaces.Count;
+            }
 		}
 
 		public bool IsSky()
@@ -822,6 +865,8 @@ namespace engine
 				}
 			}
 		}
+
+		public D3Vect GetMidpoint() { return m_d3MidPoint; }
 
 		/// <summary>
 		/// Shows this shape. Loop over texture objects and set same number
@@ -1040,16 +1085,6 @@ namespace engine
 		}
 
 		/// <summary>
-		/// Get all faces
-		/// </summary>
-		/// <param name="lFaces">list to put faces in</param>
-		public void GetFaces(List<Face> lFaces)
-		{
-			for (int i = 0; i < m_lFaces.Count; i++)
-				lFaces.Add(m_lFaces[i]);
-		}
-
-		/// <summary>
 		/// Reads in a single shape from the passed StreamReader
 		/// </summary>
 		/// <param m_DisplayName="sr">StreamReader of VRML 2.0 compliant file containing
@@ -1165,8 +1200,40 @@ namespace engine
 					lIndexes.Add(Convert.ToInt32(sTokens[i]));
 				m_lCoordinateIndexes.Add(lIndexes);
 
+				// for proof of concept I'm going to try and determine how many objects are in this shape. for example if this is a flames shape, how many torches are there
+				// of this flame type in the map?
+
+				// what i can do here is take the first face and see how many other faces are connected to it via vertice indices
+
+				if (!m_bSubShape && (GetMainTexture().GetPath().Contains("ctf/blue_telep") || GetMainTexture().GetPath().Contains("ctf/red_telep")))
+				{					
+					m_lSubShapes.Add(new List<List<int>>());
+					m_lSubShapes.Add(new List<List<int>>());
+
+					m_lSubShapes[0].Add(m_lCoordinateIndexes[0]);
+					m_lSubShapes[0].Add(m_lCoordinateIndexes[1]);
+
+                    m_lSubShapes[1].Add(m_lCoordinateIndexes[2]);
+                    m_lSubShapes[1].Add(m_lCoordinateIndexes[3]);
+                }
+
 				return true;
 			}
+		}
+
+		private bool ShareVert(List<int> lFace1, List<int> lFace2)
+		{
+			for(int i = 0; i < lFace1.Count; i++)
+			{
+				for(int j = 0; j < lFace2.Count; j++)
+				{
+					if(lFace1[i] == lFace2[j])
+					{
+						return true;
+					}
+				}
+			}
+			return false; 
 		}
 
 		/// <summary>
@@ -1189,7 +1256,7 @@ namespace engine
 				while (inLine.IndexOf(']') == -1)
 				{
 					sTokens = stringhelper.Tokenize(inLine, ',');
-					for (int i = 0; i < sTokens.Length - 1; i++)
+					for (int i = 0;  i < sTokens.Length - 1; i++)
 					{
 						D3Vect vert = new D3Vect(sTokens[i]);
 						// Reflect X values over Y-Z plane because Q3BSP reflects them for some reason when it

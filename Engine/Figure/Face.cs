@@ -84,6 +84,8 @@ namespace engine
 			DoFacePrecalculations(false);
 		}
 
+		public D3Vect GetMidpoint() { return m_d3MidPoint; }
+
 		/// <summary>
 		/// Return the number of vertices in this face.
 		/// </summary>

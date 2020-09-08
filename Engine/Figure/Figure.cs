@@ -41,7 +41,10 @@ namespace engine
 		private const string m_sChannelOneTextureDef = "texture DEF";
 
 		List<BoundingBox> m_lLeafBoundingBoxes = new List<BoundingBox>();
+
 		protected List<Shape> m_lShapes = new List<Shape>();
+		protected List<Shape> m_lShapesCustomRenderOrder = new List<Shape>();
+
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
 		private List<Viewpoint> m_SpawnPoints = new List<Viewpoint>();
@@ -70,8 +73,6 @@ namespace engine
 		private List<D3Vect> m_ld3Head = new List<D3Vect>();
 		private List<D3Vect> m_ld3HeadLookAts = new List<D3Vect>();
         private D3Vect m_LookAtRay = new D3Vect();
-		private D3Vect m_LeftSideRay = new D3Vect();
-		private D3Vect m_RightSideRay = new D3Vect();
 
 		private BasicFont m_fonter = null;
 
@@ -97,16 +98,11 @@ namespace engine
 			get { return m_lMapFaceReferences.Count; }
 		}
 
-		public int GetFaceCreationCounter
-		{
-			get { return m_nFaceCreationCounter; }
-		}
-
 		public List<BoundingBox> GetFaceContainingBoundingBoxes() { return m_lFaceContainingBoundingBoxes; }
 
 		public int GetNumShapes
 		{
-			get { return m_lShapes.Count; }
+			get { return m_lShapes.Count + m_lShapesCustomRenderOrder.Count; }
 		}
 
 		public int GetNumViewPoints 
@@ -158,6 +154,9 @@ namespace engine
 				for (int i = 0; i < m_lShapes.Count; i++)
 					m_lShapes[i].ShowWireframe();
 
+                for (int i = 0; i < m_lShapesCustomRenderOrder.Count; i++)
+					m_lShapesCustomRenderOrder[i].ShowWireframe();
+
                 sgl.POPATT();
 			}
 			else
@@ -167,7 +166,13 @@ namespace engine
 				for (int i = 0; i < m_lShapes.Count; i++)
 					m_lShapes[i].Show();
 
-				sgl.POPATT();
+				// sort custom render order list
+				m_lShapesCustomRenderOrder.Sort(CompareShapesByCamDistance);
+
+                for (int i = 0; i < m_lShapesCustomRenderOrder.Count; i++)
+					m_lShapesCustomRenderOrder[i].Show();
+
+                sgl.POPATT();
 			}
 		}
 
@@ -301,7 +306,6 @@ namespace engine
 		public override void Update(Change pChange)
 		{
 			if(pChange.GetCode == (int)Shape.ESignals.FACE_CREATED) {
-				m_nFaceCreationCounter++;
 				Notify((int)Shape.ESignals.FACE_CREATED);
 			}
 		}
@@ -313,7 +317,12 @@ namespace engine
 				s.Delete();
 			}
 
-			if(m_fonter != null) m_fonter.Delete();
+            foreach (Shape s in m_lShapesCustomRenderOrder)
+            {
+                s.Delete();
+            }
+
+            if (m_fonter != null) m_fonter.Delete();
 		}
 
 		private static bool TextureShouldRenderAtEnd(string sTexturePath)
@@ -328,6 +337,17 @@ namespace engine
 
 			return s1.GetRenderOrder().CompareTo(s2.GetRenderOrder());
         }
+
+        private static int CompareShapesByCamDistance(Shape s1, Shape s2)
+        {
+            if (s1 == null) return -1;
+            if (s2 == null) return 1;
+
+			D3Vect disOne = s1.GetMidpoint() - GameGlobals.m_CamPosition;
+			D3Vect disTwo = s2.GetMidpoint() - GameGlobals.m_CamPosition;
+
+			return disTwo.Length.CompareTo(disOne.Length);
+		}
 
         /// <summary>
         /// Reads a VRML 2.0 compliant file and creates each shape
@@ -347,15 +367,45 @@ namespace engine
 			while (Read(lShapeTextureObjects))
 			{
 				Shape s = new Shape();
+
 				LOGGER.Debug("Create shape");
 				Subscribe(s);
+
 				s.ReadMain(lShapeTextureObjects, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
-				Notify((int)ESignals.SHAPE_READ);
-				m_lShapes.Add(s);
+
+				Notify((int)ESignals.SHAPE_READ); // do this once is fine i think
+				if (s.GetSubShapes().Count > 0)
+				{
+					Unsubscribe(s, true);
+
+					for(int i = 0; i < s.GetMapFaces().Count; i++)
+					{
+						m_lMapFaceReferences.Remove(s.GetMapFaces()[i]); // clear these out
+					}
+
+					// for example for teleporters in ctf space
+					// divide up shape into sub shapes, one for each teleporter(object). then I can control render order.
+					for(int i = 0; i < s.GetSubShapes().Count; i++)
+					{
+						Shape sSubShape = new Shape(s);
+						sSubShape.SetSubShape(true);
+						Subscribe(sSubShape);
+
+						sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
+						sSubShape.CreateFaces(m_lMapFaceReferences);
+
+						m_lShapesCustomRenderOrder.Add(sSubShape);
+					}					
+				}
+				else
+				{
+					m_lShapes.Add(s);
+				}
+
 				lShapeTextureObjects.Clear();
 			}
 
-			LOGGER.Info("Read in " + m_lShapes.Count.ToString() + " shapes for " + map.GetMapPathOnDisk);
+			//LOGGER.Info("Read in " + m_lShapes.Count.ToString() + " shapes for " + map.GetMapPathOnDisk);
 
 			ReadEntities();
 		}
@@ -492,7 +542,19 @@ namespace engine
 				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
 			}
 
-			m_lShapes.Sort(CompareShapes);
+            foreach (Shape s in m_lShapesCustomRenderOrder)
+            {
+                s.InitializeLists();
+
+                m_mutProgress.WaitOne();
+                m_nInitializeProgress++;
+                m_mutProgress.ReleaseMutex();
+
+                Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+            }
+
+            m_lShapes.Sort(CompareShapes);
+			// will sort m_lShapesCustomRenderOrder every frame
 		}
 
 		/// <summary>

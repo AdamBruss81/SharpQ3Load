@@ -247,6 +247,8 @@ namespace simulator
 			m_nMaxLineCount = (int)utilities.stringhelper.CountLinesInFile(SimulatorForm.static_theMap.GetMapPathOnDisk);
 
 			FigureList lFigList = SimulatorForm.static_theEngine.GetStaticFigList;
+			while (lFigList.Count() == 0) Thread.Sleep(10);
+			
 			m_pUpdater.Subscribe(lFigList[0].GetSubject);
 
 			LOGGER.Info("Entering while loop of mapload progress control");

@@ -196,7 +196,12 @@ namespace utilities
 			return ((v1[0] * v2[0]) + (v1[1] * v2[1]) + (v1[2] * v2[2]));
 		}
 
-		public static D3Vect operator +(D3Vect v1, D3Vect v2)
+		public static bool Equals(D3Vect v1, D3Vect v2)
+		{
+			return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
+		}
+
+        public static D3Vect operator +(D3Vect v1, D3Vect v2)
 		{
 			D3Vect sum = new D3Vect();
 			for ( int i = 0; i < 3; i++ )

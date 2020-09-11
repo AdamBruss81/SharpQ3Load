@@ -368,7 +368,7 @@ namespace engine
 			{
 				Shape s = new Shape();
 
-				LOGGER.Debug("Create shape");
+				//LOGGER.Debug("Create shape");
 				Subscribe(s);
 
 				s.ReadMain(lShapeTextureObjects, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
@@ -1088,8 +1088,6 @@ namespace engine
 		/// <param name="bContainer"></param>											
 		private void DefineBSPBoundingBoxes(BoundingBox bContainer)
 		{
-			LOGGER.Debug("Defining BSP Bounding Boxes for a parent ...");
-
 			double totxlen;
 			double totylen;
 			double totzlen;

@@ -233,6 +233,8 @@ namespace simulator
 		{
 			LOGGER.Info("Entered load map completed function");
 
+			SetCursor(false, false);
+
 			m_openGLControl.MakeCurrent();
 
 			m_bLoadingMap = false;
@@ -383,7 +385,7 @@ namespace simulator
 				m_controlMapProgress.Begin_MainThread();
 				LOGGER.Info("Finished with map progress begin");
 
-				SetCursor(false, false);
+				//SetCursor(false, false);
 			}
 			// revert to old map
 			else if (map == null && m_Engine != null && m_Engine.NumStaticFigs > 0)

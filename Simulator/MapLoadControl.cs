@@ -168,8 +168,6 @@ namespace simulator
 		{
 			if (InvokeRequired)
 			{
-				//Invoke(new MethodInvoker(UpdateProgress));
-
 				Invoke(new StringParameterDelegate(UpdateProgress), new object[] { sMsg });
 			}
 			else
@@ -222,8 +220,6 @@ namespace simulator
 						else if (m_nProgressiveProgressBarMin == m_nProgressCutoffLoad) m_nProgressiveProgressBarMin = m_nProgressCutoffBoxes;
 						SetProgressBar(m_nMaxShapes, lFigList[0].GetDisplayListCreationProgress, m_nProgressiveProgressBarMin, m_progress.Maximum);
 					}
-
-					//Refresh();
 				}
 			}
 		}
@@ -235,8 +231,17 @@ namespace simulator
 		{
 			LOGGER.Info("Entered Begin function in maploadprogress control");
 
-			m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("levelshots/" + 
-				System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg"));
+			string sFullPath = m_zip.ExtractSoundTextureOther("levelshots/" +
+				System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg");
+
+			if (File.Exists(sFullPath)) {
+				m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("levelshots/" +
+					System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg"));
+			}
+			else
+			{
+				m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));                    
+            }
 
 			m_bLoading = true;
 
@@ -257,7 +262,7 @@ namespace simulator
 			{				
 				Thread.Sleep(20);
 				Application.DoEvents();				
-			}
+			}			
 
 			Reset();
 

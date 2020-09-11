@@ -193,7 +193,7 @@ namespace simulator
                 }
                 else if (e.KeyData == Keys.L)
                 {
-                    OpenMapFromFile();
+                    OpenMapFromFile(); // not activel supported. almost surely doesn't work
                 }
                 else if (e.KeyData == Keys.C)
                 {

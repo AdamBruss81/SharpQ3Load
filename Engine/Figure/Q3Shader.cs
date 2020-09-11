@@ -83,7 +83,8 @@ namespace engine
 
             // for these i can't tell by looking at the shader if they need to be see through so hardcoding for now
             bAA = m_sShaderName.Contains("sfx/teslacoil") || m_sShaderName.Contains("console/centercon") ||
-                m_sShaderName.Contains("teleporter/energy") || m_sShaderName.Contains("pj_light"); // for example see big power reactor in dm0
+                m_sShaderName.Contains("teleporter/energy") || m_sShaderName.Contains("pj_light") ||
+                m_sShaderName.Contains("portal_sfx_ring"); // for example see big power reactor in dm0
             // pj_light is ball light in brimstone abbey
 
             if (!bAA)

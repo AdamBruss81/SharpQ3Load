@@ -284,9 +284,9 @@ namespace engine
 			{
 				sb.AppendLine("void BulgeVertexes(in float width, in float height, in float speed, inout vec3 vertex)");
 				sb.AppendLine("{");
-				sb.AppendLine("float now = timeS * speed * 0.25f;");
+				sb.AppendLine("float now = timeS * speed * 0.15f;");
 				sb.AppendLine("float off = 3.1415926f * 2 * (aTexCoord[0] * width + now);");
-				sb.AppendLine("float scale = sin(off) * (height*.025);");
+				sb.AppendLine("float scale = sin(off) * (height*.02);");
 				sb.AppendLine("vertex += vertexNormal * scale;");
 				sb.AppendLine("}");
 			}

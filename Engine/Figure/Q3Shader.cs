@@ -428,6 +428,8 @@ namespace engine
                     m_lStageTextures.Add(null); // need a placeholder here, will check for null later
                 }
 
+                ScaleTexel(stage, sIndex, sb);
+
                 sb.AppendLine("");
             }
 
@@ -466,6 +468,8 @@ namespace engine
                 string sIndex = Convert.ToString(i);
                 string sTexel = "texel" + sIndex;
                 string sBlendFunc = stage.GetBlendFunc();
+
+                sb.AppendLine("// ## STAGE " + i + " ##");
 
                 // alphaGen
                 if (stage.GetAlphaGenFunc() == "lightingspecular")
@@ -641,6 +645,10 @@ namespace engine
             {
                 return "2.0";
             }
+            /*else if(m_sShaderName.Contains("comp3"))
+            {
+                return "1.0";
+            }*/
             else return "3.0";
         }
 
@@ -966,5 +974,17 @@ namespace engine
             string sTrimmed = sInsideTargetShaderLine.Trim();
             return sTrimmed.Split(new Char[] { ' ', '\t' });
         }
+
+        private void ScaleTexel(Q3ShaderStage stage, string sIndex, System.Text.StringBuilder sb)
+        {
+            // only for darkening comp3 at the moment. it's too bright because the env texture is just too bright i think.
+            // not sure why
+
+            if(stage.GetTexturePath().Contains("base_wall/comp3env"))
+            {
+                //sb.AppendLine("texel" + sIndex + " *= 0.1;");
+            }
+        }
+
     }
 }

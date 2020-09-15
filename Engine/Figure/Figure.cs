@@ -63,7 +63,6 @@ namespace engine
 		private MapInfo m_map = new MapInfo();
 		private Zipper m_zipper = new Zipper();
 
-		private int m_nFaceCreationCounter = 0;
 		private int m_nInitializeProgress = 0;
 		private int m_nThreadShutdownCounter = 0;
 

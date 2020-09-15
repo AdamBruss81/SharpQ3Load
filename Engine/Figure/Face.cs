@@ -25,6 +25,7 @@ namespace engine
 		List<List<DPoint>> m_lTextureCoordinates;
 		List<D3Vect> m_lVertices;
 		List<D3Vect> m_lVertColors;
+		List<int> m_lIndices;
 		FaceEdges m_edges = new FaceEdges();
         Shape m_pParentShape = null;
 		System.Threading.Mutex canMoveLock = new System.Threading.Mutex();
@@ -56,7 +57,7 @@ namespace engine
 		/// </summary>
 		/// <param m_DisplayName="s">a string of integer indicies which reference the 
 		/// corresponding m_verticies used to draw the face.</param>
-		public Face( List<D3Vect> lVerts, List<List<DPoint>> lTextCoords, List<D3Vect> lVertColors, Color normalCap, Color normalStem, int index )
+		public Face( List<D3Vect> lVerts, List<List<DPoint>> lTextCoords, List<D3Vect> lVertColors, Color normalCap, Color normalStem, int index, List<int> lIndices )
 		{
 			m_TextureType = lTextCoords.Count == 2 ? Shape.ETextureType.MULTI : Shape.ETextureType.SINGLE;
 			m_lTextureCoordinates = new List<List<DPoint>>();
@@ -64,7 +65,8 @@ namespace engine
 			if (m_TextureType == Shape.ETextureType.MULTI)
 				m_lTextureCoordinates.Add(new List<DPoint>(lTextCoords[1]));
 			m_lVertices = new List<D3Vect>(lVerts);
-			m_lVertColors = new List<D3Vect>(lVertColors);			
+			m_lVertColors = new List<D3Vect>(lVertColors);
+			m_lIndices = new List<int>(lIndices);
 			m_NormalCapColor = normalCap;
 			m_NormalStemColor = normalStem;
 			m_nIndex = index;
@@ -85,6 +87,8 @@ namespace engine
 		}
 
 		public D3Vect GetMidpoint() { return m_d3MidPoint; }
+
+		public uint GetIndice(int i) { return (uint)m_lIndices[i]; }
 
 		/// <summary>
 		/// Return the number of vertices in this face.

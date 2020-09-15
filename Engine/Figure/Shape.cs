@@ -75,8 +75,6 @@ namespace engine
 		{
 			m_lTextures = new List<Texture>();
 			m_lTextures.AddRange(s.m_lTextures);
-			//m_lFaces.AddRange(s.m_lFaces); // going to create new faces
-			//m_lCoordinateIndexes.AddRange(s.m_lCoordinateIndexes); going to set this later
 			m_lVertices.AddRange(s.m_lVertices);
 			m_lTexCoordinates.AddRange(s.m_lTexCoordinates);
 			m_lVerticeColors.AddRange(s.m_lVerticeColors);
@@ -711,12 +709,10 @@ namespace engine
 						faceTexCoords[1].Add(m_lTexCoordinates[1][m_lCoordinateIndexes[i][j]]);
 					faceVertColors.Add(m_lVerticeColors[m_lCoordinateIndexes[i][j]]);
 				}
-				//LOGGER.Debug("Allocating map face");
-				pFace = new Face(faceVerts, faceTexCoords, faceVertColors, new Color(240, 0, 0), new Color(100, 0, 0), lFaceReferences.Count);
+				pFace = new Face(faceVerts, faceTexCoords, faceVertColors, new Color(240, 0, 0), new Color(100, 0, 0), lFaceReferences.Count, m_lCoordinateIndexes[i]);
 				pFace.SetParentShape(this);
 				m_lFaces.Add(pFace);
 				lFaceReferences.Add(pFace);
-				//LOGGER.Debug("Added a face to the figure's map face references. Count = " + lFaceReferences.Count.ToString());
 				Notify((int)ESignals.FACE_CREATED);
 				pFace = null;
 				faceVerts.Clear();
@@ -873,6 +869,35 @@ namespace engine
 
 		public D3Vect GetMidpoint() { return m_d3MidPoint; }
 
+        private static int CompareFaces(Face f1, Face f2)
+        {
+            D3Vect disOne = f1.GetMidpoint() - GameGlobals.m_CamPosition;
+            D3Vect disTwo = f2.GetMidpoint() - GameGlobals.m_CamPosition;
+
+            return disTwo.Length.CompareTo(disOne.Length);
+        }
+
+        private void SortFaces()
+		{
+			// i need to sort the faces for this shape in the fastest way possible
+			// the faces that get sent to renderer are in m_arIndices.
+			// i think i can sort m_lFaces and then dump the indices into m_arIndices
+			// should be decently fast
+			// i don't think it matters what order the faces are in m_lFaces
+
+			m_lFaces.Sort(CompareFaces);
+
+			for(int i = 0; i < m_lFaces.Count; i++)
+			{				
+				m_arIndices[i * 3] = m_lFaces[i].GetIndice(0);
+				m_arIndices[i * 3 + 1] = m_lFaces[i].GetIndice(1);
+				m_arIndices[i * 3 + 2] = m_lFaces[i].GetIndice(2);
+			}
+
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, m_arIndices.Length * sizeof(uint), m_arIndices, BufferUsageHint.StaticDraw);
+        }
+
 		/// <summary>
 		/// Shows this shape. Loop over texture objects and set same number
 		/// of texture units.
@@ -900,14 +925,19 @@ namespace engine
 				GL.Enable(EnableCap.Blend);
 				GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 			}
-			// ***
+            // ***
 
-			ShaderHelper.UseProgram(ShaderProgram);
+            ShaderHelper.UseProgram(ShaderProgram);
 
 			GL.BindVertexArray(VertexArrayObject);
 
-			// SET UNIFORMS ***
-			int nLoc;
+			if(DoDistanceTest())
+			{
+				SortFaces();
+			}
+
+            // SET UNIFORMS ***
+            int nLoc;
 
 			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{

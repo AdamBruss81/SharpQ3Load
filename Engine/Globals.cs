@@ -190,6 +190,10 @@ namespace engine
 
 		public static long GetElapsedMS() { return m_fFrameStartElapsedMS; }
 		public static float GetElapsedS() { return m_fFrameStartElapsedS; }
+		public static string GetBaseLightmapScale() { return "2.5"; }
+		public static string GetBaseVertexColorScale() { return "3.0"; }
+
+		public static bool IsPortalEntry(string sPath) { return sPath.Contains("sfx/portal_sfx.jpg"); }
 
 		public static void InitTables()
 		{

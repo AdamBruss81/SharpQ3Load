@@ -631,7 +631,7 @@ namespace engine
             {
                 return "2.0";
             }
-            else return "3.0";
+            else return GameGlobals.GetBaseVertexColorScale();
         }
 
         /// <summary>
@@ -645,11 +645,7 @@ namespace engine
             {
                 return "2.0";
             }
-            /*else if(m_sShaderName.Contains("comp3"))
-            {
-                return "1.0";
-            }*/
-            else return "3.0";
+            else return GameGlobals.GetBaseLightmapScale();
         }
 
         private void CustomizeFinalOutputColor(System.Text.StringBuilder sb)
@@ -660,10 +656,6 @@ namespace engine
                 // customizing it here
                 sb.AppendLine("outputColor.xyz *= 3.0;");
                 sb.AppendLine("outputColor.w = 0.5;");
-            }
-            else if(m_sShaderName.Contains("jesuswall"))
-            {
-                //sb.AppendLine("outputColor *= 4.0;"); // jesus is too dark so brighten him up
             }
 
             // final clamp

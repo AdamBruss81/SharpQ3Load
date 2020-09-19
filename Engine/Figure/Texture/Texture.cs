@@ -56,6 +56,10 @@ namespace engine
             {
                 aVal *= 0.5f; // make glass more transparent
             }
+            else if(sShaderName.Contains("spotlamp"))
+            {
+
+            }
             else if (sShaderName.Contains("lamp"))
             {
                 // make things a lot less transparent from original value
@@ -67,12 +71,13 @@ namespace engine
             {
                 aVal *= 100; // special case. only remove black sections which should have alpha 0
             }
-            else
+            else if(sShaderName.Contains("beam"))
             {
-                //aVal *= 1.5f; // make things less transparent in general as well
+                aVal *= 1.5f;
             }
 
             if (aVal > 1.0f) aVal = 1.0f;
+
             return aVal;
         }
 
@@ -170,12 +175,58 @@ namespace engine
                 if (bShouldBeTGA && !SpecialTexture(sFullPath))
                 {
                     System.Diagnostics.Debug.Assert(Path.GetExtension(sFullPath) == ".jpg");
-
+                   
                     AddAlphaToImage(ref image, sShaderName);
+
+                    if (sFullPath.Contains("sfx/beam") || sFullPath.Contains("spotlamp/beam"))
+                    {
+                        BrightenUpBeams(ref image, GetBeamColor(sFullPath));
+                    }
                 }
             }
 
             return image;
+        }
+
+        /// <summary>
+        /// I don't know how quake3 does beams. I choose one color for the beam based on the texture files and use my derived transparency with it.
+        /// It works pretty well.
+        /// </summary>
+        /// <param name="sFullPath"></param>
+        /// <returns></returns>
+        private static System.Drawing.Color GetBeamColor(string sFullPath)
+        {
+            if(sFullPath.Contains("sfx/beam_blue4.jpg"))
+            {
+                return System.Drawing.Color.FromArgb(10, 157, 255);
+            }
+            else if(sFullPath.Contains("sfx/beam_red.jpg"))
+            {
+                return System.Drawing.Color.FromArgb(255, 0, 0);
+            }
+            else if(sFullPath.Contains("sfx/beam_waterlight.jpg"))
+            {
+                return System.Drawing.Color.FromArgb(163, 255, 209);
+            }
+            else
+            {
+                return System.Drawing.Color.FromArgb(255, 255, 255);
+            }
+        }
+
+        private static void BrightenUpBeams(ref System.Drawing.Bitmap image, System.Drawing.Color c)
+        {
+            System.Drawing.Bitmap imageNew = new System.Drawing.Bitmap(image.Width, image.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            for (int i = 0; i < image.Width; i++)
+            {
+                for (int j = 0; j < image.Height; j++)
+                {
+                    imageNew.SetPixel(i, j, System.Drawing.Color.FromArgb(image.GetPixel(i,j).A, c.R, c.G, c.B));
+                }
+            }
+
+            image = imageNew;
         }
 
         public void SetTexture(string sFullPath, bool bShouldBeTGA, string sShaderName)

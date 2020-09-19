@@ -226,7 +226,7 @@ namespace utilities
 			set { m_vCamPos = value; }
 		}
 
-		private void CalculateLookAt()
+		public void CalculateLookAt()
 		{
 			m_d3LookAt[0] = m_rho * Math.Cos(m_dTheta) * Math.Sin(m_dPhi);
 			m_d3LookAt[1] = m_rho * Math.Sin(m_dTheta) * Math.Sin(m_dPhi);
@@ -294,6 +294,11 @@ namespace utilities
 			m_vCamPos = GetLookAtNew;
 
 			m_rho = dTempRHO;
+		}
+
+		public void ClearStack()
+		{
+			m_UtilityStack.Clear();
 		}
 
 		public void RestoreOrientation()

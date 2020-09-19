@@ -425,7 +425,23 @@ namespace engine
 			}
 			else
 			{
-				if (bMoveAlongWallOrUpStairs)
+                // handle portals here i think
+                if (m_Intersection.Face.GetParentShape() is Portal)
+                {
+					Portal p = (m_Intersection.Face.GetParentShape() as Portal);
+					bool b = InternalMove(eSourceMovement, p.D3TargetLocation, nMoveAttemptCount, dMoveScale);
+					if (b)
+					{						
+						m_cam.PHI_DEG = p.PHI;
+						m_cam.THETA_DEG = p.Theta;
+						m_cam.CalculateLookAt();
+						m_cam.ClearStack();
+
+						m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
+					}
+					return b;
+				}
+                if (bMoveAlongWallOrUpStairs)
 				{
 					if (!bDoTheMove) return false;
 
@@ -660,7 +676,7 @@ namespace engine
 				SoundManager.EEffects eEffectToPlay = SoundManager.EEffects.NONE;
 				Fall(ref eEffectToPlay);
 
-				if(m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false)
+				if(m_swmgr.IsRunning(MovableCamera.DIRECTION.DOWN, true) == false) // have we touched the ground
                 {
                     if(STATE.Gravity) DetectJumppads(ref eEffectToPlay);
                 }

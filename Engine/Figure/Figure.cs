@@ -386,14 +386,24 @@ namespace engine
 					// divide up shape into sub shapes, one for each teleporter(object). then I can control render order.
 					for(int i = 0; i < s.GetSubShapes().Count; i++)
 					{
-						Shape sSubShape = new Shape(s);
+						Shape sSubShape;
+						if (GameGlobals.IsPortalEntry(s.GetMainTexture().GetPath()))
+						{
+							sSubShape = new Portal(s);
+							Portal p = (Portal)(sSubShape);
+
+							DefinePortal(p, i);							
+						}
+						else sSubShape = new Shape(s);
+
 						sSubShape.SetSubShape(true);
 						Subscribe(sSubShape);
 
 						sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
 						sSubShape.CreateFaces(m_lMapFaceReferences);
 
-						m_lShapesCustomRenderOrder.Add(sSubShape);
+						if (sSubShape is Portal) m_lShapes.Add(sSubShape); 
+						else m_lShapesCustomRenderOrder.Add(sSubShape);
 					}					
 				}
 				else
@@ -1231,6 +1241,31 @@ namespace engine
 					Thread.Sleep(1000);
 				}
 			}
-        }		
+        }
+
+		private void DefinePortal(Portal p, int i)
+		{
+			// there's only one portal in all of these maps so don't need ot use index i
+			double dZOffset = .2f;
+
+			if(m_map.GetNick == "q3dm0")
+			{
+                p.D3TargetLocation = new D3Vect(-4.1, 7, 1.1 + dZOffset);
+                p.PHI = 90;
+                p.Theta = 270;
+            }
+			else if(m_map.GetNick == "q3dm7")
+			{
+                p.D3TargetLocation = new D3Vect(-24.2, 53, 1.2 + dZOffset);
+                p.PHI = 90;
+				p.Theta = -90;
+            }
+			else if(m_map.GetNick == "q3dm11")
+			{
+                p.D3TargetLocation = new D3Vect(70.9, 51.6, -.18 + dZOffset);
+                p.PHI = 90;
+                p.Theta = -44;
+            }
+		}
 	}
 }

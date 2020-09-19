@@ -266,7 +266,7 @@ namespace engine
 				sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0f);");
 				sb.AppendLine("float fIntoSin = (timeS + (phase + off) * freq) / fCycleTimeMS * 3.1415926f;");
 				sb.AppendLine("float fSinValue = sin(fIntoSin);");
-				sb.AppendLine("float fScale = 0.008;");
+				sb.AppendLine("float fScale = 0.015;");
 				sb.AppendLine("float fVal = fSinValue * (amp*fScale) + (base*fScale);");
 				sb.AppendLine("vec3 offset;");
 				sb.AppendLine("offset[0] = vertexNormal[0]*fVal;");
@@ -399,12 +399,6 @@ namespace engine
 							{
 								sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
 
-								//sb.AppendLine(sTexmod + ".x += sin( ( (vertice.x + vertice.z) * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
-								//sb.AppendLine(sTexmod + ".y += sin( (vertice.y * 1.0/128.0 * 0.125 + turbVal" + sIndex + " ) * 6.238) * turb" + sIndex + "[0];");
-
-								//sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( vertice.x + vertice.z ) + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
-								//sb.AppendLine(sTexmod + ".y = " + sTexmod + ".y + sinValues[ int ( ( ( vertice.y ) + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
-
 								sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( vertice.x + vertice.z ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
 								sb.AppendLine(sTexmod + ".y = " + sTexmod + ".y + sinValues[ int ( ( ( vertice.y ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
 
@@ -504,7 +498,7 @@ namespace engine
 				sb.AppendLine("if (lightmapTexCoord.x != -1.0) {");
 				sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
 				sb.AppendLine("vec4 lightmap_texel = texture(texture1, lightmapTexCoord);");
-				sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * 3.0, 0.0, 1.0);");
+				sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * " + GameGlobals.GetBaseLightmapScale() + ", 0.0, 1.0);");
 				sb.AppendLine("}");
 				sb.AppendLine("else {");
 				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");
@@ -1210,11 +1204,9 @@ namespace engine
 
 		private bool DoDistanceTest()
 		{
-			//return false;
-
 			string sTex = GetMainTexture().GetPath();
 			return sTex.Contains("ctf/blue_telep") || sTex.Contains("ctf/red_telep") ||
-				sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
+				sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") || sTex.Contains("spotlamp/beam") ||
 				sTex.Contains("sfx/console03");
 		}
 
@@ -1274,7 +1266,9 @@ namespace engine
 
 		private void CreateSubShapes()
 		{
-			if (!m_bSubShape && DoDistanceTest())
+			bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
+
+			if (!m_bSubShape && DoDistanceTest() || bPortal)
 			{
 				List<List<int>> lCoordIndicesCopy = new List<List<int>>(m_lCoordinateIndexes);
 

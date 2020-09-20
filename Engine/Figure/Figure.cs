@@ -56,7 +56,7 @@ namespace engine
 		protected StreamReader m_srMapReader = null;
 		BoundingBox m_BSPRootBoundingBox = null;
 		HashSet<BoundingBox> m_hUtilBoxes = new HashSet<BoundingBox>();
-		Mutex m_mutProgress = new Mutex();
+		Mutex m_mutProgress = new Mutex();		
 
 		private Edge m_RayCollider = new Edge();
 
@@ -348,12 +348,39 @@ namespace engine
 			return disTwo.Length.CompareTo(disOne.Length);
 		}
 
-        /// <summary>
-        /// Reads a VRML 2.0 compliant file and creates each shape
-        /// specified within the file.
-        /// </summary>
-        /// <param m_DisplayName="file">GetPath to a VRML 2.0 compliant file</param>
-        public void Read(MapInfo map)
+		private void HandleSubShapes(Shape s)
+		{
+			// for example for teleporters in ctf space
+			// divide up shape into sub shapes, one for each teleporter(object). then I can control render order.
+			for (int i = 0; i < s.GetSubShapes().Count; i++)
+			{
+				Shape sSubShape;
+				if (GameGlobals.IsPortalEntry(s.GetMainTexture().GetPath()))
+				{
+					sSubShape = new Portal(s);
+					Portal p = (Portal)(sSubShape);
+
+					DefinePortal(p, i);
+				}
+				else sSubShape = new Shape(s);
+
+				sSubShape.SetSubShape(true);
+				Subscribe(sSubShape);
+
+				sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
+				sSubShape.CreateFaces(m_lMapFaceReferences);
+
+				if (sSubShape is Portal) m_lShapes.Add(sSubShape);
+				else m_lShapesCustomRenderOrder.Add(sSubShape);
+			}
+		}
+
+		/// <summary>
+		/// Reads a VRML 2.0 compliant file and creates each shape
+		/// specified within the file.
+		/// </summary>
+		/// <param m_DisplayName="file">GetPath to a VRML 2.0 compliant file</param>
+		public void Read(MapInfo map)
 		{
 			m_map = map;
 
@@ -382,29 +409,7 @@ namespace engine
 						m_lMapFaceReferences.Remove(s.GetMapFaces()[i]); // clear these out
 					}
 
-					// for example for teleporters in ctf space
-					// divide up shape into sub shapes, one for each teleporter(object). then I can control render order.
-					for(int i = 0; i < s.GetSubShapes().Count; i++)
-					{
-						Shape sSubShape;
-						if (GameGlobals.IsPortalEntry(s.GetMainTexture().GetPath()))
-						{
-							sSubShape = new Portal(s);
-							Portal p = (Portal)(sSubShape);
-
-							DefinePortal(p, i);							
-						}
-						else sSubShape = new Shape(s);
-
-						sSubShape.SetSubShape(true);
-						Subscribe(sSubShape);
-
-						sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
-						sSubShape.CreateFaces(m_lMapFaceReferences);
-
-						if (sSubShape is Portal) m_lShapes.Add(sSubShape); 
-						else m_lShapesCustomRenderOrder.Add(sSubShape);
-					}					
+					HandleSubShapes(s);
 				}
 				else
 				{
@@ -540,6 +545,7 @@ namespace engine
 		{
 			m_fonter = new BasicFont();
 
+			// thread shape inits below
 			foreach(Shape s in m_lShapes)
 			{
 				s.InitializeLists();
@@ -1246,7 +1252,7 @@ namespace engine
 		private void DefinePortal(Portal p, int i)
 		{
 			// there's only one portal in all of these maps so don't need ot use index i
-			double dZOffset = .2f;
+			double dZOffset = .3f;
 
 			if(m_map.GetNick == "q3dm0")
 			{

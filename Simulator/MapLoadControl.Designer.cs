@@ -88,7 +88,7 @@
             this.m_lblDetail.Name = "m_lblDetail";
             this.m_lblDetail.Size = new System.Drawing.Size(482, 30);
             this.m_lblDetail.TabIndex = 4;
-            this.m_lblDetail.Text = "details";
+            this.m_lblDetail.Text = "";
             // 
             // m_lblPercentage
             // 

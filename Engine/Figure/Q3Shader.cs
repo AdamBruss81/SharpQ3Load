@@ -146,69 +146,7 @@ namespace engine
 
         public List<Q3ShaderStage> GetStages() { return m_lStages; }
 
-        public EStepType GetStepType() { return m_eStepType; }
-
-        /// <summary>
-        /// Get the shader file that contains the shader based on the texture from the vrml map file
-        /// This is sort of a guessing game at the moment
-        /// </summary>
-        /// <returns></returns>
-        private List<string> GetShaderFileName(string sPathFromVRML)
-        {
-            string[] tokens = sPathFromVRML.Split('/');
-
-            if (tokens.Length > 0)
-            {
-                if (tokens[1].Contains("liquid"))
-                    return new List<string>() { "liquid" };
-                else if (tokens[1].Contains("skies"))
-                    return new List<string>() { "sky" };
-                else if (tokens[1].Contains("sfx"))
-                    return new List<string>() { "sfx", "common" };
-                else if (tokens[1].Contains("skin"))
-                    return new List<string>() { "skin" };
-                else if (tokens[1].Contains("organics"))
-                    return new List<string>() { "organics", "skin" };
-                else if (tokens[1].Contains("base_wall"))
-                    return new List<string>() { "base_wall", "sfx" };
-                else if (tokens[1].Contains("base_button"))
-                    return new List<string>() { "base_button" };
-                else if (tokens[1].Contains("base_floor"))
-                    return new List<string>() { "base_floor" };
-                else if (tokens[1].Contains("base_light"))
-                    return new List<string>() { "base_light" };
-                else if (tokens[1].Contains("base_trim"))
-                    return new List<string>() { "base_trim" };
-                else if (tokens[1].Contains("gothic_floor"))
-                    return new List<string>() { "gothic_floor" };
-                else if (tokens[1].Contains("gothic_wall"))
-                    return new List<string>() { "gothic_wall" };
-                else if (tokens[1].Contains("gothic_block"))
-                    return new List<string>() { "gothic_block", "sfx", "gothic_trim" };
-                else if (tokens[1].Contains("gothic_light"))
-                    return new List<string>() { "gothic_light" };
-                else if (tokens[1].Contains("gothic_trim"))
-                    return new List<string>() { "gothic_trim" };
-                else if (tokens[1].Contains("gothic_door")) // for this the only way to know where to look is by looking through all the maps and seeing what doesn't look right
-                    return new List<string>() { "gothic_block" }; // i can't think of any programmatic way besides searching the entire set of shader files which I don't want to do
-                else if (tokens[1].Contains("common"))
-                    return new List<string>() { "common" };
-                else if (tokens[0].Contains("models"))
-                    return new List<string>() { "models", "sfx" };
-                else if (tokens[1].Contains("ctf"))
-                    return new List<string>() { "ctf" };
-                else if (tokens[1].Contains("base_support"))
-                    return new List<string>() { "base_support" };
-                else if (tokens[1].Contains("base_door"))
-                    return new List<string>() { "base_wall" };
-                /*else if (tokens[1].Contains("mapobjects"))
-                    return new List<string>() { "sfx" };*/
-                else
-                    return new List<string>();
-            }
-            else
-                return new List<string>();
-        }
+        public EStepType GetStepType() { return m_eStepType; }      
 
         private string GetTokensAfterFirst(string[] tokens)
         {
@@ -660,304 +598,369 @@ namespace engine
 
             // final clamp
             sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
-        }     
+        }
+
+        public static void ReadQ3ShaderContent(Dictionary<string, List<string>> dictShaderNameToShaderContent, Zipper zip)
+        {
+            zip.ExtractAllShaderFiles();
+
+            string[] shaders = Directory.GetFiles(Path.Combine(PATHS.GetTempDir, "scripts"), "*.shader");
+
+            try
+            {
+                foreach (string sShaderFile in shaders)
+                {
+                    StreamReader sr = new StreamReader(sShaderFile);
+                    string sCurrentShaderName = "";
+                    int nCurlyCounter = 0;
+
+                    while (!sr.EndOfStream)
+                    {
+                        string sLine = sr.ReadLine();
+
+                        if(sLine.Contains("textures/gothic_light/gothic_light3_2K"))
+                        {
+                            int stop = 0;
+                        }
+
+                        if(sLine.Contains("//"))
+                        {
+                            sLine = sLine.Substring(0, sLine.IndexOf("//"));
+                        }
+
+                        string sLineTrimmed = sLine.Trim().ToLower();
+
+                        if (sLine.Contains("//") || string.IsNullOrEmpty(sLineTrimmed)) continue;
+
+                        if (sLine.Contains("{"))
+                        {
+                            nCurlyCounter++;
+
+                            if (nCurlyCounter == 1)
+                            {
+                                // new q3 shader
+
+                                // HANDLE DUPLICATE SHADERS SOMEHOW. REPLACE. I ran into three and then decided to just overwrite anymore i find. will test later.
+                                if(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName))
+                                {
+                                    dictShaderNameToShaderContent.Remove(sCurrentShaderName);
+                                }
+
+                                System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == false);
+                                dictShaderNameToShaderContent[sCurrentShaderName] = new List<string>();
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);                                
+                            }
+
+                            dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
+                        }
+                        else if (sLine.Contains("}"))
+                        {
+                            nCurlyCounter--;
+
+                            if (nCurlyCounter == 0)
+                            {
+                                // end of current q3 shader
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
+                            }
+
+                            dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
+                        }
+                        else if (nCurlyCounter == 0) // new q3 shader name
+                        {
+                            sCurrentShaderName = sLineTrimmed;
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
+                            dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                System.Windows.Forms.MessageBox.Show(e.Message + "\n\n" + e.StackTrace);
+            }
+        }
 
         /// <summary>
         /// Reads the shader files and finds the right texture
         /// </summary>
         /// <returns></returns>
         public void ReadQ3Shader(string sPathFromVRML)
-        {            
-            List<string> lsShaderFilenames = GetShaderFileName(sPathFromVRML);
+        {          
+            string sPathNoExt = sPathFromVRML.Substring(0, sPathFromVRML.IndexOf(".")).ToLower();
+            List<string> lShaderLines;
+            bool bFound = GameGlobals.m_dictQ3ShaderContent.TryGetValue(sPathNoExt, out lShaderLines);
 
-            for (int i = 0; i < lsShaderFilenames.Count; i++)
+            if (bFound)
             {
-                string sShaderFilename = lsShaderFilenames[i];
-                string sInternalPathNoExtension = System.IO.Path.ChangeExtension(sPathFromVRML, null);
-
-                StreamReader sr = new StreamReader(m_zipper.ExtractShaderFile(sShaderFilename));
-                while (!sr.EndOfStream)
+                m_sShaderName = sPathNoExt;
+                int nCurlyCounter = 0;
+                for (int i = 0; i < lShaderLines.Count; i++)
                 {
-                    int nCurlyCounter = 0;
-                    string sLine = sr.ReadLine().ToLower();
+                    string sInsideTargetShaderLine = lShaderLines[i];
 
-                    if (sLine.Trim() == sInternalPathNoExtension.ToLower()) // found shader
+                    // read surface parameters
+                    if (sInsideTargetShaderLine.Contains("surfaceparm"))
                     {
-                        m_sShaderName = sPathFromVRML;
-
-                        // read until we eat open curly
-                        sLine = sr.ReadLine();
-                        while(!sLine.Contains("{"))
+                        if (sInsideTargetShaderLine.Contains("metalsteps"))
                         {
-                            sLine = sr.ReadLine();
+                            m_eStepType = EStepType.METAL;
                         }
+                        else if (sInsideTargetShaderLine.Contains("nosteps"))
+                        {
+                            m_eStepType = EStepType.NONE;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("trans"))
+                        {
+                            m_bTrans = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("alphashadow"))
+                        {
+                            m_bAlphaShadow = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("lava"))
+                        {
+                            m_bLava = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("slime"))
+                        {
+                            m_bSlime = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("nonsolid"))
+                        {
+                            m_bNonSolid = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("water"))
+                        {
+                            m_bWater = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("sky"))
+                        {
+                            m_bSky = true;
+                        }
+                        else if (sInsideTargetShaderLine.Contains("fog"))
+                        {
+                            m_bFog = true;
+                        }
+                    }
+                    else if (sInsideTargetShaderLine.Contains("sort"))
+                    {
+                        string[] tokens = sInsideTargetShaderLine.Trim().Split(' ');
+                        if (tokens.Length > 1)
+                        {
+                            m_sSort = tokens[1];
+                        }
+                    }
+                    else if (sInsideTargetShaderLine.Contains("cull"))
+                    {
+                        string[] tokens = GetTokens(sInsideTargetShaderLine);
+                        m_sCull = GetTokensAfterFirst(tokens);
+                    }
+                    else if (sInsideTargetShaderLine.Contains("q3map_lightimage"))
+                    {
+                        // this affects the initial color of outputColor
+                        // it sets it to the average color of the image
 
+                        string[] tokens = GetTokens(sInsideTargetShaderLine);
+
+                        bool bShouldBeTGA = false;
+                        string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bShouldBeTGA);
+                        if (File.Exists(sTexPath))
+                        {
+                            m_bLightImageShouldBeTGA = bShouldBeTGA;
+                            m_sLightImageFullPath = sTexPath;
+                        }
+                    }
+                    else if (sInsideTargetShaderLine.Contains("deformvertexes"))
+                    {
+                        string[] tokens = sInsideTargetShaderLine.Trim().Split(new Char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        DeformVertexes dv = new DeformVertexes();
+                        if (tokens.Length > 1)
+                        {
+                            if (tokens[1] == "wave") // only handle wave for now
+                            {
+                                dv.m_div = Convert.ToSingle(tokens[2]);
+                                dv.m_eType = DeformVertexes.EDeformVType.WAVE;
+                                Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 3);
+                                m_lDeformVertexes.Add(dv);
+                            }
+                            else if (tokens[1] == "bulge")
+                            {
+                                // deformvertexes bulge 3 10 1
+                                dv.m_Bulge = new DVBulge();
+                                dv.m_Bulge.m_bulgeWidth = Convert.ToSingle(tokens[2]);
+                                dv.m_Bulge.m_bulgeHeight = Convert.ToSingle(tokens[3]);
+                                dv.m_Bulge.m_bulgeSpeed = Convert.ToSingle(tokens[4]);
+                                dv.m_eType = DeformVertexes.EDeformVType.BULGE;
+                                m_lDeformVertexes.Add(dv);
+                            }
+                            else if (tokens[1] == "move")
+                            {
+                                // deformVertexes move 0 0 3   sin 0 5 0 0.1
+                                dv.m_Move = new DVMove();
+                                dv.m_Move.m_x = Convert.ToSingle(tokens[2]);
+                                dv.m_Move.m_y = Convert.ToSingle(tokens[3]);
+                                dv.m_Move.m_z = Convert.ToSingle(tokens[4]);
+                                dv.m_eType = DeformVertexes.EDeformVType.MOVE;
+                                Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 5);
+                                m_lDeformVertexes.Add(dv);
+                            }
+                            else
+                            {
+                                if (tokens[1] != "autosprite" && tokens[1] != "autosprite2" && tokens[1] != "normal") // not doing autosprite  or normal right now  
+                                    throw new Exception("Found deformvertexes with type " + tokens[1]);
+                            }
+                        }
+                    }
+
+                    // begin stage found
+                    // sometimes there is shader content after the open stage curly on the same line
+                    if (sInsideTargetShaderLine.Contains("{")) 
+                    {
                         nCurlyCounter++;
 
-                        while (true) // read found shader surface params and stages
+                        if (nCurlyCounter > 1)
                         {
-                            string sInsideTargetShaderLine = sr.ReadLine().ToLower();
+                            m_lStages.Add(new Q3ShaderStage(this));
+                        }
 
-                            if(sInsideTargetShaderLine.Contains("//"))
-                            {
-                                continue;
-                                // for now just avoid lines with comments in them
-                                // may need to make this smarter later for lines with comments
-                                // at end and valid stuff at beginning of line
-                            }
+                        // remove open curly from line
+                        int nCurIndex = sInsideTargetShaderLine.IndexOf("{");
+                        sInsideTargetShaderLine = sInsideTargetShaderLine.Substring(nCurIndex + 1);
+                    }
 
-                            // read surface parameters
-                            if (sInsideTargetShaderLine.Contains("surfaceparm"))
+                    if (nCurlyCounter > 1)
+                    {
+                        if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));
+                        }
+                        // read stage items
+                        else if (IsMapTexture(sInsideTargetShaderLine))
+                        {
+                            string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (tokens.Length == 2)
                             {
-                                if (sInsideTargetShaderLine.Contains("metalsteps"))
+                                if (tokens[0].Trim(new char[] { '\t' }) == "map" || tokens[0].Trim(new char[] { '\t' }) == "clampmap")
                                 {
-                                    m_eStepType = EStepType.METAL;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("nosteps"))
-                                {
-                                    m_eStepType = EStepType.NONE;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("trans"))
-                                {
-                                    m_bTrans = true;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("alphashadow"))
-                                {
-                                    m_bAlphaShadow = true;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("lava"))
-                                {
-                                    m_bLava = true;
-                                }
-                                else if (sInsideTargetShaderLine.Contains("slime"))
-                                {
-                                    m_bSlime = true;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("nonsolid"))
-                                {
-                                    m_bNonSolid = true;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("water"))
-                                {
-                                    m_bWater = true;
-                                } 
-                                else if(sInsideTargetShaderLine.Contains("sky"))
-                                {
-                                    m_bSky = true;
-                                }
-                                else if(sInsideTargetShaderLine.Contains("fog"))
-                                {
-                                    m_bFog = true;
-                                }
-                            }
-                            else if (sInsideTargetShaderLine.Contains("sort"))
-                            {
-                                string[] tokens = sInsideTargetShaderLine.Trim().Split(' ');
-                                if (tokens.Length > 1)
-                                {
-                                    m_sSort = tokens[1];
-                                }
-                            }
-                            else if (sInsideTargetShaderLine.Contains("cull"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_sCull = GetTokensAfterFirst(tokens);                                
-                            }
-                            else if(sInsideTargetShaderLine.Contains("q3map_lightimage"))
-                            {
-                                // this affects the initial color of outputColor
-                                // it sets it to the average color of the image
-
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-
-                                bool bShouldBeTGA = false;
-                                string sTexPath = GetPathToTextureNoShaderLookup(false, tokens[1], ref bShouldBeTGA);
-                                if(File.Exists(sTexPath))
-                                {
-                                    m_bLightImageShouldBeTGA = bShouldBeTGA;
-                                    m_sLightImageFullPath = sTexPath;
-                                } 
-                            }
-                            else if(sInsideTargetShaderLine.Contains("deformvertexes"))
-                            {                                
-                                string[] tokens = sInsideTargetShaderLine.Trim().Split(new Char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                                DeformVertexes dv = new DeformVertexes();
-                                if(tokens.Length > 1)
-                                {
-                                    if (tokens[1] == "wave") // only handle wave for now
+                                    m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
+                                    if (sInsideTargetShaderLine.Contains("clampmap"))
                                     {
-                                        dv.m_div = Convert.ToSingle(tokens[2]);
-                                        dv.m_eType = DeformVertexes.EDeformVType.WAVE;
-                                        Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 3);
-                                        m_lDeformVertexes.Add(dv);
-                                    }
-                                    else if(tokens[1] == "bulge")
-                                    {
-                                        // deformvertexes bulge 3 10 1
-                                        dv.m_Bulge = new DVBulge();
-                                        dv.m_Bulge.m_bulgeWidth = Convert.ToSingle(tokens[2]);
-                                        dv.m_Bulge.m_bulgeHeight = Convert.ToSingle(tokens[3]);
-                                        dv.m_Bulge.m_bulgeSpeed = Convert.ToSingle(tokens[4]);
-                                        dv.m_eType = DeformVertexes.EDeformVType.BULGE;
-                                        m_lDeformVertexes.Add(dv);
-                                    }
-                                    else if(tokens[1] == "move")
-                                    {
-                                        // deformVertexes move 0 0 3   sin 0 5 0 0.1
-                                        dv.m_Move = new DVMove();
-                                        dv.m_Move.m_x = Convert.ToSingle(tokens[2]);
-                                        dv.m_Move.m_y = Convert.ToSingle(tokens[3]);
-                                        dv.m_Move.m_z = Convert.ToSingle(tokens[4]);
-                                        dv.m_eType = DeformVertexes.EDeformVType.MOVE;
-                                        Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 5);
-                                        m_lDeformVertexes.Add(dv);
-                                    }   
-                                    else
-                                    {                                        
-                                        if (tokens[1] != "autosprite" && tokens[1] != "autosprite2" && tokens[1] != "normal") // not doing autosprite  or normal right now  
-                                            throw new Exception("Found deformvertexes with type " + tokens[1]);
+                                        m_lStages[m_lStages.Count - 1].SetClampmap(true);
                                     }
                                 }
-                            }
-
-                            // begin stage found
-                            // sometimes there is shader content after the open stage curly on the same line
-                            if (sInsideTargetShaderLine.Contains("{"))
-                            {
-                                m_lStages.Add(new Q3ShaderStage(this));
-                                nCurlyCounter++;
-
-                                // remove open curly from line
-                                int nCurIndex = sInsideTargetShaderLine.IndexOf("{");
-                                sInsideTargetShaderLine = sInsideTargetShaderLine.Substring(nCurIndex + 1);
-                            }
-
-                            if (sInsideTargetShaderLine.Contains("animmap")) // this needs to be before the map texture one
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetAnimmap(GetTokensAfterFirst(tokens));
-                            }
-                            // read stage items
-                            else if (IsMapTexture(sInsideTargetShaderLine))
-                            {
-                                string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                                if (tokens.Length == 2)
-                                {
-                                    if (tokens[0].Trim(new char[] { '\t' }) == "map" || tokens[0].Trim(new char[] { '\t' }) == "clampmap")
-                                    {
-                                        m_lStages[m_lStages.Count - 1].SetTexturePath(tokens[1]);
-                                        if (sInsideTargetShaderLine.Contains("clampmap"))
-                                        {
-                                            m_lStages[m_lStages.Count - 1].SetClampmap(true);
-                                        }
-                                    }
-                                }
-                            }
-                            else if (sInsideTargetShaderLine.Contains("rgbgen"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetRGBGEN(GetTokensAfterFirst(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("blendfunc"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("alphagen"))
-                            {
-                                if (!sInsideTargetShaderLine.Contains("portal")) // don't handle portal
-                                {
-                                    string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                    m_lStages[m_lStages.Count - 1].SetAlphaGen(GetTokensAfterFirst(tokens));
-                                }
-                            }
-                            else if (sInsideTargetShaderLine.Contains("alphafunc"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetAlphaFunc(GetTokensAfterFirst(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("tcmod scroll"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetTCModScroll(GetTokensAfterSecond(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("tcmod turb"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetTCModTurb(GetTokensAfterSecond(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("tcmod rotate"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-
-                                string sRotate = GetTokensAfterSecond(tokens);
-                                float fRotate;
-                                if(Single.TryParse(sRotate, out fRotate))
-                                {
-                                    // the portal in dm0 has a rotate value of .1 .1. i think this means to rotate back and forth a tiny bit.saw
-                                    // for now just ignore this. maybe implement later. funny that the shader manual doesn't mention this.
-                                    // i find lots of little things the shader manual doesn't mention but are in the built in q3 maps.
-                                    // it's amusing because it gives you insight into the development process of q3 and id
-                                    m_lStages[m_lStages.Count - 1].SetTCMODRotate(fRotate);
-                                }                                
-                            }
-                            else if (sInsideTargetShaderLine.Contains("tcmod stretch"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetTCMODStretch(GetTokensAfterSecond(tokens));
-                            }
-                            else if (sInsideTargetShaderLine.Contains("tcmod scale"))
-                            {
-                                string[] tokens = GetTokens(sInsideTargetShaderLine);
-                                m_lStages[m_lStages.Count - 1].SetTCModeScale(GetTokensAfterSecond(tokens));
-                            }
-                            else if(sInsideTargetShaderLine.Contains("tcgen environment"))
-                            {
-                                m_lStages[m_lStages.Count - 1].SetTCGEN_CS("environment");
-                            }
-                            else if(sInsideTargetShaderLine.Contains("$lightmap"))
-                            {
-                                // for example the jesus wall has a lightmap stage but there is no lightmap
-                                // try ignoring this then
-                                if (m_pParent.GetLightmapTexture() != null)
-                                    m_lStages[m_lStages.Count - 1].SetLightmap(true);
-                                else 
-                                    m_lStages[m_lStages.Count - 1].SetSkip(true);
-                            }
-                            // end stage reading                            
-                            else if (sInsideTargetShaderLine.Contains("}")) // end of stage
-                            {
-                                nCurlyCounter--;
-
-                                if (nCurlyCounter == 0)
-                                    break; // end of shader
-                                
-                                // this is a good spot to exit out of the shader reading process to debug shaders
-                                // exit out after stages one by one to test stages one by one
-                                if(m_sShaderName.Contains("jesuswall"))
-                                {
-                                    if(m_lStages.Count == 1)
-                                    {
-                                        //m_lStages[1].SetSkip(true);
-                                        //break;
-
-                                        // you can break out after reading some of the stages and test
-                                        // or you can set certain stages to skip rendering
-
-                                        //break;
-                                        //m_lStages[2].SetSkip(true);
-                                    }
-                                }
-
-                                m_lStages[m_lStages.Count - 1].SetCustomRenderRules();
                             }
                         }
-                        break;
+                        else if (sInsideTargetShaderLine.Contains("rgbgen"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetRGBGEN(GetTokensAfterFirst(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("blendfunc"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetBlendFunc(GetTokensAfterFirst(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("alphagen"))
+                        {
+                            if (!sInsideTargetShaderLine.Contains("portal")) // don't handle portal
+                            {
+                                string[] tokens = GetTokens(sInsideTargetShaderLine);
+                                m_lStages[m_lStages.Count - 1].SetAlphaGen(GetTokensAfterFirst(tokens));
+                            }
+                        }
+                        else if (sInsideTargetShaderLine.Contains("alphafunc"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetAlphaFunc(GetTokensAfterFirst(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("tcmod scroll"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetTCModScroll(GetTokensAfterSecond(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("tcmod turb"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetTCModTurb(GetTokensAfterSecond(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("tcmod rotate"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+
+                            string sRotate = GetTokensAfterSecond(tokens);
+                            float fRotate;
+                            if (Single.TryParse(sRotate, out fRotate))
+                            {
+                                // the portal in dm0 has a rotate value of .1 .1. i think this means to rotate back and forth a tiny bit.saw
+                                // for now just ignore this. maybe implement later. funny that the shader manual doesn't mention this.
+                                // i find lots of little things the shader manual doesn't mention but are in the built in q3 maps.
+                                // it's amusing because it gives you insight into the development process of q3 and id
+                                m_lStages[m_lStages.Count - 1].SetTCMODRotate(fRotate);
+                            }
+                        }
+                        else if (sInsideTargetShaderLine.Contains("tcmod stretch"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetTCMODStretch(GetTokensAfterSecond(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("tcmod scale"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetTCModeScale(GetTokensAfterSecond(tokens));
+                        }
+                        else if (sInsideTargetShaderLine.Contains("tcgen environment"))
+                        {
+                            m_lStages[m_lStages.Count - 1].SetTCGEN_CS("environment");
+                        }
+                        else if (sInsideTargetShaderLine.Contains("$lightmap"))
+                        {
+                            // for example the jesus wall has a lightmap stage but there is no lightmap
+                            // try ignoring this then
+                            if (m_pParent.GetLightmapTexture() != null)
+                                m_lStages[m_lStages.Count - 1].SetLightmap(true);
+                            else
+                                m_lStages[m_lStages.Count - 1].SetSkip(true);
+                        }
+
+                        // end stage reading                            
+                        if (sInsideTargetShaderLine.Contains("}")) // end of stage
+                        {
+                            nCurlyCounter--;
+
+                            if (nCurlyCounter == 0)
+                                break; // end of shader
+
+                            // this is a good spot to exit out of the shader reading process to debug shaders
+                            // exit out after stages one by one to test stages one by one
+                            if (m_sShaderName.Contains("jesuswall"))
+                            {
+                                if (m_lStages.Count == 1)
+                                {
+                                    //m_lStages[1].SetSkip(true);
+                                    //break;
+
+                                    // you can break out after reading some of the stages and test
+                                    // or you can set certain stages to skip rendering
+
+                                    //break;
+                                    //m_lStages[2].SetSkip(true);
+                                }
+                            }
+
+                            m_lStages[m_lStages.Count - 1].SetCustomRenderRules();
+                        }
                     }
                 }
-                sr.Close();
-
-                if (!string.IsNullOrEmpty(m_sShaderName)) break;
             }
         }
 

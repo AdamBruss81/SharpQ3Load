@@ -12,6 +12,7 @@ using System.IO;
 using System;
 using Microsoft.VisualBasic.FileIO;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace engine
 {
@@ -187,6 +188,7 @@ namespace engine
 		public static float m_fFrameStartElapsedS = 0f;
 		public static long m_fFrameStartElapsedMS = 0;
 		public static float[] m_SinTable = new float[1024];
+		public static Dictionary<string, List<string>> m_dictQ3ShaderContent = new Dictionary<string, List<string>>();
 
 		public static long GetElapsedMS() { return m_fFrameStartElapsedMS; }
 		public static float GetElapsedS() { return m_fFrameStartElapsedS; }
@@ -195,13 +197,16 @@ namespace engine
 
 		public static bool IsPortalEntry(string sPath) { return sPath.Contains("sfx/portal_sfx.jpg"); }
 
-		public static void InitTables()
+		public static void InitTables(Zipper zipper)
 		{
 			for (int i = 0; i < 1024; i++)
 			{
 				// sin( DEG2RAD( i * 360.0f / ( ( float ) ( FUNCTABLE_SIZE - 1 ) ) ) );
 				m_SinTable[i] = (float)Math.Sin(utilities.GLB.GoDegToRad(i * 360.0 / 1023.0));
 			}
-		}
+
+            // read in all q3 shaders once here and then use in shapes instead of searching for the q3 shader shaders for every shape 
+            Q3Shader.ReadQ3ShaderContent(m_dictQ3ShaderContent, zipper);
+        }
 	}
 }

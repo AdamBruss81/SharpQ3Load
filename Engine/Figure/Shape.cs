@@ -397,6 +397,7 @@ namespace engine
 							}
 						case TCMOD.ETYPE.TURB:
 							{
+								// get rid of sintable usage for now until i get to fixing this again
 								sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
 
 								sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( vertice.x + vertice.z ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
@@ -522,7 +523,6 @@ namespace engine
 					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
 					if (File.Exists(sNonShaderTexture))
 						t.SetTexture(sNonShaderTexture, bShouldBeTGA, m_q3Shader.GetShaderName());
-					// else: should be using q3 shader then. no need to set t to anything. it represents the shader.
 				}
 				else
 				{
@@ -832,7 +832,7 @@ namespace engine
 			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
 
 			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3") ||
-				sShaderName.Contains("teleporter/energy") || sShaderName.Contains("bot_flare") || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
+				sShaderName.Contains("teleporter/energy") || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
 			// slamp2 are the bulbs under the skull lights
@@ -864,7 +864,7 @@ namespace engine
 		public D3Vect GetMidpoint() { return m_d3MidPoint; }
 
         private static int CompareFaces(Face f1, Face f2)
-        {
+          {
             D3Vect disOne = f1.GetMidpoint() - GameGlobals.m_CamPosition;
             D3Vect disTwo = f2.GetMidpoint() - GameGlobals.m_CamPosition;
 
@@ -1207,7 +1207,7 @@ namespace engine
 			string sTex = GetMainTexture().GetPath();
 			return sTex.Contains("ctf/blue_telep") || sTex.Contains("ctf/red_telep") ||
 				sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") || sTex.Contains("spotlamp/beam") ||
-				sTex.Contains("sfx/console03");
+				sTex.Contains("sfx/console03") || sTex.Contains("bot_flare") || sTex.Contains("lamps/beam");
 		}
 
         private List<List<int>> GetMatchedFaces(List<List<int>> lCoordIndicesCopy, List<int> face)

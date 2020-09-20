@@ -49,6 +49,11 @@ namespace engine
 			return sFullPathToExtractedFile;
 		}
 
+        public void ExtractAllShaderFiles()
+        {
+            zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, FastZip.Overwrite.Never, null, "scripts/*.*", "", false);
+        }
+
         public string ExtractShaderFile(string sShaderName)
         {
             if (string.IsNullOrEmpty(sShaderName)) throw new Exception("Invalid path to extract");

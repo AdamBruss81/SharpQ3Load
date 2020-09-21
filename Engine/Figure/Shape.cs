@@ -845,7 +845,7 @@ namespace engine
 		public void ShowWireframe()
 		{
 			// for debugging can only show certain shapes here
-			if (!m_q3Shader.GetShaderName().Contains("beam")) return;
+			if (!m_q3Shader.GetShaderName().Contains("flame")) return;
 
 			for (int i = 0; i < m_lFaces.Count; i++)
 				m_lFaces[i].Draw(Engine.EGraphicsMode.WIREFRAME);
@@ -863,13 +863,40 @@ namespace engine
 
 		public D3Vect GetMidpoint() { return m_d3MidPoint; }
 
+		/// <summary>
+		/// Sort faces back to front from viewer. That's why we do disTwo length compared to disOne length.
+		/// say disTwo length is 2 and disOne length is 1
+		/// We want disTwo to be higher up in list so we do 2.compareto(1)
+		/// this sorts descending
+		/// </summary>
+		/// <param name="f1"></param>
+		/// <param name="f2"></param>
+		/// <returns></returns>
         private static int CompareFaces(Face f1, Face f2)
-          {
-            D3Vect disOne = f1.GetMidpoint() - GameGlobals.m_CamPosition;
-            D3Vect disTwo = f2.GetMidpoint() - GameGlobals.m_CamPosition;
+        {
+			D3Vect camTof1V1 = f1.GetVertices[0] - GameGlobals.m_CamPosition;
+			double dLenf1v1 = camTof1V1.Length;
 
-            return disTwo.Length.CompareTo(disOne.Length);
-        }
+			D3Vect camTof1V2 = f1.GetVertices[1] - GameGlobals.m_CamPosition;
+			double dLenf1v2 = camTof1V2.Length;
+
+			D3Vect camTof1V3 = f1.GetVertices[2] - GameGlobals.m_CamPosition;
+			double dLenf1v3 = camTof1V3.Length;
+
+			D3Vect camTof2V1 = f2.GetVertices[0] - GameGlobals.m_CamPosition;
+			double dLenf2v1 = camTof2V1.Length;
+
+			D3Vect camTof2V2 = f2.GetVertices[1] - GameGlobals.m_CamPosition;
+			double dLenf2v2 = camTof2V2.Length;
+
+			D3Vect camTof2V3 = f2.GetVertices[2] - GameGlobals.m_CamPosition;
+			double dLenf2v3 = camTof2V3.Length;
+
+			double dMax1 = Math.Max(Math.Max(dLenf1v1, dLenf1v2), dLenf1v3);
+			double dMax2 = Math.Max(Math.Max(dLenf2v1, dLenf2v2), dLenf2v3);
+
+			return dMax2.CompareTo(dMax1);
+		}
 
         private void SortFaces()
 		{
@@ -925,7 +952,7 @@ namespace engine
 
 			GL.BindVertexArray(VertexArrayObject);
 
-			if(DoDistanceTest())
+			if(DoDistanceTest() && !m_q3Shader.GetShaderName().Contains("flame")) // don't need to sort flame faces inside shape. will sort flame shapes against each other.
 			{
 				SortFaces();
 			}
@@ -1207,7 +1234,8 @@ namespace engine
 			string sTex = GetMainTexture().GetPath();
 			return sTex.Contains("ctf/blue_telep") || sTex.Contains("ctf/red_telep") ||
 				sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") || sTex.Contains("spotlamp/beam") ||
-				sTex.Contains("sfx/console03") || sTex.Contains("bot_flare") || sTex.Contains("lamps/beam");
+				sTex.Contains("sfx/console03") || sTex.Contains("bot_flare") || sTex.Contains("lamps/beam") ||
+				sTex.Contains("teleporter/energy") || sTex.Contains("flame");
 		}
 
         private List<List<int>> GetMatchedFaces(List<List<int>> lCoordIndicesCopy, List<int> face)

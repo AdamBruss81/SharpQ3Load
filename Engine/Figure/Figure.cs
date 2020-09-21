@@ -342,10 +342,29 @@ namespace engine
             if (s1 == null) return -1;
             if (s2 == null) return 1;
 
-			D3Vect disOne = s1.GetMidpoint() - GameGlobals.m_CamPosition;
-			D3Vect disTwo = s2.GetMidpoint() - GameGlobals.m_CamPosition;
+			if (s1.GetQ3Shader().GetShaderName().Contains("flame") && s2.GetQ3Shader().GetShaderName().Contains("flame"))
+			{
+				Face f1 = s1.GetMapFaces()[0];
+				Face f2 = s2.GetMapFaces()[0]; // all flame objects as far as i know are made of two faces on the same plane
 
-			return disTwo.Length.CompareTo(disOne.Length);
+				// take dot of cam to shape midpoint and face normal
+				D3Vect camVec1 = s1.GetMidpoint() - GameGlobals.m_CamPosition;
+				camVec1.normalize();
+				double dot1 = D3Vect.DotProduct(camVec1, f1.GetNormal);
+
+                D3Vect camVec2 = s2.GetMidpoint() - GameGlobals.m_CamPosition;
+				camVec2.normalize();
+                double dot2 = D3Vect.DotProduct(camVec2, f2.GetNormal);
+
+				return Math.Abs(dot2).CompareTo(Math.Abs(dot1));
+            }
+			else
+			{
+				D3Vect disOne = s1.GetMidpoint() - GameGlobals.m_CamPosition;
+				D3Vect disTwo = s2.GetMidpoint() - GameGlobals.m_CamPosition;
+
+				return disTwo.Length.CompareTo(disOne.Length);
+			}
 		}
 
 		private void HandleSubShapes(Shape s)

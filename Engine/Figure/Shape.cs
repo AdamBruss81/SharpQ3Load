@@ -38,6 +38,8 @@ namespace engine
 																		  // could also be used later to control properties of jumppads
 		D3Vect m_d3MidPoint = null;
 		bool m_bSubShape = false;
+		bool m_bMergeReceiver = false;
+		bool m_bMergeSource = false;
 
 		// shader utility members for performance
 		float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
@@ -59,7 +61,6 @@ namespace engine
 		const string m_sChannelOneTextureCoordinatesHeader = "texCoord  TextureCoordinate { point [";
 		const string m_sMeshCoordinatesHeader = "coord Coordinate { point [";
 		const string m_sCoordinateIndexHeader = "coordIndex [";
-		private const string g_sDefaultTexture = "textures/base_floor/clang_floor.jpg";
 
 		ETextureType m_TextureType;
 
@@ -81,6 +82,41 @@ namespace engine
 			m_TextureType = s.m_TextureType;
 			m_q3Shader = new Q3Shader(this);
 		}
+
+		public void Merge(Shape s)
+		{
+			m_bMergeReceiver = true;
+			s.m_bMergeSource = true;
+
+			int nOriginalVertCount = m_lVertices.Count;
+			m_lVertices.AddRange(s.m_lVertices);
+
+			System.Diagnostics.Debug.Assert(s.m_lTexCoordinates.Count == m_lTexCoordinates.Count);
+			for(int i = 0; i < s.m_lTexCoordinates.Count; i++)
+			{
+				m_lTexCoordinates[i].AddRange(s.m_lTexCoordinates[i]);
+			}
+
+			m_lVerticeColors.AddRange(s.m_lVerticeColors);
+			m_lFaces.AddRange(s.m_lFaces);
+
+			int nFaceCount = m_lCoordinateIndexes.Count;
+			for(int i = 0; i < s.m_lCoordinateIndexes.Count; i++)
+			{
+				List<int> lCoordIndicesNew = s.m_lCoordinateIndexes[i];
+				lCoordIndicesNew[0] += nOriginalVertCount;
+				lCoordIndicesNew[1] += nOriginalVertCount;
+				lCoordIndicesNew[2] += nOriginalVertCount;
+				m_lCoordinateIndexes.Add(lCoordIndicesNew);
+
+				m_lFaces[nFaceCount + i].SetIndices(lCoordIndicesNew);
+			}
+
+			s.m_lCoordinateIndexes.Clear(); // s stays the same except that it now has no faces to render. it still has
+			// its faces for collision detection
+		}
+
+		public bool IsMergeSource() { return m_bMergeSource; }
 
 		public void Delete()
 		{
@@ -663,7 +699,7 @@ namespace engine
 			return m_lFaces.IndexOf(f);
 		}
 
-		public void ReadMain(List<Texture> lTextures, StreamReader sr, List<Face> lFaceReferences, ref int nCounter)
+		public bool ReadMain(List<Texture> lTextures, StreamReader sr, ref int nCounter)
 		{
 			m_lTextures = new List<Texture>(lTextures);
 			m_TextureType = lTextures.Count == 2 ? Shape.ETextureType.MULTI : Shape.ETextureType.SINGLE;
@@ -676,12 +712,7 @@ namespace engine
 				m_lTextures.Add(tLM);
 			}
 
-			if (Read(sr, ref nCounter))
-			{
-				CreateFaces(lFaceReferences);
-			}
-			else
-				throw new Exception("Error in reading shape data from file");
+			return Read(sr, ref nCounter);			
 		}
 
 		public void CreateFaces(List<Face> lFaceReferences)
@@ -716,16 +747,13 @@ namespace engine
 				faceVertColors.Clear();
 			}
 
-			if (m_bSubShape)
+			// calculate mid point based on faces
+			m_d3MidPoint = new D3Vect();
+			for (int i = 0; i < m_lFaces.Count; i++)
 			{
-				// calculate mid point based on faces
-				m_d3MidPoint = new D3Vect();
-				for (int i = 0; i < m_lFaces.Count; i++)
-				{
-					m_d3MidPoint += m_lFaces[i].GetMidpoint();
-				}
-				m_d3MidPoint /= m_lFaces.Count;
+				m_d3MidPoint += m_lFaces[i].GetMidpoint();
 			}
+			m_d3MidPoint /= m_lFaces.Count;			
 		}
 
 		public bool IsSky()
@@ -750,6 +778,9 @@ namespace engine
 				if (sName.Contains("fog") || sName.Contains("clip"))
 					bRender = false;
 			}
+			if (bRender) 
+				bRender = m_lCoordinateIndexes.Count > 0;
+
 			return !bRender;
 		}
 
@@ -831,7 +862,7 @@ namespace engine
 
 			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
 
-			if (sShaderName.Contains("flame") || sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3") ||
+			if (sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3") ||
 				sShaderName.Contains("teleporter/energy") || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
@@ -852,12 +883,12 @@ namespace engine
 
 			if (STATE.DrawFaceNormals)
 			{
-				//DrawFaceNormals();
+				DrawFaceNormals();
 
-				for (int i = 0; i < m_lVerticeNormals.Count; i++)
+				/*for (int i = 0; i < m_lVerticeNormals.Count; i++)
 				{
 					Face.DrawNormalStatic(m_lVerticeNormals[i], m_lVertices[i], 0.1, new Color(100, 100, 0), new Color(50, 100, 150));
-				}
+				}*/
 			}
 		}
 
@@ -874,29 +905,46 @@ namespace engine
 		/// <returns></returns>
         private static int CompareFaces(Face f1, Face f2)
         {
-			D3Vect camTof1V1 = f1.GetVertices[0] - GameGlobals.m_CamPosition;
-			double dLenf1v1 = camTof1V1.Length;
+            D3Vect camTof1V1 = f1.GetVertices[0] - GameGlobals.m_CamPosition;
+            double dLenf1v1 = camTof1V1.Length;
 
-			D3Vect camTof1V2 = f1.GetVertices[1] - GameGlobals.m_CamPosition;
-			double dLenf1v2 = camTof1V2.Length;
+            D3Vect camTof1V2 = f1.GetVertices[1] - GameGlobals.m_CamPosition;
+            double dLenf1v2 = camTof1V2.Length;
 
-			D3Vect camTof1V3 = f1.GetVertices[2] - GameGlobals.m_CamPosition;
-			double dLenf1v3 = camTof1V3.Length;
+            D3Vect camTof1V3 = f1.GetVertices[2] - GameGlobals.m_CamPosition;
+            double dLenf1v3 = camTof1V3.Length;
 
-			D3Vect camTof2V1 = f2.GetVertices[0] - GameGlobals.m_CamPosition;
-			double dLenf2v1 = camTof2V1.Length;
+            D3Vect camTof2V1 = f2.GetVertices[0] - GameGlobals.m_CamPosition;
+            double dLenf2v1 = camTof2V1.Length;
 
-			D3Vect camTof2V2 = f2.GetVertices[1] - GameGlobals.m_CamPosition;
-			double dLenf2v2 = camTof2V2.Length;
+            D3Vect camTof2V2 = f2.GetVertices[1] - GameGlobals.m_CamPosition;
+            double dLenf2v2 = camTof2V2.Length;
 
-			D3Vect camTof2V3 = f2.GetVertices[2] - GameGlobals.m_CamPosition;
-			double dLenf2v3 = camTof2V3.Length;
+            D3Vect camTof2V3 = f2.GetVertices[2] - GameGlobals.m_CamPosition;
+            double dLenf2v3 = camTof2V3.Length;
 
-			double dMax1 = Math.Max(Math.Max(dLenf1v1, dLenf1v2), dLenf1v3);
-			double dMax2 = Math.Max(Math.Max(dLenf2v1, dLenf2v2), dLenf2v3);
+            double dMax1 = Math.Max(Math.Max(dLenf1v1, dLenf1v2), dLenf1v3);
+            double dMax2 = Math.Max(Math.Max(dLenf2v1, dLenf2v2), dLenf2v3);
 
-			return dMax2.CompareTo(dMax1);
-		}
+            return dMax2.CompareTo(dMax1);
+        }
+
+        private static int CompareFlames(Face f1, Face f2)
+        {
+			string s1 = f1.GetParentShape().GetQ3Shader().GetShaderName();
+			string s2 = f2.GetParentShape().GetQ3Shader().GetShaderName();
+
+			// take dot of cam to shape midpoint and face normal
+			D3Vect camVec1 = f1.GetMidpoint() - GameGlobals.m_CamPosition;
+            camVec1.normalize();
+            double dot1 = D3Vect.DotProduct(camVec1, f1.GetNormal);
+
+            D3Vect camVec2 = f2.GetMidpoint() - GameGlobals.m_CamPosition;
+            camVec2.normalize();
+            double dot2 = D3Vect.DotProduct(camVec2, f2.GetNormal);
+
+            return Math.Abs(dot2).CompareTo(Math.Abs(dot1));
+        }
 
         private void SortFaces()
 		{
@@ -906,9 +954,16 @@ namespace engine
 			// should be decently fast
 			// i don't think it matters what order the faces are in m_lFaces
 
-			m_lFaces.Sort(CompareFaces);
+			if (m_q3Shader.GetShaderName().Contains("flame"))
+			{
+				m_lFaces.Sort(CompareFlames);
+			}
+			else
+			{
+				m_lFaces.Sort(CompareFaces);
+			}
 
-			for(int i = 0; i < m_lFaces.Count; i++)
+			for( int i = 0; i < m_lFaces.Count; i++)
 			{				
 				m_arIndices[i * 3] = m_lFaces[i].GetIndice(0);
 				m_arIndices[i * 3 + 1] = m_lFaces[i].GetIndice(1);
@@ -952,7 +1007,7 @@ namespace engine
 
 			GL.BindVertexArray(VertexArrayObject);
 
-			if(DoDistanceTest() && !m_q3Shader.GetShaderName().Contains("flame")) // don't need to sort flame faces inside shape. will sort flame shapes against each other.
+			if(DoDistanceTest()) 
 			{
 				SortFaces();
 			}
@@ -1134,6 +1189,8 @@ namespace engine
 
 		private void DrawFaceNormals()
 		{
+			if (!m_q3Shader.GetShaderName().Contains("flame")) return;
+
 			for (int i = 0; i < m_lFaces.Count; i++)
 			{
 				m_lFaces[i].DrawNormals();
@@ -1296,7 +1353,7 @@ namespace engine
 		{
 			bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
 
-			if (!m_bSubShape && DoDistanceTest() || bPortal)
+			if (!m_bSubShape && bPortal)
 			{
 				List<List<int>> lCoordIndicesCopy = new List<List<int>>(m_lCoordinateIndexes);
 

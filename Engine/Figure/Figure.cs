@@ -43,7 +43,7 @@ namespace engine
 		List<BoundingBox> m_lLeafBoundingBoxes = new List<BoundingBox>();
 
 		protected List<Shape> m_lShapes = new List<Shape>();
-		protected List<Shape> m_lShapesCustomRenderOrder = new List<Shape>();
+		protected List<Tuple<string, string>> m_lShapesToCombine = new List<Tuple<string, string>>();
 
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
@@ -90,6 +90,9 @@ namespace engine
 			m_lBoxColors.Add(new Color(155, 48, 255));
 			m_lBoxColors.Add(new Color(238, 121, 159));
 			m_BSPRootBoundingBox = new BoundingBox(this);
+
+			m_lShapesToCombine.Add(new Tuple<string, string>("sfx/flame1dark", "sfx/flame1side"));
+			m_lShapesToCombine.Add(new Tuple<string, string>("sfx/flame1", "sfx/flame1side"));
 		}
 
 		public int GetNumFaces
@@ -101,7 +104,7 @@ namespace engine
 
 		public int GetNumShapes
 		{
-			get { return m_lShapes.Count + m_lShapesCustomRenderOrder.Count; }
+			get { return m_lShapes.Count; }
 		}
 
 		public int GetNumViewPoints 
@@ -153,9 +156,6 @@ namespace engine
 				for (int i = 0; i < m_lShapes.Count; i++)
 					m_lShapes[i].ShowWireframe();
 
-                for (int i = 0; i < m_lShapesCustomRenderOrder.Count; i++)
-					m_lShapesCustomRenderOrder[i].ShowWireframe();
-
                 sgl.POPATT();
 			}
 			else
@@ -164,12 +164,6 @@ namespace engine
 
 				for (int i = 0; i < m_lShapes.Count; i++)
 					m_lShapes[i].Show();
-
-				// sort custom render order list
-				m_lShapesCustomRenderOrder.Sort(CompareShapesByCamDistance);
-
-                for (int i = 0; i < m_lShapesCustomRenderOrder.Count; i++)
-					m_lShapesCustomRenderOrder[i].Show();
 
                 sgl.POPATT();
 			}
@@ -316,17 +310,7 @@ namespace engine
 				s.Delete();
 			}
 
-            foreach (Shape s in m_lShapesCustomRenderOrder)
-            {
-                s.Delete();
-            }
-
             if (m_fonter != null) m_fonter.Delete();
-		}
-
-		private static bool TextureShouldRenderAtEnd(string sTexturePath)
-		{
-			return sTexturePath.Contains("models");
 		}
 
         private static int CompareShapes(Shape s1, Shape s2)
@@ -335,37 +319,7 @@ namespace engine
 			if (s2 == null) return 1;
 
 			return s1.GetRenderOrder().CompareTo(s2.GetRenderOrder());
-        }
-
-        private static int CompareShapesByCamDistance(Shape s1, Shape s2)
-        {
-            if (s1 == null) return -1;
-            if (s2 == null) return 1;
-
-			if (s1.GetQ3Shader().GetShaderName().Contains("flame") && s2.GetQ3Shader().GetShaderName().Contains("flame"))
-			{
-				Face f1 = s1.GetMapFaces()[0];
-				Face f2 = s2.GetMapFaces()[0]; // all flame objects as far as i know are made of two faces on the same plane
-
-				// take dot of cam to shape midpoint and face normal
-				D3Vect camVec1 = s1.GetMidpoint() - GameGlobals.m_CamPosition;
-				camVec1.normalize();
-				double dot1 = D3Vect.DotProduct(camVec1, f1.GetNormal);
-
-                D3Vect camVec2 = s2.GetMidpoint() - GameGlobals.m_CamPosition;
-				camVec2.normalize();
-                double dot2 = D3Vect.DotProduct(camVec2, f2.GetNormal);
-
-				return Math.Abs(dot2).CompareTo(Math.Abs(dot1));
-            }
-			else
-			{
-				D3Vect disOne = s1.GetMidpoint() - GameGlobals.m_CamPosition;
-				D3Vect disTwo = s2.GetMidpoint() - GameGlobals.m_CamPosition;
-
-				return disTwo.Length.CompareTo(disOne.Length);
-			}
-		}
+        }     
 
 		private void HandleSubShapes(Shape s)
 		{
@@ -390,8 +344,47 @@ namespace engine
 				sSubShape.CreateFaces(m_lMapFaceReferences);
 
 				if (sSubShape is Portal) m_lShapes.Add(sSubShape);
-				else m_lShapesCustomRenderOrder.Add(sSubShape);
+				else throw new Exception("Unknown subshape");
 			}
+		}
+
+		private void ProcessEquivalents(Shape sNewShape)
+		{
+			bool bNewShapeIsEquivType = false;
+			Tuple<string, string> tup = null;
+			for (int i = 0; i < m_lShapesToCombine.Count; i++)
+			{
+				if (sNewShape.GetMainTexture().GetPath().Contains(m_lShapesToCombine[i].Item1) ||
+					sNewShape.GetMainTexture().GetPath().Contains(m_lShapesToCombine[i].Item2))
+				{
+					bNewShapeIsEquivType = true;
+					tup = m_lShapesToCombine[i];
+				}
+			}
+
+			Shape shapeToMergeWith = null;
+			bool bMerge = false;
+			if (bNewShapeIsEquivType)
+			{
+				for (int i = 0; i < m_lShapes.Count; i++)
+				{
+					if (m_lShapes[i].IsMergeSource()) continue;
+
+					if (m_lShapes[i].GetMainTexture().GetPath().Contains(tup.Item1) ||
+						m_lShapes[i].GetMainTexture().GetPath().Contains(tup.Item2))
+					{
+						bMerge = true;
+						shapeToMergeWith = m_lShapes[i];
+					}
+				}
+			}
+
+			if (bNewShapeIsEquivType && bMerge) // merge new shape to existing one and return null
+			{
+				shapeToMergeWith.Merge(sNewShape);
+			}
+
+			return;
 		}
 
 		/// <summary>
@@ -416,26 +409,37 @@ namespace engine
 				//LOGGER.Debug("Create shape");
 				Subscribe(s);
 
-				s.ReadMain(lShapeTextureObjects, m_srMapReader, m_lMapFaceReferences, ref m_nMapFileLineCounter);
+				bool bReadSuccess = s.ReadMain(lShapeTextureObjects, m_srMapReader, ref m_nMapFileLineCounter);
 
-				Notify((int)ESignals.SHAPE_READ); // do this once is fine i think
-				if (s.GetSubShapes().Count > 0)
+				if (bReadSuccess)
 				{
-					Unsubscribe(s, true);
+					s.CreateFaces(m_lMapFaceReferences);
 
-					for(int i = 0; i < s.GetMapFaces().Count; i++)
+					ProcessEquivalents(s);
+
+					if (s != null)
 					{
-						m_lMapFaceReferences.Remove(s.GetMapFaces()[i]); // clear these out
+						Notify((int)ESignals.SHAPE_READ); // do this once is fine i think
+						if (s.GetSubShapes().Count > 0)
+						{
+							Unsubscribe(s, true);
+
+							for (int i = 0; i < s.GetMapFaces().Count; i++)
+							{
+								m_lMapFaceReferences.Remove(s.GetMapFaces()[i]); // clear these out
+							}
+
+							HandleSubShapes(s);
+						}
+						else
+						{
+							m_lShapes.Add(s);
+						}
 					}
 
-					HandleSubShapes(s);
+					lShapeTextureObjects.Clear();
 				}
-				else
-				{
-					m_lShapes.Add(s);
-				}
-
-				lShapeTextureObjects.Clear();
+				else throw new Exception("Shape read error");
 			}
 
 			//LOGGER.Info("Read in " + m_lShapes.Count.ToString() + " shapes for " + map.GetMapPathOnDisk);
@@ -575,17 +579,6 @@ namespace engine
 
 				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
 			}
-
-            foreach (Shape s in m_lShapesCustomRenderOrder)
-            {
-                s.InitializeLists();
-
-                m_mutProgress.WaitOne();
-                m_nInitializeProgress++;
-                m_mutProgress.ReleaseMutex();
-
-                Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
-            }
 
             m_lShapes.Sort(CompareShapes);
 			// will sort m_lShapesCustomRenderOrder every frame

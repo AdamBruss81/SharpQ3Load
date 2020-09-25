@@ -618,11 +618,6 @@ namespace engine
                     {
                         string sLine = sr.ReadLine();
 
-                        if(sLine.Contains("textures/gothic_light/gothic_light3_2K"))
-                        {
-                            int stop = 0;
-                        }
-
                         if(sLine.Contains("//"))
                         {
                             sLine = sLine.Substring(0, sLine.IndexOf("//"));

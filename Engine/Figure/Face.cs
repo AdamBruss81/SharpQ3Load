@@ -89,6 +89,7 @@ namespace engine
 		public D3Vect GetMidpoint() { return m_d3MidPoint; }
 
 		public uint GetIndice(int i) { return (uint)m_lIndices[i]; }
+		public void SetIndices(List<int> lIndices) { m_lIndices = lIndices; } // used for merged shapes when sorting
 
 		/// <summary>
 		/// Return the number of vertices in this face.

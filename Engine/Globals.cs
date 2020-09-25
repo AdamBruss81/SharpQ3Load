@@ -196,6 +196,7 @@ namespace engine
 		public static string GetBaseVertexColorScale() { return "3.0"; }
 
 		public static bool IsPortalEntry(string sPath) { return sPath.Contains("sfx/portal_sfx.jpg"); }
+		public static bool IsTeleporterEntry(string sPath) { return sPath.Contains("teleporter/energy"); }
 
 		public static void InitTables(Zipper zipper)
 		{

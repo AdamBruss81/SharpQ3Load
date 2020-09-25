@@ -426,14 +426,14 @@ namespace engine
 			else
 			{
                 // handle portals here i think
-                if (m_Intersection.Face.GetParentShape() is Portal)
+                if (m_Intersection.Face.GetParentShape() is Transporter)
                 {
-					Portal p = (m_Intersection.Face.GetParentShape() as Portal);
-					bool b = InternalMove(eSourceMovement, p.D3TargetLocation, nMoveAttemptCount, dMoveScale);
+					Transporter pTransporter = (m_Intersection.Face.GetParentShape() as Transporter);
+					bool b = InternalMove(eSourceMovement, pTransporter.D3TargetLocation, nMoveAttemptCount, dMoveScale);
 					if (b)
 					{						
-						m_cam.PHI_DEG = p.PHI;
-						m_cam.THETA_DEG = p.Theta;
+						m_cam.PHI_DEG = pTransporter.PHI;
+						m_cam.THETA_DEG = pTransporter.Theta;
 						m_cam.CalculateLookAt();
 						m_cam.ClearStack();
 

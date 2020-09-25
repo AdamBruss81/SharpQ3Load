@@ -333,8 +333,15 @@ namespace engine
 					sSubShape = new Portal(s);
 					Portal p = (Portal)(sSubShape);
 
-					DefinePortal(p, i);
+					DefineTransporter(p, i);
 				}
+				else if(GameGlobals.IsTeleporterEntry(s.GetMainTexture().GetPath()))
+				{
+                    sSubShape = new Teleporter(s);
+					Teleporter t = (Teleporter)(sSubShape);
+
+                    DefineTransporter(t, i);
+                }
 				else sSubShape = new Shape(s);
 
 				sSubShape.SetSubShape(true);
@@ -343,7 +350,7 @@ namespace engine
 				sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
 				sSubShape.CreateFaces(m_lMapFaceReferences);
 
-				if (sSubShape is Portal) m_lShapes.Add(sSubShape);
+				if (sSubShape is Portal || sSubShape is Teleporter) m_lShapes.Add(sSubShape);
 				else throw new Exception("Unknown subshape");
 			}
 		}
@@ -1261,28 +1268,57 @@ namespace engine
 			}
         }
 
-		private void DefinePortal(Portal p, int i)
+		private void DefineTransporter(Transporter p, int i)
 		{
-			// there's only one portal in all of these maps so don't need ot use index i
-			double dZOffset = .3f;
+			double dZOffset = 1f;
 
-			if(m_map.GetNick == "q3dm0")
+			// there's only one portal in all of these maps so don't need to use index i
+			if (p is Portal)
 			{
-                p.D3TargetLocation = new D3Vect(-4.1, 7, 1.1 + dZOffset);
-                p.PHI = 90;
-                p.Theta = 270;
-            }
-			else if(m_map.GetNick == "q3dm7")
+				if (m_map.GetNick == "q3dm0")
+				{
+					p.D3TargetLocation = new D3Vect(-4.1, 7, 1.1 + dZOffset);
+					p.PHI = 90;
+					p.Theta = 270;
+				}
+				else if (m_map.GetNick == "q3dm7")
+				{
+					p.D3TargetLocation = new D3Vect(-24.2, 53, 1.2 + dZOffset);
+					p.PHI = 90;
+					p.Theta = -90;
+				}
+				else if (m_map.GetNick == "q3dm11")
+				{
+					p.D3TargetLocation = new D3Vect(70.9, 51.6, -.18 + dZOffset);
+					p.PHI = 90;
+					p.Theta = -44;
+				}
+			}
+			else if(p is Teleporter)
 			{
-                p.D3TargetLocation = new D3Vect(-24.2, 53, 1.2 + dZOffset);
-                p.PHI = 90;
-				p.Theta = -90;
-            }
-			else if(m_map.GetNick == "q3dm11")
-			{
-                p.D3TargetLocation = new D3Vect(70.9, 51.6, -.18 + dZOffset);
-                p.PHI = 90;
-                p.Theta = -44;
+                if (m_map.GetNick == "q3dm4")
+                {
+					p.D3TargetLocation = new D3Vect(4.3, 7.6, -4.43 + dZOffset);
+                    p.PHI = 90;
+                    p.Theta = -90;
+                }     
+				else if(m_map.GetNick == "q3tourney2")
+				{
+					if(i == 1)
+					{
+						dZOffset = 0;
+                        p.D3TargetLocation = new D3Vect(1.3, 11, 1.2 + dZOffset);
+                        p.PHI = 90;
+                        p.Theta = -90;
+                    }
+					else
+					{
+						dZOffset = 1.5;
+                        p.D3TargetLocation = new D3Vect(1.5, -13.4, 6.92 + dZOffset);
+                        p.PHI = 90;
+                        p.Theta = -90;
+                    }
+				}
             }
 		}
 	}

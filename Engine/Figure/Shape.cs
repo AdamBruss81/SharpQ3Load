@@ -1352,8 +1352,9 @@ namespace engine
 		private void CreateSubShapes()
 		{
 			bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
+			bool bTeleporter = GameGlobals.IsTeleporterEntry(GetMainTexture().GetPath());
 
-			if (!m_bSubShape && bPortal)
+			if (!m_bSubShape && (bPortal || bTeleporter))
 			{
 				List<List<int>> lCoordIndicesCopy = new List<List<int>>(m_lCoordinateIndexes);
 

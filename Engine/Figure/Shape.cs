@@ -295,12 +295,12 @@ namespace engine
 				sb.AppendLine("");
 				sb.AppendLine("void DeformVertexWave(in float div, in float wavefunc, in float base, in float amp, in float phase, in float freq, inout vec3 vertex)");
 				sb.AppendLine("{");
-				sb.AppendLine("if(wavefunc == 0f) {"); // just sin for now
+				sb.AppendLine("if(wavefunc == 0) {"); // just sin for now
 				sb.AppendLine("float divMult = -.261 * freq + .1861;");
 				// my vertices are a lot smaller than the bsp ones so i need to scale the div, amp and base				
 				sb.AppendLine("float off = ( vertex[0] + vertex[1] + vertex[2] ) * (div * divMult);");
-				sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0f);");
-				sb.AppendLine("float fIntoSin = (timeS + (phase + off) * freq) / fCycleTimeMS * 3.1415926f;");
+				sb.AppendLine("float fCycleTimeMS = 1.0 / (freq * 2.0);");
+				sb.AppendLine("float fIntoSin = (timeS + (phase + off) * freq) / fCycleTimeMS * 3.1415926;");
 				sb.AppendLine("float fSinValue = sin(fIntoSin);");
 				sb.AppendLine("float fScale = 0.015;");
 				sb.AppendLine("float fVal = fSinValue * (amp*fScale) + (base*fScale);");
@@ -318,8 +318,8 @@ namespace engine
 			{
 				sb.AppendLine("void BulgeVertexes(in float width, in float height, in float speed, inout vec3 vertex)");
 				sb.AppendLine("{");
-				sb.AppendLine("float now = timeS * speed * 0.15f;");
-				sb.AppendLine("float off = 3.1415926f * 2 * (aTexCoord[0] * width + now);");
+				sb.AppendLine("float now = timeS * speed * 0.15;");
+				sb.AppendLine("float off = 3.1415926 * 2 * (aTexCoord[0] * width + now);");
 				sb.AppendLine("float scale = sin(off) * (height*.02);");
 				sb.AppendLine("vertex += vertexNormal * scale;");
 				sb.AppendLine("}");
@@ -333,9 +333,9 @@ namespace engine
 
 				sb.AppendLine("void MoveVertexes(in float x, in float y, in float z, in float wavefunc, in float base, in float amp, in float phase, in float freq, inout vec3 vertex)");
 				sb.AppendLine("{");
-				sb.AppendLine("if(wavefunc == 0f) {"); // just sin for now
-				sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0f);");
-				sb.AppendLine("float fIntoSin = (timeS + phase * freq) / fCycleTimeMS * 3.1415926f;");
+				sb.AppendLine("if(wavefunc == 0) {"); // just sin for now
+				sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0);");
+				sb.AppendLine("float fIntoSin = (timeS + phase * freq) / fCycleTimeMS * 3.1415926;");
 				sb.AppendLine("float fSinValue = sin(fIntoSin);");
 				sb.AppendLine("float scale = fSinValue * (amp*0.0166) + (base*0.0166);");
 				sb.AppendLine("vec3 moveVec = vec3(x, y, z);");

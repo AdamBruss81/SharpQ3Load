@@ -44,6 +44,7 @@ namespace engine
 
 		protected List<Shape> m_lShapes = new List<Shape>();
 		protected List<Tuple<string, string>> m_lShapesToCombine = new List<Tuple<string, string>>();
+		protected List<Shape> m_lShapesCustomRenderOrder = new List<Shape>();
 
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
@@ -104,7 +105,7 @@ namespace engine
 
 		public int GetNumShapes
 		{
-			get { return m_lShapes.Count; }
+			get { return m_lShapes.Count + m_lShapesCustomRenderOrder.Count; }
 		}
 
 		public int GetNumViewPoints 
@@ -156,6 +157,9 @@ namespace engine
 				for (int i = 0; i < m_lShapes.Count; i++)
 					m_lShapes[i].ShowWireframe();
 
+                for (int i = 0; i < m_lShapesCustomRenderOrder.Count; i++)
+                    m_lShapesCustomRenderOrder[i].ShowWireframe();
+
                 sgl.POPATT();
 			}
 			else
@@ -164,6 +168,12 @@ namespace engine
 
 				for (int i = 0; i < m_lShapes.Count; i++)
 					m_lShapes[i].Show();
+
+                // sort custom render order list
+                m_lShapesCustomRenderOrder.Sort(CompareShapesByCamDistance);
+
+                for (int i = 0; i < m_lShapesCustomRenderOrder.Count; i++)
+                    m_lShapesCustomRenderOrder[i].Show();
 
                 sgl.POPATT();
 			}
@@ -310,8 +320,24 @@ namespace engine
 				s.Delete();
 			}
 
+            foreach (Shape s in m_lShapesCustomRenderOrder)
+            {
+                s.Delete();
+            }
+
             if (m_fonter != null) m_fonter.Delete();
 		}
+
+        private static int CompareShapesByCamDistance(Shape s1, Shape s2)
+        {
+            if (s1 == null) return -1;
+            if (s2 == null) return 1;
+
+            D3Vect disOne = s1.GetMidpoint() - GameGlobals.m_CamPosition;
+            D3Vect disTwo = s2.GetMidpoint() - GameGlobals.m_CamPosition;
+
+            return disTwo.Length.CompareTo(disOne.Length);
+        }
 
         private static int CompareShapes(Shape s1, Shape s2)
         {
@@ -350,8 +376,8 @@ namespace engine
 				sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
 				sSubShape.CreateFaces(m_lMapFaceReferences);
 
-				if (sSubShape is Portal || sSubShape is Teleporter) m_lShapes.Add(sSubShape);
-				else throw new Exception("Unknown subshape");
+				if (sSubShape is Portal || sSubShape is Teleporter) m_lShapes.Add(sSubShape); // don't need sorting
+				else m_lShapesCustomRenderOrder.Add(sSubShape); // transparent so need sorting
 			}
 		}
 
@@ -578,18 +604,28 @@ namespace engine
 			// thread shape inits below
 			foreach(Shape s in m_lShapes)
 			{
+				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+
 				s.InitializeLists();
 
 				m_mutProgress.WaitOne();
 				m_nInitializeProgress++;				
-				m_mutProgress.ReleaseMutex();
-
-				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+				m_mutProgress.ReleaseMutex();				
 			}
 
             m_lShapes.Sort(CompareShapes);
-			// will sort m_lShapesCustomRenderOrder every frame
-		}
+
+            foreach (Shape s in m_lShapesCustomRenderOrder)
+            {
+				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+
+				s.InitializeLists();
+
+                m_mutProgress.WaitOne();
+                m_nInitializeProgress++;
+                m_mutProgress.ReleaseMutex();                
+            }
+        }
 
 		/// <summary>
 		/// Return whether the map file has up to date bounding box definitions already
@@ -1277,9 +1313,11 @@ namespace engine
 			{
 				if (m_map.GetNick == "q3dm0")
 				{
+					dZOffset = .75;
 					p.D3TargetLocation = new D3Vect(-4.1, 7, 1.1 + dZOffset);
 					p.PHI = 90;
 					p.Theta = 270;
+					p.PopoutPowerMS = 300;
 				}
 				else if (m_map.GetNick == "q3dm7")
 				{
@@ -1304,21 +1342,31 @@ namespace engine
                 }     
 				else if(m_map.GetNick == "q3tourney2")
 				{
-					if(i == 1)
+					if(i == 1) // into big room with fog in pit
 					{
 						dZOffset = 0;
+						p.PopoutPowerMS = 400;
                         p.D3TargetLocation = new D3Vect(1.3, 11, 1.2 + dZOffset);
                         p.PHI = 90;
                         p.Theta = -90;
                     }
-					else
+					else // into room with core generator
 					{
 						dZOffset = 1.5;
                         p.D3TargetLocation = new D3Vect(1.5, -13.4, 6.92 + dZOffset);
+						p.PopoutPowerMS = 300;
                         p.PHI = 90;
                         p.Theta = -90;
                     }
 				}
+				else if(m_map.GetNick == "q3dm11")
+				{
+                    dZOffset = .5;
+                    p.D3TargetLocation = new D3Vect(36.7, 2.73, -1.62 + dZOffset);
+                    p.PopoutPowerMS = 300;
+                    p.PHI = 90;
+                    p.Theta = 180;
+                }
             }
 		}
 	}

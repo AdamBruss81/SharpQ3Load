@@ -391,6 +391,25 @@ namespace engine
 				return true;
 		}
 
+		private bool HandleTransporters(MovableCamera.DIRECTION eSourceMovement, ref int nMoveAttemptCount, double dMoveScale)
+		{
+			Transporter pTransporter = (m_Intersection.Face.GetParentShape() as Transporter);
+			bool b = InternalMove(eSourceMovement, pTransporter.D3TargetLocation, nMoveAttemptCount, dMoveScale);
+			if (b)
+			{
+				m_cam.PHI_DEG = pTransporter.PHI;
+				m_cam.THETA_DEG = pTransporter.Theta;
+				m_cam.CalculateLookAt();
+				m_cam.ClearStack();
+
+				m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
+
+				// pop out
+				HandleJumpsAndPopouts("", null, pTransporter);
+			}
+			return b;
+		}
+
 		/// <summary>
 		/// Attempt to move forward by determining if a face is in the way. If a collision is detected,
 		/// slide the MovableCamera along the wall.
@@ -428,20 +447,9 @@ namespace engine
                 // handle portals here i think
                 if (m_Intersection.Face.GetParentShape() is Transporter)
                 {
-					Transporter pTransporter = (m_Intersection.Face.GetParentShape() as Transporter);
-					bool b = InternalMove(eSourceMovement, pTransporter.D3TargetLocation, nMoveAttemptCount, dMoveScale);
-					if (b)
-					{						
-						m_cam.PHI_DEG = pTransporter.PHI;
-						m_cam.THETA_DEG = pTransporter.Theta;
-						m_cam.CalculateLookAt();
-						m_cam.ClearStack();
-
-						m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
-					}
-					return b;
+					return HandleTransporters(eSourceMovement, ref nMoveAttemptCount, dMoveScale);
 				}
-                if (bMoveAlongWallOrUpStairs)
+				if (bMoveAlongWallOrUpStairs)
 				{
 					if (!bDoTheMove) return false;
 
@@ -698,7 +706,7 @@ namespace engine
 			}
         }
 
-		private SoundManager.EEffects HandleJumppads(string sTextureInfo, IntersectionInfo intersection)
+		private SoundManager.EEffects HandleJumpsAndPopouts(string sTextureInfo, IntersectionInfo intersection, Transporter transporter)
 		{
 			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
 
@@ -723,6 +731,10 @@ namespace engine
 				jumpDir.Length = m_cam.RHO;
                 m_swmgr.Jump(mcd_PadPowerInMS, jumpDir); // this should also jump straight up a bit first
                 eEffect = SoundManager.EEffects.JUMPPAD;
+            }
+			else if(transporter != null)
+			{
+                m_swmgr.Jump(transporter.PopoutPowerMS, transporter.D3Lookat); // this should also jump straight up a bit first
             }
 
             return eEffect;
@@ -760,7 +772,7 @@ namespace engine
 			}
 
 			SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
-			eEffectReturn = HandleJumppads(sTextureInfo, m_Intersection);
+			eEffectReturn = HandleJumpsAndPopouts(sTextureInfo, m_Intersection, null);
 			if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;			
 
 			// check that we are the right distance from the ground(player's height)

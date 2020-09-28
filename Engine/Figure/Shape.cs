@@ -1349,12 +1349,20 @@ namespace engine
 			}
 		}
 
+		private bool SubShapeEnabled()
+		{
+            string sTex = GetMainTexture().GetPath();
+
+            bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
+            bool bTeleporter = GameGlobals.IsTeleporterEntry(GetMainTexture().GetPath());
+
+			return sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
+				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") || bPortal || bTeleporter;
+        }
+
 		private void CreateSubShapes()
 		{
-			bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
-			bool bTeleporter = GameGlobals.IsTeleporterEntry(GetMainTexture().GetPath());
-
-			if (!m_bSubShape && (bPortal || bTeleporter))
+			if (!m_bSubShape && SubShapeEnabled())
 			{
 				List<List<int>> lCoordIndicesCopy = new List<List<int>>(m_lCoordinateIndexes);
 

@@ -1,0 +1,189 @@
+﻿using System;
+using OpenTK.Graphics.OpenGL;
+using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+
+namespace engine
+{
+    class BitmapWrapper
+    {
+        private System.Drawing.Bitmap m_bitMap = null;
+        private System.Drawing.Imaging.BitmapData m_bitmapData = null;
+        bool m_bDeleted = false;
+        string m_sFullPath = "";
+        bool m_bTGA = false;
+        bool m_bWideTexture = false; // if image is wider than high
+
+        public BitmapWrapper(string sFullPath)
+        {
+            m_sFullPath = sFullPath;
+        }
+
+        public void Delete()
+        {
+            if (m_bDeleted) throw new Exception("Already deleted bitmap with path: " + m_sFullPath);
+            m_bDeleted = true;
+            if (m_bitMap != null)
+            {
+                if (m_bitmapData == null) throw new Exception("bitmap data is null but should be valid");
+
+                m_bitMap.UnlockBits(m_bitmapData);
+                m_bitMap.Dispose();
+            }
+        }
+
+        public bool GetIsTGA() { return m_bTGA; }
+        public bool GetIsWide() { return m_bWideTexture; }
+
+        public void TexImage2d()
+        {
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, m_bitMap.Width,
+                m_bitMap.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, m_bitmapData.Scan0);
+        }
+
+        public void ReadIntoBitmapForTexture(bool bShouldBeTGA, string sShaderName)
+        {       
+            if (string.IsNullOrEmpty(m_sFullPath)) return; // for example fog
+
+            //m_bsh
+
+            //if (m_bitMap != null) throw new Exception("Member bitmap already allocated");
+
+            if (Path.GetExtension(m_sFullPath) == ".tga") m_bTGA = true;
+
+            //LOGGER.Debug("Set texture to " + sFullPath);
+
+            SetBitmapFromImageFile(bShouldBeTGA, sShaderName);
+
+            if (m_bitMap.Width > m_bitMap.Height) m_bWideTexture = true;
+
+            m_bitMap.RotateFlip(System.Drawing.RotateFlipType.Rotate180FlipX);
+
+            System.Drawing.Rectangle rect = new System.Drawing.Rectangle(0, 0, m_bitMap.Width, m_bitMap.Height);
+
+            m_bitmapData = m_bitMap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly,
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        }
+
+        private void AddAlphaToImage(string sShaderName)
+        {
+            //GameGlobals.m_StaticTextureFcnMutex1.WaitOne();
+
+            System.Drawing.Bitmap imageWithA = new System.Drawing.Bitmap(m_bitMap.Width, m_bitMap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            // add alpha to image
+            // loop bits in image and set their alpha value based on rgb values of bit
+
+            for (int i = 0; i < m_bitMap.Width; i++)
+            {
+                for (int j = 0; j < m_bitMap.Height; j++)
+                {
+                    System.Drawing.Color pcol = m_bitMap.GetPixel(i, j);
+                    System.Diagnostics.Debug.Assert(pcol.A == 255);
+                    float fAlpha = Texture.CalculateAlphaNormalized(pcol, sShaderName);
+                    System.Drawing.Color tempCol = System.Drawing.Color.FromArgb((int)(fAlpha * 255f), pcol.R, pcol.G, pcol.B);
+                    imageWithA.SetPixel(i, j, tempCol);
+                }
+            }
+
+            m_bitMap.Dispose();
+            m_bitMap = null;
+            m_bitMap = imageWithA;
+
+            //image = imageWithA;
+
+            //GameGlobals.m_StaticTextureFcnMutex1.ReleaseMutex();
+        }
+
+        public float[] GetAverageColor255()
+        {
+            //GameGlobals.m_StaticTextureFcnMutex4.WaitOne();
+
+            float[] fCol = { 0f, 0f, 0f, 0f };
+            //System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath, bShouldBeTGA, "");
+            float fCounter = 0;
+            for (int i = 0; i < m_bitMap.Width; i++)
+            {
+                for (int j = 0; j < m_bitMap.Height; j++)
+                {
+                    System.Drawing.Color pcol = m_bitMap.GetPixel(i, j);
+                    fCounter++;
+
+                    fCol[0] += pcol.R;
+                    fCol[1] += pcol.G;
+                    fCol[2] += pcol.B;
+                    fCol[3] += pcol.A;
+                }
+            }
+            fCol[0] /= fCounter;
+            fCol[1] /= fCounter;
+            fCol[2] /= fCounter;
+            fCol[3] /= fCounter;
+
+            //bm.Dispose();
+
+            //GameGlobals.m_StaticTextureFcnMutex4.ReleaseMutex();
+
+            return fCol;
+        }
+
+        public void SetBitmapFromImageFile(bool bShouldBeTGA, string sShaderName)
+        {
+            if (m_bitMap != null) throw new Exception("Bitmap already allocated");
+
+            if (Path.GetExtension(m_sFullPath) == ".tga")
+            { // already tga
+                IImageFormat format;
+                using (var image2 = Image.Load(m_sFullPath, out format))
+                {
+                    MemoryStream memStr = new MemoryStream();
+                    image2.SaveAsPng(memStr);
+                    m_bitMap = new System.Drawing.Bitmap(memStr);
+
+                    if (m_sFullPath.Contains("pjgrate2")) // only real tga in the game that converts incorrectly from tga to png to bmp so add alpha manually
+                    {
+                        AddAlphaToImage(sShaderName);
+                    }
+
+                    memStr.Dispose();
+                }
+            }
+            else
+            {
+                m_bitMap = new System.Drawing.Bitmap(m_sFullPath);
+
+                if (bShouldBeTGA && !Texture.SpecialTexture(m_sFullPath))
+                {
+                    System.Diagnostics.Debug.Assert(Path.GetExtension(m_sFullPath) == ".jpg");
+
+                    AddAlphaToImage(sShaderName);
+
+                    if (m_sFullPath.Contains("sfx/beam") || m_sFullPath.Contains("spotlamp/beam"))
+                    {
+                        BrightenUpBeams(Texture.GetBeamColor(m_sFullPath));
+                    }
+                }
+            }
+        }
+
+        private void BrightenUpBeams(System.Drawing.Color c)
+        {
+            //GameGlobals.m_StaticTextureFcnMutex3.WaitOne();
+
+            //System.Drawing.Bitmap imageNew = new System.Drawing.Bitmap(m_bitMap.Width, m_bitMap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            for (int i = 0; i < m_bitMap.Width; i++)
+            {
+                for (int j = 0; j < m_bitMap.Height; j++)
+                {
+                    m_bitMap.SetPixel(i, j, System.Drawing.Color.FromArgb(m_bitMap.GetPixel(i, j).A, c.R, c.G, c.B));
+                }
+            }
+
+            //image = imageNew;
+
+            //GameGlobals.m_StaticTextureFcnMutex3.ReleaseMutex();
+        }        
+    }
+}

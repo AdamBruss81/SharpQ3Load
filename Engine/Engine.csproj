@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Engine.cs" />
+    <Compile Include="Figure\BitmapWrapper.cs" />
     <Compile Include="Figure\Plane.cs" />
     <Compile Include="Figure\Portal.cs" />
     <Compile Include="Figure\Q3Shader.cs" />

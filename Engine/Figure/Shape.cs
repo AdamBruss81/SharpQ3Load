@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using utilities;
 using obsvr;
 using OpenTK.Graphics.OpenGL;
+using System.Diagnostics;
 
 namespace engine
 {
@@ -41,8 +42,11 @@ namespace engine
 		bool m_bMergeReceiver = false;
 		bool m_bMergeSource = false;
 
-		// shader utility members for performance
-		float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
+		string m_autoGenereatedFragShader = "";
+		string m_autoGenereatedVertexShader = "";
+
+        // shader utility members for performance
+        float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
 		float[] m_uniformFloat3 = { 0f, 0f, 0f };
 		float[] m_uniformFloat2 = { 0f, 0f };
 
@@ -61,6 +65,7 @@ namespace engine
 		const string m_sChannelOneTextureCoordinatesHeader = "texCoord  TextureCoordinate { point [";
 		const string m_sMeshCoordinatesHeader = "coord Coordinate { point [";
 		const string m_sCoordinateIndexHeader = "coordIndex [";
+		const int m_nNumValuesInVA = 14;
 
 		ETextureType m_TextureType;
 
@@ -122,9 +127,8 @@ namespace engine
 		{
 			ShaderHelper.CloseProgram(ShaderProgram);
 
-			foreach (Texture t in m_lTextures) {
-				t.Delete();
-			}
+			m_q3Shader.Delete();
+
 			foreach (Face f in m_lFaces) {
 				f.Delete();
 			}
@@ -547,38 +551,61 @@ namespace engine
 			return sb.ToString();
 		}
 
-		public void InitializeLists()
+		public void InitializeNonGL()
 		{
-			m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
+			//Stopwatch sw = new Stopwatch();
 
-			bool bShouldBeTGA = false;
-			foreach (Texture t in m_lTextures)
+			//sw.Start();
+			m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
+			//sw.Stop();
+			//LOGGER.Debug("Reading q3 shader took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
+
+			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-				if (GetMainTexture() == t)
+				bool bShouldBeTGA = false;
+				foreach (Texture t in m_lTextures)
 				{
-					string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
-					if (File.Exists(sNonShaderTexture))
-						t.SetTexture(sNonShaderTexture, bShouldBeTGA, m_q3Shader.GetShaderName());
-				}
-				else
-				{
-					// lightmap for non shader shape
-					t.SetTexture(m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath(), ref bShouldBeTGA), false, m_q3Shader.GetShaderName());
+					if (GetMainTexture() == t)
+					{
+						string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
+						if (File.Exists(sNonShaderTexture))
+						{
+							if (!t.Initialized())
+							{
+								t.SetShouldBeTGA(bShouldBeTGA);
+								t.SetFullPath(sNonShaderTexture);
+								t.SetTexture(m_q3Shader.GetShaderName());
+							}
+						}
+					}
+					else
+					{
+						// lightmap for non shader shape
+						if (!t.Initialized())
+						{
+							string sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath(), ref bShouldBeTGA);
+							t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
+							t.SetFullPath(sFullTexPath);
+							t.SetTexture(m_q3Shader.GetShaderName());
+						}
+					}
 				}
 			}
+			// else I'd like to clear m_lTextures but it is used in definiing the vertex attributes so leave for now
 
 			foreach (Face f in m_lFaces)
 			{
 				f.InitializeLists();
 			}
 
+			//sw.Start();
+
 			// use modern open gl via vertex buffers, vertex array, element buffer and shaders
 			// setup vertices
-			int nNumValues = 14;
-			m_arVertices = new double[m_lVertices.Count * nNumValues]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap), color
+			m_arVertices = new double[m_lVertices.Count * m_nNumValuesInVA]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap), color
 			for (int i = 0; i < m_lVertices.Count; i++)
 			{
-				int nBase = i * nNumValues;
+				int nBase = i * m_nNumValuesInVA;
 
 				// vertices
 				m_arVertices[nBase] = m_lVertices[i].x;
@@ -643,17 +670,47 @@ namespace engine
 				m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
 			}
 
-			string autoGenereatedGLSL = CreateGLSLFragShader();
-			string autoGenereatedVertexShader = CreateGLSLVertShader();
-			ShaderProgram = ShaderHelper.CreateProgramFromContent(autoGenereatedVertexShader, autoGenereatedGLSL, m_q3Shader.GetShaderName());
+            //sw.Stop();
+            //LOGGER.Debug("Initializing vert and indices took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
+
+			//sw.Start();
+
+			m_autoGenereatedFragShader = CreateGLSLFragShader();
+
+            //sw.Stop();
+            //LOGGER.Debug("Generating glsl vert took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
+
+			//sw.Start();
+
+            m_autoGenereatedVertexShader = CreateGLSLVertShader();
+
+            //sw.Stop();
+            //LOGGER.Debug("Generating glsl frag took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
 
 #if DEBUG
-			if (!string.IsNullOrEmpty(autoGenereatedGLSL))
+            if (!string.IsNullOrEmpty(m_autoGenereatedFragShader) && !string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".frag.txt", autoGenereatedGLSL);
-				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt", autoGenereatedVertexShader);
+				// this will not output the default glsl shaders for when no q3 shader exists. but I can turn that on somehow if i need it.				
+				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".frag.txt", m_autoGenereatedFragShader);
+				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt", m_autoGenereatedVertexShader);
 			}
 #endif
+		}
+
+		public void InitializeGL()
+		{
+			// define gl aspects of all textures for this shape
+			// three locations are : shape texture list, q3shader list and q3shader animmap list
+			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
+			{
+				foreach (Texture t in m_lTextures)
+				{
+					t.GLDefineTexture();
+				}
+			}
+			m_q3Shader.GLDefineTextures();
+
+			ShaderProgram = ShaderHelper.CreateProgramFromContent(m_autoGenereatedVertexShader, m_autoGenereatedFragShader, m_q3Shader.GetShaderName());
 
 			VertexBufferObject = GL.GenBuffer();
 			VertexArrayObject = GL.GenVertexArray();
@@ -669,19 +726,19 @@ namespace engine
 			GL.BufferData(BufferTarget.ArrayBuffer, m_arVertices.Length * sizeof(double), m_arVertices, BufferUsageHint.StaticDraw);
 
 			// 3. then set our vertex attributes pointers
-			GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 0);
+			GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Double, false, m_nNumValuesInVA * sizeof(double), 0);
 			GL.EnableVertexAttribArray(0);
 
-			GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 3 * sizeof(double));
+			GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Double, false, m_nNumValuesInVA * sizeof(double), 3 * sizeof(double));
 			GL.EnableVertexAttribArray(1);
 
-			GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 5 * sizeof(double));
+			GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Double, false, m_nNumValuesInVA * sizeof(double), 5 * sizeof(double));
 			GL.EnableVertexAttribArray(2);
 
-			GL.VertexAttribPointer(3, 4, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 7 * sizeof(double));
+			GL.VertexAttribPointer(3, 4, VertexAttribPointerType.Double, false, m_nNumValuesInVA * sizeof(double), 7 * sizeof(double));
 			GL.EnableVertexAttribArray(3);
 
-			GL.VertexAttribPointer(4, 3, VertexAttribPointerType.Double, false, nNumValues * sizeof(double), 11 * sizeof(double));
+			GL.VertexAttribPointer(4, 3, VertexAttribPointerType.Double, false, m_nNumValuesInVA * sizeof(double), 11 * sizeof(double));
 			GL.EnableVertexAttribArray(4);
 
 			ShaderHelper.printOpenGLError("");
@@ -693,6 +750,12 @@ namespace engine
 
 			ShaderHelper.printOpenGLError("");
 		}
+
+		/*public void InitializeLists()
+		{
+			InitializeNonGL();
+			InitializeGL();
+		}*/
 
 		public int GetIndex(Face f)
 		{
@@ -835,7 +898,15 @@ namespace engine
 			else return -1;
 		}
 
-		public int GetRenderOrder()
+		/// <summary>
+		/// There are three levels of render order control
+		/// 1. this, GetRenderOrder, which only happens once per map.
+		/// 2. then there is sorting of shapes by mid point distance. subshapes can be created to sort specific beams against specific consoles for example.
+		/// see deva station control room.
+		/// 3. then there is face sorting inside a shape for flame faces, beam faces, etc.
+		/// </summary>
+		/// <returns></returns>
+		public int GetRenderOrder() // this is only for non-subshapes
 		{
 			int nVal = 0;
 
@@ -844,13 +915,15 @@ namespace engine
 
 			// i can probably improve on this a bit after reading the q3 shader manual's comments on sorting
 
+			// 0 would be the most static geometry like walls and floors
+
 			string sShaderName = m_q3Shader.GetShaderName();
 
-			if (sShaderName.Contains("models")) nVal = 3;
+			if (sShaderName.Contains("models")) nVal = 3; // models are always in front of walls
 
-			if (!string.IsNullOrEmpty(sShaderName)) nVal = 4;
+			if (!string.IsNullOrEmpty(sShaderName)) nVal = 4; // any shaders are next
 
-			if (m_q3Shader.GetAddAlpha())
+			if (m_q3Shader.GetAddAlpha()) // alpha enabled shaders
 			{
 				if (m_q3Shader.GetSort() == "5")
 					nVal = 5;
@@ -862,8 +935,8 @@ namespace engine
 
 			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
 
-			if (sShaderName.Contains("beam") || sShaderName.Contains("proto_zzztblu3") ||
-				sShaderName.Contains("teleporter/energy") || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
+			if (/*sShaderName.Contains("beam") || */sShaderName.Contains("proto_zzztblu3") /*||
+				sShaderName.Contains("teleporter/energy")*/ || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
 			// slamp2 are the bulbs under the skull lights
@@ -996,6 +1069,7 @@ namespace engine
 				GL.PushAttrib(AttribMask.EnableBit);
 				GL.CullFace(CullFaceMode.Back);
 			}
+
 			if (m_q3Shader.GetAddAlpha())
 			{
 				GL.Enable(EnableCap.Blend);

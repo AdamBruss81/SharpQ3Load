@@ -45,6 +45,7 @@ namespace engine
 		protected List<Shape> m_lShapes = new List<Shape>();
 		protected List<Tuple<string, string>> m_lShapesToCombine = new List<Tuple<string, string>>();
 		protected List<Shape> m_lShapesCustomRenderOrder = new List<Shape>();
+		protected List<Shape> m_lAllShapes = new List<Shape>();
 
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
@@ -268,8 +269,8 @@ namespace engine
 					m_nMapFileLineCounter++;
 					if (sURL != "null.png")
 					{
-						m_textureObjects.Add(sKey, new Texture(sURL));
-						LOGGER.Debug("Add texture " + sKey);
+                        m_textureObjects.Add(sKey, new Texture(sURL));
+						//LOGGER.Debug("Add texture " + sKey);
 						lTextureObjects.Add(m_textureObjects[sKey]);                        
 					}
 					m_srMapReader.ReadLine(); // eat close bracket line
@@ -278,7 +279,7 @@ namespace engine
 				else if (sDEForUSE.Contains("USE"))
 				{
 					sKey = stringhelper.Tokenize(sDEForUSE, ' ')[1];
-					LOGGER.Info("Use texture " + sKey);
+					//LOGGER.Info("Use texture " + sKey);
 					lTextureObjects.Add(m_textureObjects[sKey]);
 				}
 				sDEForUSE = m_srMapReader.ReadLine();
@@ -288,7 +289,7 @@ namespace engine
 					textureTokens = stringhelper.Tokenize(sDEForUSE, ' ');
 					sKey = textureTokens[1];
 					sURL = stringhelper.Tokenize(m_srMapReader.ReadLine(), '"')[1];
-					LOGGER.Debug("Add texture " + sKey);
+					//LOGGER.Debug("Add texture " + sKey);
 					m_nMapFileLineCounter++;
 					m_textureObjects.Add(sKey, new Texture(sURL));
 					lTextureObjects.Add(m_textureObjects[sKey]);
@@ -296,7 +297,7 @@ namespace engine
 				else if (sDEForUSE.Contains("USE"))
 				{
 					sKey = stringhelper.Tokenize(sDEForUSE, ' ')[1];
-					LOGGER.Debug("Use texture " + sKey);
+					//LOGGER.Debug("Use texture " + sKey);
 					lTextureObjects.Add(m_textureObjects[sKey]);
 				}
 
@@ -315,6 +316,11 @@ namespace engine
 
 		public void Delete()
 		{
+			foreach(KeyValuePair<string, Texture> kvp in m_textureObjects)
+			{
+				kvp.Value.Delete();
+			}
+
 			foreach(Shape s in m_lShapes) 
 			{
 				s.Delete();
@@ -453,6 +459,7 @@ namespace engine
 					if (s != null)
 					{
 						Notify((int)ESignals.SHAPE_READ); // do this once is fine i think
+
 						if (s.GetSubShapes().Count > 0)
 						{
 							Unsubscribe(s, true);
@@ -503,7 +510,7 @@ namespace engine
 			{
 				BackgroundWorker bw = new BackgroundWorker();
 				bw.DoWork += workerthread_AddFaceBoxesToLeafBoundingBoxes;
-				bw.RunWorkerCompleted += mainthread_FinishedAddingFacesToBoundingBoxes;
+				bw.RunWorkerCompleted += mainthreadFinishedWorkerThread;
 				bw.RunWorkerAsync(new KeyValuePair<int, int>(nStartIndex, nStartIndex + lBoxCountsPerThread[i]));
 				nStartIndex += lBoxCountsPerThread[i];
 			}
@@ -599,31 +606,127 @@ namespace engine
 
 		public void InitializeLists()
 		{
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
+
+			//Stopwatch swShape = new Stopwatch();
+
 			m_fonter = new BasicFont();
 
-			// thread shape inits below
-			foreach(Shape s in m_lShapes)
-			{
-				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+            // start up threads and divide up all shapes into containers for each thread.
+            // in thread do work, call shape.InitNonGL
+            // after those threads are done, loop all shapes and call init gl
+            // then call sort on m_lShapes and we're done with this function
+            
+            int nProcCount = Environment.ProcessorCount;            
 
-				s.InitializeLists();
+			int nShapesPerThread = GetNumShapes / nProcCount;
+            int nRemainder = GetNumShapes % nProcCount;
+			int nMax = nProcCount;
+			if (nShapesPerThread == 0)
+			{
+				nShapesPerThread = 1;
+				nMax = GetNumShapes;
+				nRemainder = 0;
+			}
+			m_nThreadShutdownCounter = nMax;
+			List<int> lShapeCountPerThread = new List<int>();
+            for (int i = 0; i < nMax; i++)
+            {
+                lShapeCountPerThread.Add(nShapesPerThread);
+            }
+            for (int i = 0; i < nRemainder; i++)
+            {
+                lShapeCountPerThread[i] = lShapeCountPerThread[i] + 1;
+            }
+
+			foreach (Shape s in m_lShapes) m_lAllShapes.Add(s); // all shapes is just used for threading purposes
+			foreach (Shape s in m_lShapesCustomRenderOrder) m_lAllShapes.Add(s);
+
+			Notify("Initializing shapes non-gl stuff", (int)Figure.ESignals.SHAPE_READ);
+
+			int nStartIndex = 0;
+            for (int i = 0; i < nMax; i++)
+            {
+                BackgroundWorker bw = new BackgroundWorker();
+                bw.DoWork += workerthread_InitShapeNonGL;
+                bw.RunWorkerCompleted += mainthreadFinishedWorkerThread;
+                bw.RunWorkerAsync(new KeyValuePair<int, int>(nStartIndex, nStartIndex + lShapeCountPerThread[i]));
+                nStartIndex += lShapeCountPerThread[i];
+            }
+
+            while (true)
+            {
+                m_mutThreadShutdownChecker.WaitOne();
+                if (m_nThreadShutdownCounter == 0)
+                {
+                    m_mutThreadShutdownChecker.ReleaseMutex();
+                    break;
+                }
+                else
+                {
+                    m_mutThreadShutdownChecker.ReleaseMutex();
+					Notify((int)Figure.ESignals.SHAPE_READ); // this is just to update the progress bar
+					Thread.Sleep(500);
+                }
+            }
+
+			m_lShapes.Sort(CompareShapes);
+
+			Notify("Initializing shapes gl stuff", (int)Figure.ESignals.SHAPE_READ);
+
+			foreach (Shape s in m_lAllShapes)
+			{
+				s.InitializeGL();
+			}
+
+            // thread shape inits below
+            /*foreach (Shape s in m_lShapes)
+			{
+				swShape.Start();
+				//s.InitializeLists();
+				swShape.Stop();
+				LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
+				swShape.Reset();
 
 				m_mutProgress.WaitOne();
 				m_nInitializeProgress++;				
-				m_mutProgress.ReleaseMutex();				
+				m_mutProgress.ReleaseMutex();
+
+				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
 			}
 
             m_lShapes.Sort(CompareShapes);
 
             foreach (Shape s in m_lShapesCustomRenderOrder)
             {
-				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
-
-				s.InitializeLists();
+				swShape.Start();
+				//s.InitializeLists();
+                swShape.Stop();
+                LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
+                swShape.Reset();
 
                 m_mutProgress.WaitOne();
                 m_nInitializeProgress++;
-                m_mutProgress.ReleaseMutex();                
+                m_mutProgress.ReleaseMutex();
+
+				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+			}*/
+
+			sw.Stop();
+			LOGGER.Info("Figure took " + sw.Elapsed.TotalSeconds + " seconds to initialize.");
+        }
+
+		private void workerthread_InitShapeNonGL(object sender, DoWorkEventArgs e)
+		{
+            KeyValuePair<int, int> kvp = (KeyValuePair<int, int>)e.Argument;
+            for (int i = kvp.Key; i < kvp.Value; i++)
+            {
+				m_lAllShapes[i].InitializeNonGL();
+
+                m_mutProgress.WaitOne();
+                m_nInitializeProgress++;
+                m_mutProgress.ReleaseMutex();
             }
         }
 
@@ -1247,7 +1350,7 @@ namespace engine
             }
         }
 
-        private void mainthread_FinishedAddingFacesToBoundingBoxes(object sender, RunWorkerCompletedEventArgs e)
+        private void mainthreadFinishedWorkerThread(object sender, RunWorkerCompletedEventArgs e)
         {
             m_mutThreadShutdownChecker.WaitOne();
             m_nThreadShutdownCounter--;
@@ -1283,7 +1386,7 @@ namespace engine
 			{
 				BackgroundWorker bw = new BackgroundWorker();
 				bw.DoWork += workerthread_AddFacesToBoundingBoxes;
-				bw.RunWorkerCompleted += mainthread_FinishedAddingFacesToBoundingBoxes;
+				bw.RunWorkerCompleted += mainthreadFinishedWorkerThread;
 				bw.RunWorkerAsync(new KeyValuePair<int, int>(nStartIndex, nStartIndex + lBoxCountsPerThread[i]));
 				nStartIndex += lBoxCountsPerThread[i];
 			}

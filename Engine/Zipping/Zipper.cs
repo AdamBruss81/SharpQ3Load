@@ -26,14 +26,17 @@ namespace engine
 		}
 
 		public string ExtractLightmap(string sInternalPath)
-		{
+		{            
             if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
 
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             if (!File.Exists(sFullPathToExtractedFile))
             {
+                GameGlobals.m_ZipExtractLMMutex.WaitOne();
                 zipper.ExtractZip(PATHS.GetLightmapPath, PATHS.GetTempDir, sInternalPath);
+                GameGlobals.m_ZipExtractLMMutex.ReleaseMutex();
             }
+
             return sFullPathToExtractedFile;
         }
 
@@ -44,7 +47,9 @@ namespace engine
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             if (!File.Exists(sFullPathToExtractedFile))
             {
+                GameGlobals.m_ZipExtractPak0Mutex.WaitOne();
                 zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, sInternalPath);
+                GameGlobals.m_ZipExtractPak0Mutex.ReleaseMutex();
             }
 			return sFullPathToExtractedFile;
 		}

@@ -245,7 +245,9 @@ namespace engine
             // define outputColor line
             if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
             {
-                float[] fCol = Texture.GetAverageColor255(m_sLightImageFullPath, m_bLightImageShouldBeTGA);
+                BitmapWrapper bmw = new BitmapWrapper(m_sLightImageFullPath);
+                bmw.SetBitmapFromImageFile(m_bLightImageShouldBeTGA, m_sShaderName);
+                float[] fCol = bmw.GetAverageColor255();
 
                 sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, 0.0);");
             }
@@ -271,6 +273,19 @@ namespace engine
             else
             {
                 sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
+            }
+        }
+
+        public void GLDefineTextures()
+        {
+            foreach(Texture t in m_lStageTextures)
+            {
+                if(t != null)
+                    t.GLDefineTexture();
+            }
+            foreach(Q3ShaderStage stage in m_lStages)
+            {
+                stage.GLDefineTextures();
             }
         }
 
@@ -339,12 +354,14 @@ namespace engine
                 }
                 else if (!string.IsNullOrEmpty(stage.GetTexturePath()))
                 {
-                    m_lStageTextures.Add(new Texture(stage.GetTexturePath()));
-                    bool bTGA = false;
-                    m_lStageTextures[m_lStageTextures.Count - 1].SetClamp(stage.GetClampmap());
-                    string sTemp = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bTGA);
-                    m_lStageTextures[m_lStageTextures.Count - 1].SetTexture(sTemp, bTGA, m_sShaderName);
-                    m_lStageTextures[m_lStageTextures.Count - 1].SetShouldBeTGA(bTGA);                    
+                    Texture t = new Texture(stage.GetTexturePath());
+                    m_lStageTextures.Add(t);
+                    bool bShouldBeTGA = false;
+                    t.SetClamp(stage.GetClampmap());
+                    string sFullTexPath = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bShouldBeTGA);
+                    t.SetFullPath(sFullTexPath);
+                    t.SetShouldBeTGA(bShouldBeTGA);
+                    t.SetTexture(m_sShaderName);
 
                     string sTexCoordName = "mainTexCoord";
                     if (stage.GetTCGEN_CS() == "environment") sTexCoordName = "tcgenEnvTexCoord";
@@ -682,6 +699,27 @@ namespace engine
             {
                 System.Windows.Forms.MessageBox.Show(e.Message + "\n\n" + e.StackTrace);
             }
+        }
+
+        public void Delete()
+        {
+            foreach (Texture t in m_lStageTextures)
+            {
+                if (t != null)
+                {
+                    if(!t.Deleted()) // it could be deleted if it's a lightmap
+                        t.Delete();
+                    else
+                    {
+                        // assure lightmap
+                        if (!t.GetPath().Contains(".png")) throw new Exception("Only okay to try to delete something twice if it's a lightmap. This is not.");
+                        // also ok to delete something twice in case of animmap textures because they are located in two lists
+                        // the stage list has one and the animmap list has all of them. this is handled by setting wrapper to null now upon
+                        // first delete
+                    }
+                }
+            }
+            foreach (Q3ShaderStage s in m_lStages) s.Delete();
         }
 
         /// <summary>

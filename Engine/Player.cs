@@ -382,7 +382,7 @@ namespace engine
 				m_dictLastMoveScales[eSourceMovement] = dMoveScaleUsed; // do we need this dict?
 			}
 
-			LOGGER.Debug("Setting last move scale to " + dMoveScaleUsed + " from source movement " + eSourceMovement);
+			//LOGGER.Debug("Setting last move scale to " + dMoveScaleUsed + " from source movement " + eSourceMovement);
 			m_dLastGameTickMoveScale = dMoveScaleUsed;
 
 			if (nMoveAttemptCount > 1)

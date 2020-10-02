@@ -155,7 +155,7 @@ namespace engine
 
             dScale = (1.0 - dRatio) * m_cam.GetStandardMovementScale();
 
-            LOGGER.Debug("Decel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds + " for direction " + dir);
+            //LOGGER.Debug("Decel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds + " for direction " + dir);
 
             return dScale;
         }
@@ -170,7 +170,7 @@ namespace engine
 
             dScale = dElapsedAdjusted / mc_dDecelAccelTimeMS * m_cam.GetStandardMovementScale();
 
-            LOGGER.Debug("Accel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds + " for direction " + dir);
+            //LOGGER.Debug("Accel scale is " + dScale + " for elapsed of " + sw.ElapsedMilliseconds + " for direction " + dir);
 
             return dScale;
         }

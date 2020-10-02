@@ -232,17 +232,38 @@ namespace engine
                     string sToken = tokens[i].Trim();
                     if (!string.IsNullOrEmpty(sToken))
                     {
-                        m_lAnimmapTextures.Add(new Texture(sToken));
                         bool bShouldBeTGA = false;
-                        string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
-                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(sNonShaderTexture, bShouldBeTGA, m_ParentShader.GetShaderName());
-                        if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
+                        string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, sToken, ref bShouldBeTGA);
+                        m_lAnimmapTextures.Add(new Texture(sToken, sNonShaderTexture));
+
+                        //string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
+
+                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(bShouldBeTGA);
+                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(m_ParentShader.GetShaderName());
+                        //if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
                     }
                 }
                 m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToSingle(tokens[0]);
                 m_sAnimmapIntervalInput = tokens[0];
             }
         }
+
+        public void Delete()
+        {
+            foreach (Texture t in m_lAnimmapTextures)
+            {
+                t.Delete();
+            }
+        }
+
+        public void GLDefineTextures()
+        {
+            foreach(Texture t in m_lAnimmapTextures)
+            {
+                t.GLDefineTexture();
+            }
+        }
+
         public void SetLightmap(bool b) { m_bLightmap = b; }
         public bool GetLightmap() { return m_bLightmap; }
         public void SetTCModScroll(string s)

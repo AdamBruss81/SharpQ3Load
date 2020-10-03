@@ -157,7 +157,7 @@ namespace engine
 
 		virtual public void InitializeLists()
 		{
-			if(m_lStaticFigList.Count() > 0) m_lStaticFigList[0].InitializeLists();
+			if(m_lStaticFigList.Count() > 0) m_lStaticFigList[0].InitializeLists(false);
 		}
 
 		protected void SetMovableCameraToRandomViewPoint()

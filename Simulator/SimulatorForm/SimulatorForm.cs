@@ -230,7 +230,7 @@ namespace simulator
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void mainthread_LoadMapCompleted(object sender, RunWorkerCompletedEventArgs e)
-		{
+ 		{
 			LOGGER.Info("Entered load map completed function");
 
 			SetCursor(false, false);

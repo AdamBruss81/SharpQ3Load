@@ -604,81 +604,120 @@ namespace engine
 			}
 		}
 
-		public void InitializeLists()
+		public void InitializeLists(bool bProjectile)
 		{
-			Stopwatch sw = new Stopwatch();
-			sw.Start();
+			//Stopwatch sw = new Stopwatch();
+			//sw.Start();
 
 			//Stopwatch swShape = new Stopwatch();
-
+			
 			m_fonter = new BasicFont();
 
-            // start up threads and divide up all shapes into containers for each thread.
-            // in thread do work, call shape.InitNonGL
-            // after those threads are done, loop all shapes and call init gl
-            // then call sort on m_lShapes and we're done with this function
-            
-            int nProcCount = Environment.ProcessorCount;            
+			// start up threads and divide up all shapes into containers for each thread.
+			// in thread do work, call shape.InitNonGL
+			// after those threads are done, loop all shapes and call init gl
+			// then call sort on m_lShapes and we're done with this function
 
-			int nShapesPerThread = GetNumShapes / nProcCount;
-            int nRemainder = GetNumShapes % nProcCount;
-			int nMax = nProcCount;
-			if (nShapesPerThread == 0)
+			if (!bProjectile)
 			{
-				nShapesPerThread = 1;
-				nMax = GetNumShapes;
-				nRemainder = 0;
+				int nProcCount = Environment.ProcessorCount;
+
+				int nShapesPerThread = GetNumShapes / nProcCount;
+				int nRemainder = GetNumShapes % nProcCount;
+				int nMax = nProcCount;
+				if (nShapesPerThread == 0)
+				{
+					nShapesPerThread = 1;
+					nMax = GetNumShapes;
+					nRemainder = 0;
+				}
+				m_nThreadShutdownCounter = nMax;
+				List<int> lShapeCountPerThread = new List<int>();
+				for (int i = 0; i < nMax; i++)
+				{
+					lShapeCountPerThread.Add(nShapesPerThread);
+				}
+				for (int i = 0; i < nRemainder; i++)
+				{
+					lShapeCountPerThread[i] = lShapeCountPerThread[i] + 1;
+				}
+
+				foreach (Shape s in m_lShapes) m_lAllShapes.Add(s); // all shapes is just used for threading purposes
+				foreach (Shape s in m_lShapesCustomRenderOrder) m_lAllShapes.Add(s);
+
+				Notify("Initializing shapes non-gl stuff", (int)Figure.ESignals.SHAPE_READ);
+
+				int nStartIndex = 0;
+				for (int i = 0; i < nMax; i++)
+				{
+					BackgroundWorker bw = new BackgroundWorker();
+					bw.DoWork += workerthread_InitShapeNonGL;
+					bw.RunWorkerCompleted += mainthreadFinishedWorkerThread;
+					bw.RunWorkerAsync(new KeyValuePair<int, int>(nStartIndex, nStartIndex + lShapeCountPerThread[i]));
+					nStartIndex += lShapeCountPerThread[i];
+				}
+
+				while (true)
+				{
+					m_mutThreadShutdownChecker.WaitOne();
+					if (m_nThreadShutdownCounter == 0)
+					{
+						m_mutThreadShutdownChecker.ReleaseMutex();
+						break;
+					}
+					else
+					{
+						m_mutThreadShutdownChecker.ReleaseMutex();
+						Notify((int)Figure.ESignals.SHAPE_READ); // this is just to update the progress bar
+						Thread.Sleep(500);
+					}
+				}
+
+				m_lShapes.Sort(CompareShapes);
+
+				Notify("Initializing shapes gl stuff", (int)Figure.ESignals.SHAPE_READ);
+
+				foreach (Shape s in m_lAllShapes)
+				{
+					s.InitializeGL();
+				}
 			}
-			m_nThreadShutdownCounter = nMax;
-			List<int> lShapeCountPerThread = new List<int>();
-            for (int i = 0; i < nMax; i++)
-            {
-                lShapeCountPerThread.Add(nShapesPerThread);
-            }
-            for (int i = 0; i < nRemainder; i++)
-            {
-                lShapeCountPerThread[i] = lShapeCountPerThread[i] + 1;
-            }
-
-			foreach (Shape s in m_lShapes) m_lAllShapes.Add(s); // all shapes is just used for threading purposes
-			foreach (Shape s in m_lShapesCustomRenderOrder) m_lAllShapes.Add(s);
-
-			Notify("Initializing shapes non-gl stuff", (int)Figure.ESignals.SHAPE_READ);
-
-			int nStartIndex = 0;
-            for (int i = 0; i < nMax; i++)
-            {
-                BackgroundWorker bw = new BackgroundWorker();
-                bw.DoWork += workerthread_InitShapeNonGL;
-                bw.RunWorkerCompleted += mainthreadFinishedWorkerThread;
-                bw.RunWorkerAsync(new KeyValuePair<int, int>(nStartIndex, nStartIndex + lShapeCountPerThread[i]));
-                nStartIndex += lShapeCountPerThread[i];
-            }
-
-            while (true)
-            {
-                m_mutThreadShutdownChecker.WaitOne();
-                if (m_nThreadShutdownCounter == 0)
-                {
-                    m_mutThreadShutdownChecker.ReleaseMutex();
-                    break;
-                }
-                else
-                {
-                    m_mutThreadShutdownChecker.ReleaseMutex();
-					Notify((int)Figure.ESignals.SHAPE_READ); // this is just to update the progress bar
-					Thread.Sleep(500);
-                }
-            }
-
-			m_lShapes.Sort(CompareShapes);
-
-			Notify("Initializing shapes gl stuff", (int)Figure.ESignals.SHAPE_READ);
-
-			foreach (Shape s in m_lAllShapes)
+			else
 			{
-				s.InitializeGL();
-			}
+                foreach (Shape s in m_lShapes)
+                {
+					//swShape.Start();
+					s.InitializeNonGL();
+					s.InitializeGL();
+                    //swShape.Stop();
+                    //LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
+                    //swShape.Reset();
+
+                    //m_mutProgress.WaitOne();
+                    //m_nInitializeProgress++;
+                    //m_mutProgress.ReleaseMutex();
+
+                    //Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+                }
+
+                m_lShapes.Sort(CompareShapes);
+
+                foreach (Shape s in m_lShapesCustomRenderOrder)
+                {
+					//swShape.Start();
+					s.InitializeNonGL();
+                    s.InitializeGL();
+                    //swShape.Stop();
+                    //LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
+                    //swShape.Reset();
+
+                    /*m_mutProgress.WaitOne();
+                    m_nInitializeProgress++;
+                    m_mutProgress.ReleaseMutex();*/
+
+                    //Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
+                }
+            }
 
             // thread shape inits below
             /*foreach (Shape s in m_lShapes)
@@ -713,8 +752,8 @@ namespace engine
 				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
 			}*/
 
-			sw.Stop();
-			LOGGER.Info("Figure took " + sw.Elapsed.TotalSeconds + " seconds to initialize.");
+			//sw.Stop();
+			//LOGGER.Info("Figure took " + sw.Elapsed.TotalSeconds + " seconds to initialize.");
         }
 
 		private void workerthread_InitShapeNonGL(object sender, DoWorkEventArgs e)

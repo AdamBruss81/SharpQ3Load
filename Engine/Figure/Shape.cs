@@ -551,136 +551,155 @@ namespace engine
 			return sb.ToString();
 		}
 
-		public void InitializeNonGL()
+		private void InitTexture(Texture t, bool bLightmap)
 		{
-			//Stopwatch sw = new Stopwatch();
+			bool bShouldBeTGA = false;
+			string sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(bLightmap, t.GetPath(), ref bShouldBeTGA);
+			t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
+			t.SetFullPath(sFullTexPath);
+			t.SetTexture(m_q3Shader.GetShaderName());
+		}
 
-			//sw.Start();
-			m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
+		public void InitializeNonGL()
+        {
+            //Stopwatch sw = new Stopwatch();
+
+            //sw.Start();
+            m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
 			//sw.Stop();
 			//LOGGER.Debug("Reading q3 shader took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
 
+			GameGlobals.m_SharedTextureInit.WaitOne();
+
 			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
+            {
+                //bool bShouldBeTGA = false;
+                foreach (Texture t in m_lTextures)
+                {				
+                    if (!t.Initialized())
+                    {
+                        if (GetMainTexture() == t)
+                        {
+							/*string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
+                            if (File.Exists(sNonShaderTexture))
+                            {
+                                t.SetShouldBeTGA(bShouldBeTGA);
+                                t.SetFullPath(sNonShaderTexture);
+                                t.SetTexture(m_q3Shader.GetShaderName());
+                            }*/
+
+							InitTexture(t, false);
+                        }
+                        else
+                        {
+							// lightmap for non shader shape
+							InitTexture(t, true);
+						}
+					}					
+                }
+            }
+			else
 			{
-				bool bShouldBeTGA = false;
-				foreach (Texture t in m_lTextures)
+				// shader present but still need to init lightmap if present
+				if(GetLightmapTexture() != null && !GetLightmapTexture().Initialized())
 				{
-					if (GetMainTexture() == t)
-					{
-						string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
-						if (File.Exists(sNonShaderTexture))
-						{
-							if (!t.Initialized())
-							{
-								t.SetShouldBeTGA(bShouldBeTGA);
-								t.SetFullPath(sNonShaderTexture);
-								t.SetTexture(m_q3Shader.GetShaderName());
-							}
-						}
-					}
-					else
-					{
-						// lightmap for non shader shape
-						if (!t.Initialized())
-						{
-							string sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(true, t.GetPath(), ref bShouldBeTGA);
-							t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
-							t.SetFullPath(sFullTexPath);
-							t.SetTexture(m_q3Shader.GetShaderName());
-						}
-					}
+					InitTexture(GetLightmapTexture(), true);
 				}
+
+				// one key point here is that we don't try to initialize the main texture in this case. if a shader is present there's no need to
+				// i should probably not create or delete the main texture in this case but it doesn't do any harm right now
 			}
-			// else I'd like to clear m_lTextures but it is used in definiing the vertex attributes so leave for now
+
+			GameGlobals.m_SharedTextureInit.ReleaseMutex();
 
 			foreach (Face f in m_lFaces)
-			{
-				f.InitializeLists();
-			}
+            {
+                f.InitializeLists();
+            }
 
-			//sw.Start();
+            //sw.Start();
 
-			// use modern open gl via vertex buffers, vertex array, element buffer and shaders
-			// setup vertices
-			m_arVertices = new double[m_lVertices.Count * m_nNumValuesInVA]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap), color
-			for (int i = 0; i < m_lVertices.Count; i++)
-			{
-				int nBase = i * m_nNumValuesInVA;
+            // use modern open gl via vertex buffers, vertex array, element buffer and shaders
+            // setup vertices
+            m_arVertices = new double[m_lVertices.Count * m_nNumValuesInVA]; // vertices, texcoord1, texcoord2(could be dummy if no lightmap), color
+            for (int i = 0; i < m_lVertices.Count; i++)
+            {
+                int nBase = i * m_nNumValuesInVA;
 
-				// vertices
-				m_arVertices[nBase] = m_lVertices[i].x;
-				m_arVertices[nBase + 1] = m_lVertices[i].y;
-				m_arVertices[nBase + 2] = m_lVertices[i].z;
+                // vertices
+                m_arVertices[nBase] = m_lVertices[i].x;
+                m_arVertices[nBase + 1] = m_lVertices[i].y;
+                m_arVertices[nBase + 2] = m_lVertices[i].z;
 
-				// main texture coordinates
-				m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
-				m_arVertices[nBase + 4] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[1];
+                // main texture coordinates
+                m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
+                m_arVertices[nBase + 4] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[1];
 
-				if (m_lTextures.Count > 1)
-				{
-					// lightmap texture coordinates
-					m_arVertices[nBase + 5] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[0];
-					m_arVertices[nBase + 6] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[1];
-				}
-				else
-				{
-					// dummy texture coordinates for lightmap
-					m_arVertices[nBase + 5] = -1.0;
-					m_arVertices[nBase + 6] = -1.0;
-				}
+                if (m_lTextures.Count > 1)
+                {
+                    // lightmap texture coordinates
+                    m_arVertices[nBase + 5] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[0];
+                    m_arVertices[nBase + 6] = m_lTexCoordinates[GetLightmapTextureIndex()][i].Vect[1];
+                }
+                else
+                {
+                    // dummy texture coordinates for lightmap
+                    m_arVertices[nBase + 5] = -1.0;
+                    m_arVertices[nBase + 6] = -1.0;
+                }
 
-				// vertice colors
-				m_arVertices[nBase + 7] = m_lVerticeColors[i].x;
-				m_arVertices[nBase + 8] = m_lVerticeColors[i].y;
-				m_arVertices[nBase + 9] = m_lVerticeColors[i].z;
-				m_arVertices[nBase + 10] = 1.0;
+                // vertice colors
+                m_arVertices[nBase + 7] = m_lVerticeColors[i].x;
+                m_arVertices[nBase + 8] = m_lVerticeColors[i].y;
+                m_arVertices[nBase + 9] = m_lVerticeColors[i].z;
+                m_arVertices[nBase + 10] = 1.0;
 
-				// vertice normals
-				D3Vect vNormal = new D3Vect();
-				int nCounter = 0;
-				for (int j = 0; j < m_lCoordinateIndexes.Count; j++)
-				{
-					for (int k = 0; k < m_lCoordinateIndexes[j].Count; k++)
-					{
-						if (i == m_lCoordinateIndexes[j][k])
-						{
-							// j corresponds to a face
-							vNormal += m_lFaces[j].GetNormal;
-							nCounter++;
-							break;
-						}
-					}
-				}
-				vNormal = vNormal / nCounter;
-				vNormal.normalize();
+                // vertice normals
+                D3Vect vNormal = new D3Vect();
+                int nCounter = 0;
+                for (int j = 0; j < m_lCoordinateIndexes.Count; j++)
+                {
+                    for (int k = 0; k < m_lCoordinateIndexes[j].Count; k++)
+                    {
+                        if (i == m_lCoordinateIndexes[j][k])
+                        {
+                            // j corresponds to a face
+                            vNormal += m_lFaces[j].GetNormal;
+                            nCounter++;
+                            break;
+                        }
+                    }
+                }
+                vNormal = vNormal / nCounter;
+                vNormal.normalize();
 
-				vNormal.Negate();
-				m_lVerticeNormals.Add(vNormal);
+                vNormal.Negate();
+                m_lVerticeNormals.Add(vNormal);
 
-				m_arVertices[nBase + 11] = vNormal.x;
-				m_arVertices[nBase + 12] = vNormal.y;
-				m_arVertices[nBase + 13] = vNormal.z;
-			}
+                m_arVertices[nBase + 11] = vNormal.x;
+                m_arVertices[nBase + 12] = vNormal.y;
+                m_arVertices[nBase + 13] = vNormal.z;
+            }
 
-			m_arIndices = new uint[m_lCoordinateIndexes.Count * 3];
-			for (int i = 0; i < m_lCoordinateIndexes.Count; i++)
-			{
-				m_arIndices[i * 3] = (uint)m_lCoordinateIndexes[i][0];
-				m_arIndices[i * 3 + 1] = (uint)m_lCoordinateIndexes[i][1];
-				m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
-			}
+            m_arIndices = new uint[m_lCoordinateIndexes.Count * 3];
+            for (int i = 0; i < m_lCoordinateIndexes.Count; i++)
+            {
+                m_arIndices[i * 3] = (uint)m_lCoordinateIndexes[i][0];
+                m_arIndices[i * 3 + 1] = (uint)m_lCoordinateIndexes[i][1];
+                m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
+            }
 
             //sw.Stop();
             //LOGGER.Debug("Initializing vert and indices took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
 
-			//sw.Start();
+            //sw.Start();
 
-			m_autoGenereatedFragShader = CreateGLSLFragShader();
+            m_autoGenereatedFragShader = CreateGLSLFragShader();
 
             //sw.Stop();
             //LOGGER.Debug("Generating glsl vert took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
 
-			//sw.Start();
+            //sw.Start();
 
             m_autoGenereatedVertexShader = CreateGLSLVertShader();
 
@@ -695,9 +714,9 @@ namespace engine
 				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt", m_autoGenereatedVertexShader);
 			}
 #endif
-		}
+        }
 
-		public void InitializeGL()
+        public void InitializeGL()
 		{
 			// define gl aspects of all textures for this shape
 			// three locations are : shape texture list, q3shader list and q3shader animmap list
@@ -935,11 +954,12 @@ namespace engine
 
 			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
 
-			if (/*sShaderName.Contains("beam") || */sShaderName.Contains("proto_zzztblu3") /*||
-				sShaderName.Contains("teleporter/energy")*/ || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
+			if (sShaderName.Contains("spotlamp/beam") || sShaderName.Contains("proto_zzztblu3") ||
+				sShaderName.Contains("teleporter/energy") || sShaderName.Contains("portal_sfx_ring")) nVal = 8;
 
 			// proto_zzztblu3 is for the coil in dm0
 			// slamp2 are the bulbs under the skull lights
+			// beam is for spotlamp beams
 
 			return nVal;
 		}
@@ -1431,7 +1451,8 @@ namespace engine
             bool bTeleporter = GameGlobals.IsTeleporterEntry(GetMainTexture().GetPath());
 
 			return sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
-				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") || bPortal || bTeleporter;
+				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") ||
+				sTex.Contains("jets") || bPortal || bTeleporter;
         }
 
 		private void CreateSubShapes()

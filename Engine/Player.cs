@@ -69,7 +69,7 @@ namespace engine
 		/// <param m_DisplayName="driver">driver to copy</param>
 		public Player(Engine driver):base(driver) 
 		{
-			InitializeProjectiles();
+			 InitializeProjectiles();
 			m_swmgr = new StopWatchManager(m_cam, this);
 		}		
 
@@ -102,8 +102,8 @@ namespace engine
 
 		private void InitializeProjectiles()
 		{
-			m_figInitialAxe.InitializeLists();
-			m_figInitialStar.InitializeLists();
+			m_figInitialAxe.InitializeLists(true);
+			m_figInitialStar.InitializeLists(true);
 		}
 
 		override public EEngineType GetClass()

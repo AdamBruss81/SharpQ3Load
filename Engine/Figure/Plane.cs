@@ -10,10 +10,7 @@
 //*===================================================================================
 
 using utilities;
-using System.Collections.Generic;
 using System;
-using System.Diagnostics;
-using OpenTK.Graphics.OpenGL;
 
 namespace engine
 {

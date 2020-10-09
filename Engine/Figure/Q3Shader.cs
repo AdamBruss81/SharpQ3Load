@@ -20,7 +20,7 @@ namespace engine
 
     public class DeformVertexes
     {
-        public enum EDeformVType { INVALID, WAVE, BULGE, MOVE };
+        public enum EDeformVType { INVALID, WAVE, BULGE, MOVE, AUTOSPRITE };
 
         public EDeformVType m_eType = EDeformVType.INVALID;
 
@@ -617,7 +617,7 @@ namespace engine
             sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
         }
 
-        public static void ReadQ3ShaderContent(Dictionary<string, List<string>> dictShaderNameToShaderContent, Zipper zip)
+        public static void ReadQ3ShaderContentOnceAtStartup(Dictionary<string, List<string>> dictShaderNameToShaderContent, Zipper zip)
         {
             zip.ExtractAllShaderFiles();
 
@@ -782,7 +782,7 @@ namespace engine
                         else if (sInsideTargetShaderLine.Contains("fog"))
                         {
                             m_bFog = true;
-                        }
+                        }                        
                     }
                     else if (sInsideTargetShaderLine.Contains("sort"))
                     {
@@ -846,9 +846,14 @@ namespace engine
                                 Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 5);
                                 m_lDeformVertexes.Add(dv);
                             }
+                            else if(tokens[1] == "autosprite") // just do autosprite for now not autosprite2
+                            {
+                                dv.m_eType = DeformVertexes.EDeformVType.AUTOSPRITE;
+                                m_lDeformVertexes.Add(dv);
+                            }
                             else
                             {
-                                if (tokens[1] != "autosprite" && tokens[1] != "autosprite2" && tokens[1] != "normal") // not doing autosprite  or normal right now  
+                                if (tokens[1] != "normal" && tokens[1] != "autosprite2") // not doing autosprite2 or normal right now  
                                     throw new Exception("Found deformvertexes with type " + tokens[1]);
                             }
                         }
@@ -880,7 +885,7 @@ namespace engine
                         // read stage items
                         else if (IsMapTexture(sInsideTargetShaderLine))
                         {
-                            string[] tokens = sInsideTargetShaderLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                            string[] tokens = GetTokens(sInsideTargetShaderLine); 
                             if (tokens.Length == 2)
                             {
                                 if (tokens[0].Trim(new char[] { '\t' }) == "map" || tokens[0].Trim(new char[] { '\t' }) == "clampmap")
@@ -997,10 +1002,19 @@ namespace engine
             }
         }
 
-        private string[] GetTokens(string sInsideTargetShaderLine)
+        public static string[] GetTokens(string sInsideTargetShaderLine)
         {
             string sTrimmed = sInsideTargetShaderLine.Trim();
-            return sTrimmed.Split(new Char[] { ' ', '\t' });
+            return sTrimmed.Split(new Char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public bool AutoSpriteEnabled()
+        {
+            for(int i = 0; i < m_lDeformVertexes.Count; i++)
+            {
+                if (m_lDeformVertexes[i].m_eType == DeformVertexes.EDeformVType.AUTOSPRITE) return true;
+            }
+            return false;
         }
 
         private void ScaleTexel(Q3ShaderStage stage, string sIndex, System.Text.StringBuilder sb)

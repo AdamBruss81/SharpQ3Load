@@ -128,7 +128,7 @@ namespace simulator
 		private void SetProgressBar(int nInputMax, int nInputProgress, int nProgressValueMin, int nProgressValueMax)
 		{
 			double dDenom = ((double)nInputMax / (double)(nProgressValueMax - nProgressValueMin));
-			if (dDenom == 0) dDenom = 1;
+			if (dDenom == 0 || System.Double.IsNaN(dDenom)) dDenom = 1;
 			int nVal = (int)((double)nInputProgress / dDenom) + nProgressValueMin;
 			if (nVal < nProgressValueMin)
 				throw new Exception("Invalid value for progress bar " + Convert.ToString(nVal));

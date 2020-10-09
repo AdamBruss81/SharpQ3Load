@@ -46,13 +46,7 @@ namespace engine
         {       
             if (string.IsNullOrEmpty(m_sFullPath)) return; // for example fog
 
-            //m_bsh
-
-            //if (m_bitMap != null) throw new Exception("Member bitmap already allocated");
-
             if (Path.GetExtension(m_sFullPath) == ".tga") m_bTGA = true;
-
-            //LOGGER.Debug("Set texture to " + sFullPath);
 
             SetBitmapFromImageFile(bShouldBeTGA, sShaderName);
 
@@ -68,8 +62,6 @@ namespace engine
 
         private void AddAlphaToImage(string sShaderName)
         {
-            //GameGlobals.m_StaticTextureFcnMutex1.WaitOne();
-
             System.Drawing.Bitmap imageWithA = new System.Drawing.Bitmap(m_bitMap.Width, m_bitMap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             // add alpha to image
@@ -90,18 +82,12 @@ namespace engine
             m_bitMap.Dispose();
             m_bitMap = null;
             m_bitMap = imageWithA;
-
-            //image = imageWithA;
-
-            //GameGlobals.m_StaticTextureFcnMutex1.ReleaseMutex();
         }
 
         public float[] GetAverageColor255()
         {
-            //GameGlobals.m_StaticTextureFcnMutex4.WaitOne();
-
             float[] fCol = { 0f, 0f, 0f, 0f };
-            //System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath, bShouldBeTGA, "");
+
             float fCounter = 0;
             for (int i = 0; i < m_bitMap.Width; i++)
             {
@@ -121,10 +107,6 @@ namespace engine
             fCol[2] /= fCounter;
             fCol[3] /= fCounter;
 
-            //bm.Dispose();
-
-            //GameGlobals.m_StaticTextureFcnMutex4.ReleaseMutex();
-
             return fCol;
         }
 
@@ -135,8 +117,11 @@ namespace engine
             if (Path.GetExtension(m_sFullPath) == ".tga")
             { // already tga
                 IImageFormat format;
+
+                GameGlobals.m_BitmapInitMutex.WaitOne();
                 using (var image2 = Image.Load(m_sFullPath, out format))
                 {
+                    GameGlobals.m_BitmapInitMutex.ReleaseMutex();
                     MemoryStream memStr = new MemoryStream();
                     image2.SaveAsPng(memStr);
                     m_bitMap = new System.Drawing.Bitmap(memStr);
@@ -147,11 +132,13 @@ namespace engine
                     }
 
                     memStr.Dispose();
-                }
+                }                
             }
             else
             {
+                GameGlobals.m_BitmapInitMutex.WaitOne();
                 m_bitMap = new System.Drawing.Bitmap(m_sFullPath);
+                GameGlobals.m_BitmapInitMutex.ReleaseMutex();
 
                 if (bShouldBeTGA && !Texture.SpecialTexture(m_sFullPath))
                 {
@@ -161,18 +148,18 @@ namespace engine
 
                     if (m_sFullPath.Contains("sfx/beam") || m_sFullPath.Contains("spotlamp/beam"))
                     {
-                        BrightenUpBeams(Texture.GetBeamColor(m_sFullPath));
+                        BrightUpBitmap(Texture.GetBeamColor(m_sFullPath));
+                    }
+                    else if(m_sFullPath.Contains("lamps/flare03"))
+                    {
+                        BrightUpBitmap(System.Drawing.Color.White);
                     }
                 }
             }
         }
 
-        private void BrightenUpBeams(System.Drawing.Color c)
+        private void BrightUpBitmap(System.Drawing.Color c)
         {
-            //GameGlobals.m_StaticTextureFcnMutex3.WaitOne();
-
-            //System.Drawing.Bitmap imageNew = new System.Drawing.Bitmap(m_bitMap.Width, m_bitMap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
             for (int i = 0; i < m_bitMap.Width; i++)
             {
                 for (int j = 0; j < m_bitMap.Height; j++)
@@ -180,10 +167,6 @@ namespace engine
                     m_bitMap.SetPixel(i, j, System.Drawing.Color.FromArgb(m_bitMap.GetPixel(i, j).A, c.R, c.G, c.B));
                 }
             }
-
-            //image = imageNew;
-
-            //GameGlobals.m_StaticTextureFcnMutex3.ReleaseMutex();
         }        
     }
 }

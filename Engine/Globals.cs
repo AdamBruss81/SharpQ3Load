@@ -194,6 +194,8 @@ namespace engine
 		public static Mutex m_ZipExtractPak0Mutex = new Mutex();
 		public static Mutex m_ZipExtractLMMutex = new Mutex();
 		public static Mutex m_SharedTextureInit = new Mutex();
+		public static Mutex m_DebugShaderWriteMutex = new Mutex();
+		public static Mutex m_BitmapInitMutex = new Mutex();
 
 		public static long GetElapsedMS() { return m_fFrameStartElapsedMS; }
 		public static float GetElapsedS() { return m_fFrameStartElapsedS; }
@@ -202,6 +204,7 @@ namespace engine
 
 		public static bool IsPortalEntry(string sPath) { return sPath.Contains("sfx/portal_sfx.jpg"); }
 		public static bool IsTeleporterEntry(string sPath) { return sPath.Contains("teleporter/energy"); }
+		public static bool IsLightBulb(string sPath) { return sPath.Contains("flare03") || sPath.Contains("gratelamp_flare"); } // more tests later
 
 		public static void InitTables(Zipper zipper)
 		{
@@ -212,7 +215,7 @@ namespace engine
 			}
 
             // read in all q3 shaders once here and then use in shapes instead of searching for the q3 shader shaders for every shape 
-            Q3Shader.ReadQ3ShaderContent(m_dictQ3ShaderContent, zipper);
+            Q3Shader.ReadQ3ShaderContentOnceAtStartup(m_dictQ3ShaderContent, zipper);
         }
 	}
 }

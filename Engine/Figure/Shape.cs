@@ -34,10 +34,14 @@ namespace engine
 		List<List<DPoint>> m_lTexCoordinates = new List<List<DPoint>>();
 		List<D3Vect> m_lVerticeColors = new List<D3Vect>();
 		Q3Shader m_q3Shader = null;
-		List<D3Vect> m_lVerticeNormals = new List<D3Vect>();
+		List<D3Vect> m_lVertexNormals = new List<D3Vect>();
 		List<List<List<int>>> m_lSubShapes = new List<List<List<int>>>(); // for dividing up shapes into sub shapes to fix transparency issues on rendering
 																		  // could also be used later to control properties of jumppads
-		D3Vect m_d3MidPoint = null;
+
+		float m_fTempAngle = 0f;
+        float[] m_util4x4 = new float[16];
+
+        D3Vect m_d3MidPoint = null;
 		bool m_bSubShape = false;
 		bool m_bMergeReceiver = false;
 		bool m_bMergeSource = false;
@@ -45,8 +49,8 @@ namespace engine
 		string m_autoGenereatedFragShader = "";
 		string m_autoGenereatedVertexShader = "";
 
-        // shader utility members for performance
-        float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
+		// shader utility members for performance
+		float[] m_uniformFloat6 = { 0f, 0f, 0f, 0f, 0f, 0f };
 		float[] m_uniformFloat3 = { 0f, 0f, 0f };
 		float[] m_uniformFloat2 = { 0f, 0f };
 
@@ -97,7 +101,7 @@ namespace engine
 			m_lVertices.AddRange(s.m_lVertices);
 
 			System.Diagnostics.Debug.Assert(s.m_lTexCoordinates.Count == m_lTexCoordinates.Count);
-			for(int i = 0; i < s.m_lTexCoordinates.Count; i++)
+			for (int i = 0; i < s.m_lTexCoordinates.Count; i++)
 			{
 				m_lTexCoordinates[i].AddRange(s.m_lTexCoordinates[i]);
 			}
@@ -106,7 +110,7 @@ namespace engine
 			m_lFaces.AddRange(s.m_lFaces);
 
 			int nFaceCount = m_lCoordinateIndexes.Count;
-			for(int i = 0; i < s.m_lCoordinateIndexes.Count; i++)
+			for (int i = 0; i < s.m_lCoordinateIndexes.Count; i++)
 			{
 				List<int> lCoordIndicesNew = s.m_lCoordinateIndexes[i];
 				lCoordIndicesNew[0] += nOriginalVertCount;
@@ -118,7 +122,7 @@ namespace engine
 			}
 
 			s.m_lCoordinateIndexes.Clear(); // s stays the same except that it now has no faces to render. it still has
-			// its faces for collision detection
+											// its faces for collision detection
 		}
 
 		public bool IsMergeSource() { return m_bMergeSource; }
@@ -193,6 +197,7 @@ namespace engine
 			sb.AppendLine("uniform mat4 proj;");
 			sb.AppendLine("uniform vec3 camPosition;");
 			sb.AppendLine("uniform float timeS;");
+			sb.AppendLine("uniform mat4 autospriteMat;");
 
 			bool bSendSinTable = false;
 
@@ -225,19 +230,26 @@ namespace engine
 			bool bDeformVWavePresent = false;
 			bool bDeformBulgePresent = false;
 			bool bDeformMovePresent = false;
+			bool bDeformAutoSprite = false;
+
 			for (int i = 0; i < m_q3Shader.GetDeformVertexes().Count; i++)
 			{
-				if (m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.WAVE)
+				DeformVertexes dv = m_q3Shader.GetDeformVertexes()[i];
+				if (dv.m_eType == DeformVertexes.EDeformVType.WAVE)
 				{
 					bDeformVWavePresent = true;
 				}
-				if (m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.BULGE)
+				else if (dv.m_eType == DeformVertexes.EDeformVType.BULGE)
 				{
 					bDeformBulgePresent = true;
 				}
-				if (m_q3Shader.GetDeformVertexes()[i].m_eType == DeformVertexes.EDeformVType.MOVE)
+				else if (dv.m_eType == DeformVertexes.EDeformVType.MOVE)
 				{
 					bDeformMovePresent = true;
+				}
+				else if (dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE)
+				{
+					bDeformAutoSprite = true;
 				}
 			}
 
@@ -249,12 +261,12 @@ namespace engine
 			if (bUsesTCGen)
 			{
 				sb.AppendLine("");
-				sb.AppendLine("void CalculateTcGen(in vec3 campos, in vec3 position, in vec3 vertexnormal, out vec2 tcgen)");
+				sb.AppendLine("void CalculateTcGen(in vec3 campos, in vec3 position, out vec2 tcgen)");
 				sb.AppendLine("{");
 				sb.AppendLine("vec3 viewer = campos - position;");
 				sb.AppendLine("viewer = normalize(viewer);");
 				sb.AppendLine("float d = dot(vertexNormal, viewer);");
-				sb.AppendLine("vec3 reflected = vertexnormal * 2.0 * d - viewer;");
+				sb.AppendLine("vec3 reflected = vertexNormal * 2.0 * d - viewer;");
 				sb.AppendLine("tcgen[0] = 0.5 + reflected[0] * 0.5;");
 				sb.AppendLine("tcgen[1] = 0.5 - reflected[1] * 0.5;");
 				sb.AppendLine("}");
@@ -264,13 +276,13 @@ namespace engine
 			if (bUsesAlphaGenspec)
 			{
 				sb.AppendLine("");
-				sb.AppendLine("void CalculateAlphaGenSpec(in vec3 campos, in vec3 position, in vec3 vertexnormal, out float alpha)");
+				sb.AppendLine("void CalculateAlphaGenSpec(in vec3 campos, in vec3 position, out float alpha)");
 				sb.AppendLine("{");
 				sb.AppendLine("vec3 lightorigin = vec3(-960, 1980, 96);");
 				sb.AppendLine("vec3 lightdir = lightorigin - position;");
 				sb.AppendLine("lightdir = normalize(lightdir);");
-				sb.AppendLine("float d = dot(vertexnormal, lightdir);");
-				sb.AppendLine("vec3 reflected = vertexnormal * 2 * d - lightdir;");
+				sb.AppendLine("float d = dot(vertexNormal, lightdir);");
+				sb.AppendLine("vec3 reflected = vertexNormal * 2 * d - lightdir;");
 				sb.AppendLine("vec3 viewer = campos - position;");
 				sb.AppendLine("float ilen = sqrt(dot(viewer, viewer));");
 				sb.AppendLine("float l = dot(reflected, viewer);");
@@ -329,6 +341,28 @@ namespace engine
 				sb.AppendLine("}");
 			}
 
+			if (bDeformAutoSprite)
+			{
+				// create auto sprite function
+				// this function will modify the vertex. it will use the vector from eye to shape midpoint. and the normal of one of the faces of the shape.
+				// it could use a vertexnormal too.
+				// it's going to figure out how much to rotate the vertex so that the normals are pointing at eachother.
+
+				sb.AppendLine("");
+                sb.AppendLine("void DeformAutoSprite(inout vec3 vertex)");
+                sb.AppendLine("{");
+				sb.AppendLine("vec4 vtemp;");
+				sb.AppendLine("vtemp.x = vertex.x;");
+				sb.AppendLine("vtemp.y = vertex.y;");
+				sb.AppendLine("vtemp.z = vertex.z;");
+				sb.AppendLine("vtemp.w = 1.0;");
+				sb.AppendLine("vtemp = vtemp * autospriteMat;");
+				sb.AppendLine("vertex.x = vtemp.x;");
+				sb.AppendLine("vertex.y = vtemp.y;");
+				sb.AppendLine("vertex.z = vtemp.z;");
+				sb.AppendLine("}");
+            }
+
 			if (bDeformMovePresent)
 			{
 				// insert function to move a vertex     
@@ -358,11 +392,11 @@ namespace engine
 
 			if (bUsesTCGen)
 			{
-				sb.AppendLine("CalculateTcGen(camPosition, aPosition, vertexNormal, tcgenEnvTexCoord);");
+				sb.AppendLine("CalculateTcGen(camPosition, aPosition, tcgenEnvTexCoord);");
 			}
 			if (bUsesAlphaGenspec)
 			{
-				sb.AppendLine("CalculateAlphaGenSpec(camPosition, aPosition, vertexNormal, alphaGenSpecular);");
+				sb.AppendLine("CalculateAlphaGenSpec(camPosition, aPosition, alphaGenSpecular);");
 			}
 
 			sb.AppendLine("");
@@ -453,9 +487,10 @@ namespace engine
 
 			sb.AppendLine("color = aColor;");
 
-			if (bDeformVWavePresent || bDeformBulgePresent || bDeformMovePresent)
+			if (bDeformVWavePresent || bDeformBulgePresent || bDeformMovePresent || bDeformAutoSprite)
 			{
 				sb.AppendLine("vec3 newPosition = aPosition;");
+				sb.AppendLine("");
 				for (int i = 0; i < m_q3Shader.GetDeformVertexes().Count; i++)
 				{
 					DeformVertexes dv = m_q3Shader.GetDeformVertexes()[i];
@@ -482,10 +517,15 @@ namespace engine
 						}
 						sb.AppendLine("MoveVertexes(" + dv.m_Move.m_x + ", " + dv.m_Move.m_y + ", " + dv.m_Move.m_z + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
 					}
+					else if(dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE)
+					{
+						sb.AppendLine("DeformAutoSprite(newPosition);");
+					}
 				}
+				sb.AppendLine("");
 			}
 
-			string sFinalPosName = (bDeformVWavePresent | bDeformBulgePresent | bDeformMovePresent) ? "newPosition" : "aPosition";
+			string sFinalPosName = (bDeformVWavePresent || bDeformBulgePresent || bDeformMovePresent || bDeformAutoSprite) ? "newPosition" : "aPosition";
 			sb.AppendLine("vertice = " + sFinalPosName + ";");
 			sb.AppendLine("gl_Position = proj * modelview * vec4(" + sFinalPosName + ", 1.0);");
 
@@ -562,32 +602,18 @@ namespace engine
 
 		public void InitializeNonGL()
         {
-            //Stopwatch sw = new Stopwatch();
-
-            //sw.Start();
             m_q3Shader.ReadQ3Shader(GetMainTexture().GetPath());
-			//sw.Stop();
-			//LOGGER.Debug("Reading q3 shader took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
 
 			GameGlobals.m_SharedTextureInit.WaitOne();
 
 			if (string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
             {
-                //bool bShouldBeTGA = false;
                 foreach (Texture t in m_lTextures)
                 {				
                     if (!t.Initialized())
                     {
                         if (GetMainTexture() == t)
                         {
-							/*string sNonShaderTexture = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA);
-                            if (File.Exists(sNonShaderTexture))
-                            {
-                                t.SetShouldBeTGA(bShouldBeTGA);
-                                t.SetFullPath(sNonShaderTexture);
-                                t.SetTexture(m_q3Shader.GetShaderName());
-                            }*/
-
 							InitTexture(t, false);
                         }
                         else
@@ -616,8 +642,6 @@ namespace engine
             {
                 f.InitializeLists();
             }
-
-            //sw.Start();
 
             // use modern open gl via vertex buffers, vertex array, element buffer and shaders
             // setup vertices
@@ -670,11 +694,14 @@ namespace engine
                         }
                     }
                 }
-                vNormal = vNormal / nCounter;
-                vNormal.normalize();
+				if (nCounter > 0)
+				{
+					vNormal = vNormal / nCounter;
+					vNormal.normalize();
 
-                vNormal.Negate();
-                m_lVerticeNormals.Add(vNormal);
+					vNormal.Negate();
+					m_lVertexNormals.Add(vNormal);
+				}
 
                 m_arVertices[nBase + 11] = vNormal.x;
                 m_arVertices[nBase + 12] = vNormal.y;
@@ -689,29 +716,19 @@ namespace engine
                 m_arIndices[i * 3 + 2] = (uint)m_lCoordinateIndexes[i][2];
             }
 
-            //sw.Stop();
-            //LOGGER.Debug("Initializing vert and indices took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
-
-            //sw.Start();
-
             m_autoGenereatedFragShader = CreateGLSLFragShader();
-
-            //sw.Stop();
-            //LOGGER.Debug("Generating glsl vert took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
-
-            //sw.Start();
-
             m_autoGenereatedVertexShader = CreateGLSLVertShader();
-
-            //sw.Stop();
-            //LOGGER.Debug("Generating glsl frag took " + sw.Elapsed.TotalSeconds + " for " + m_q3Shader.GetShaderName());
 
 #if DEBUG
             if (!string.IsNullOrEmpty(m_autoGenereatedFragShader) && !string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
+				GameGlobals.m_DebugShaderWriteMutex.WaitOne();
+
 				// this will not output the default glsl shaders for when no q3 shader exists. but I can turn that on somehow if i need it.				
 				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".frag.txt", m_autoGenereatedFragShader);
 				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt", m_autoGenereatedVertexShader);
+
+				GameGlobals.m_DebugShaderWriteMutex.ReleaseMutex();
 			}
 #endif
         }
@@ -769,12 +786,6 @@ namespace engine
 
 			ShaderHelper.printOpenGLError("");
 		}
-
-		/*public void InitializeLists()
-		{
-			InitializeNonGL();
-			InitializeGL();
-		}*/
 
 		public int GetIndex(Face f)
 		{
@@ -862,6 +873,11 @@ namespace engine
 			}
 			if (bRender) 
 				bRender = m_lCoordinateIndexes.Count > 0;
+
+			if(bRender)
+			{
+				//bRender = GetMainTexture().GetPath().Contains("bitch");
+			}
 
 			return !bRender;
 		}
@@ -1076,6 +1092,11 @@ namespace engine
 			// filter shape showing here for debugging
 			//if (!m_q3Shader.GetShaderName().Contains("killblockgeomtrn")) return;
 
+			if(m_q3Shader.GetShaderName().Contains("flare03"))
+			{
+				int stop = 0;
+			}
+
 			if (DontRender()) return;
 
 			// these apply to entire shader
@@ -1178,6 +1199,13 @@ namespace engine
 				nLoc = GL.GetUniformLocation(ShaderProgram, "timeS");
 				GL.Uniform1(nLoc, GameGlobals.GetElapsedS());
 
+				if (m_q3Shader.AutoSpriteEnabled())
+				{
+					nLoc = GL.GetUniformLocation(ShaderProgram, "autospriteMat");
+					// setup autosprite vertex rotation matrix
+					SetupAutospriteMat(nLoc);
+				}
+
 				if (bSendSinTable)
 				{
 					nLoc = GL.GetUniformLocation(ShaderProgram, "sinValues");
@@ -1203,7 +1231,6 @@ namespace engine
 				nLoc = GL.GetUniformLocation(ShaderProgram, "camPosition");
 				GL.Uniform3(nLoc, 1, GameGlobals.m_CamPosition.VectFloat());
 			}
-			// END SET UNIFORMS ***
 
 			// Activate textures - this needs to be after the uniforms above to make animmaps sync with waveforms
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
@@ -1249,16 +1276,16 @@ namespace engine
 			}
 
 			ShaderHelper.printOpenGLError(m_q3Shader.GetShaderName());
+			
+			GL.GetFloat(GetPName.ProjectionMatrix, m_util4x4);
+            nLoc = GL.GetUniformLocation(ShaderProgram, "proj");
+            GL.UniformMatrix4(nLoc, 1, false, m_util4x4);
 
-			float[] proj = new float[16];
-			float[] modelview = new float[16];
-			GL.GetFloat(GetPName.ProjectionMatrix, proj);
-			GL.GetFloat(GetPName.ModelviewMatrix, modelview);
-
+            GL.GetFloat(GetPName.ModelviewMatrix, m_util4x4);
 			nLoc = GL.GetUniformLocation(ShaderProgram, "modelview");
-			GL.UniformMatrix4(nLoc, 1, false, modelview);
-			nLoc = GL.GetUniformLocation(ShaderProgram, "proj");
-			GL.UniformMatrix4(nLoc, 1, false, proj);
+			GL.UniformMatrix4(nLoc, 1, false, m_util4x4);
+			
+			// END SET UNIFORMS ***
 
 			GL.DrawElements(PrimitiveType.Triangles, m_arIndices.Length, DrawElementsType.UnsignedInt, 0);
 
@@ -1281,13 +1308,46 @@ namespace engine
 			}
 		}
 
+		private void SetupAutospriteMat(int nUniformLocation)
+		{
+			if(m_q3Shader.GetShaderName().Contains("flare03"))
+			{
+				int stop = 0;
+			}
+
+			D3Vect camForward = m_d3MidPoint - GameGlobals.m_CamPosition;
+			camForward.normalize();
+
+			D3Vect cross = new D3Vect(camForward, m_lVertexNormals[0]);
+			double dAngle = Math.Acos(D3Vect.DotProduct(m_lVertexNormals[0], camForward)) * GLB.RadToDeg;
+
+			dAngle = 180 - dAngle;
+
+			sgl.PUSHMAT();
+			GL.LoadIdentity();
+
+			GL.Translate((float)m_d3MidPoint.x, (float)m_d3MidPoint.y, (float)m_d3MidPoint.z);
+			GL.Rotate((float)dAngle, (float)cross.x, (float)cross.y, (float)cross.z);
+			GL.Translate((float)-m_d3MidPoint.x, (float)-m_d3MidPoint.y, (float)-m_d3MidPoint.z);
+
+			GL.GetFloat(GetPName.ModelviewMatrix, m_util4x4);
+			sgl.POPMAT();
+
+            GL.UniformMatrix4(nUniformLocation, 1, true, m_util4x4);
+		}
+
 		private void DrawFaceNormals()
 		{
-			if (!m_q3Shader.GetShaderName().Contains("flame")) return;
+			if (!m_q3Shader.GetShaderName().Contains("flare03")) return;
 
-			for (int i = 0; i < m_lFaces.Count; i++)
+			/*for (int i = 0; i < m_lFaces.Count; i++)
 			{
 				m_lFaces[i].DrawNormals();
+			}*/
+
+			for(int i = 0; i < m_lVertexNormals.Count; i++)
+			{
+				Face.DrawNormalStatic(m_lVertexNormals[i], m_lVertices[i], .5, new utilities.Color(255, 0, 0), new utilities.Color(0, 255, 0));
 			}
 		}
 
@@ -1443,6 +1503,38 @@ namespace engine
 			}
 		}
 
+		/// <summary>
+		/// peak into the q3 shader and see if a line contains token without being a comment line
+		/// </summary>
+		/// <param name="sToken"></param>
+		/// <returns></returns>
+		private bool PeakQ3Shader(string sToken)
+		{
+			bool bFound = false;
+            List<string> lShaderLines;
+
+			bool bFoundShader = GameGlobals.m_dictQ3ShaderContent.TryGetValue(Path.ChangeExtension(GetMainTexture().GetPath(), null), out lShaderLines);
+
+			if(bFoundShader)
+			{
+				for(int i = 0; i < lShaderLines.Count; i++)
+				{
+					// comments are already removed
+					string[] tokens = Q3Shader.GetTokens(lShaderLines[i]);
+					foreach(string token in tokens)
+					{
+						if(sToken == token)
+						{
+							bFound = true;
+							break;
+						}
+					}
+					if (bFound) break;
+				}
+			}
+			return bFound;
+        }
+
 		private bool SubShapeEnabled()
 		{
             string sTex = GetMainTexture().GetPath();
@@ -1450,9 +1542,22 @@ namespace engine
             bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
             bool bTeleporter = GameGlobals.IsTeleporterEntry(GetMainTexture().GetPath());
 
-			return sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
+			bool bEnabled = sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
 				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") ||
 				sTex.Contains("jets") || bPortal || bTeleporter;
+
+			if(!bEnabled)
+			{
+				// i really should and wish i knew whether something was autosprite or not by this time but i dont.
+				// the q3 shader is read later. i have to subshape to make autosprite work so each shape has a correct midpoint
+				// but ill just hardcode autosprites that i know of for now.
+
+				//bEnabled = sTex.Contains("slamp3") || sTex.Contains("bitch/orb") || sTex.Contains("lamps/flare03"); // skull lamps in many maps
+
+				bEnabled = PeakQ3Shader("autosprite");
+			}
+
+			return bEnabled;
         }
 
 		private void CreateSubShapes()

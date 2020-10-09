@@ -374,6 +374,11 @@ namespace engine
 
                     DefineTransporter(t, i);
                 }
+				else if(GameGlobals.IsLightBulb(s.GetMainTexture().GetPath()))
+				{
+					LOGGER.Info("Creating lightbulb subshape");
+					sSubShape = new LightBulb(s);
+				}
 				else sSubShape = new Shape(s);
 
 				sSubShape.SetSubShape(true);
@@ -382,8 +387,10 @@ namespace engine
 				sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
 				sSubShape.CreateFaces(m_lMapFaceReferences);
 
-				if (sSubShape is Portal || sSubShape is Teleporter) m_lShapes.Add(sSubShape); // don't need sorting
-				else m_lShapesCustomRenderOrder.Add(sSubShape); // transparent so need sorting
+				if (sSubShape is Portal || sSubShape is Teleporter || sSubShape is LightBulb) m_lShapes.Add(sSubShape); // don't need sorting
+				else m_lShapesCustomRenderOrder.Add(sSubShape); // transparent so need sorting ...
+				// some of the subshapes like ones for autosprite may not need the custom render order sorting but it shouldn't hurt anything
+				// except a little performance. can look into later.
 			}
 		}
 
@@ -427,10 +434,10 @@ namespace engine
 		}
 
 		/// <summary>
-		/// Reads a VRML 2.0 compliant file and creates each shape
+		/// Reads a VRML file and creates each shape
 		/// specified within the file.
 		/// </summary>
-		/// <param m_DisplayName="file">GetPath to a VRML 2.0 compliant file</param>
+		/// <param m_DisplayName="file">GetPath to a VRML file</param>
 		public void Read(MapInfo map)
 		{
 			m_map = map;
@@ -645,7 +652,7 @@ namespace engine
 				foreach (Shape s in m_lShapes) m_lAllShapes.Add(s); // all shapes is just used for threading purposes
 				foreach (Shape s in m_lShapesCustomRenderOrder) m_lAllShapes.Add(s);
 
-				Notify("Initializing shapes non-gl stuff", (int)Figure.ESignals.SHAPE_READ);
+				Notify("Initializing shapes non-gl using " + nMax + " threads", (int)Figure.ESignals.SHAPE_READ);
 
 				int nStartIndex = 0;
 				for (int i = 0; i < nMax; i++)
@@ -758,15 +765,23 @@ namespace engine
 
 		private void workerthread_InitShapeNonGL(object sender, DoWorkEventArgs e)
 		{
-            KeyValuePair<int, int> kvp = (KeyValuePair<int, int>)e.Argument;
-            for (int i = kvp.Key; i < kvp.Value; i++)
-            {
-				m_lAllShapes[i].InitializeNonGL();
+			try
+			{
+				KeyValuePair<int, int> kvp = (KeyValuePair<int, int>)e.Argument;
+				for (int i = kvp.Key; i < kvp.Value; i++)
+				{
+					m_lAllShapes[i].InitializeNonGL();
 
-                m_mutProgress.WaitOne();
-                m_nInitializeProgress++;
-                m_mutProgress.ReleaseMutex();
-            }
+					m_mutProgress.WaitOne();
+					m_nInitializeProgress++;
+					m_mutProgress.ReleaseMutex();
+				}
+			}
+			catch(Exception ex)
+			{
+				System.Windows.Forms.MessageBox.Show("Error when initting shape non gl: " + ex.Message + "\n\n" + ex.StackTrace, "Shape load error");
+				Environment.Exit(1);
+			}
         }
 
 		/// <summary>

@@ -32,8 +32,6 @@ namespace engine
 
         public enum EFileType { PNG, TGA, JPG };
 
-        // Form the complete path of the m_pnTextures filename and create the m_pnTextures with the filename
-        // If the m_pnTextures cannot be found then create a m_pnTextures with a default file
         public Texture( string sInternalZipPath, string sFullPath )
         {
             m_pnTextures = new uint[1];
@@ -85,17 +83,17 @@ namespace engine
             {
                 aVal *= 0.5f; // make glass more transparent
             }
-            else if(sShaderName.Contains("spotlamp"))
+            else if (sShaderName.Contains("flare03"))
             {
-
+                aVal *= 2.0f;
             }
             else if (sShaderName.Contains("lamp"))
             {
                 // make things a lot less transparent from original value
                 // in dm4 the skull lights have lightbulbs rendered in the lamp glass
 
-                aVal *= 2.5f;
-            }
+                aVal *= 2.0f;
+            }            
             else if(sShaderName.Contains("pjgrate2"))
             {
                 aVal *= 100; // special case. only remove black sections which should have alpha 0
@@ -190,113 +188,11 @@ namespace engine
         public void SetTexture(string sShaderName)
         {
             m_pWrapper.ReadIntoBitmapForTexture(m_bShouldBeTGA, sShaderName);
-
-            /*if (string.IsNullOrEmpty(sFullPath)) return; // for example fog
-
-            if(Path.GetExtension(sFullPath) == ".tga") m_bTGA = true;
-
-            //LOGGER.Debug("Set texture to " + sFullPath);
-
-            GetBitmapFromImageFile(sFullPath, bShouldBeTGA, sShaderName, m_pWrapper);
-
-            if (m_bitmap.Width > m_bitmap.Height) m_bWideTexture = true;
-
-            m_bitmap.RotateFlip(System.Drawing.RotateFlipType.Rotate180FlipX);
-
-            System.Drawing.Rectangle rect = new System.Drawing.Rectangle(0, 0, m_bitmap.Width, m_bitmap.Height);
-
-            System.Drawing.Imaging.BitmapData bitmapdata;
-
-            m_bitmapdata = m_bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                System.Drawing.Imaging.PixelFormat.Format32bppArgb);*/
-
-			//File.Delete(sFullPath);
         }
 
         public void bindMeRaw()
         {
             GL.BindTexture(TextureTarget.Texture2D, m_pnTextures[0]);
         }
-
-        // ### non thread safe static functions for review ###
-
-        /*public static float[] GetAverageColor255(string sPath, bool bShouldBeTGA)
-        {
-            //GameGlobals.m_StaticTextureFcnMutex4.WaitOne();
-
-            float[] fCol = { 0f, 0f, 0f, 0f };
-            System.Drawing.Bitmap bm = GetBitmapFromImageFile(sPath, bShouldBeTGA, "");
-            float fCounter = 0;
-            for (int i = 0; i < bm.Width; i++)
-            {
-                for (int j = 0; j < bm.Height; j++)
-                {
-                    System.Drawing.Color pcol = bm.GetPixel(i, j);
-                    fCounter++;
-
-                    fCol[0] += pcol.R;
-                    fCol[1] += pcol.G;
-                    fCol[2] += pcol.B;
-                    fCol[3] += pcol.A;
-                }
-            }
-            fCol[0] /= fCounter;
-            fCol[1] /= fCounter;
-            fCol[2] /= fCounter;
-            fCol[3] /= fCounter;
-
-            bm.Dispose();
-
-            //GameGlobals.m_StaticTextureFcnMutex4.ReleaseMutex();
-
-            return fCol;
-        }*/
-
-       
-
-        /*private static System.Drawing.Bitmap GetBitmapFromImageFile(string sFullPath, bool bShouldBeTGA, string sShaderName, BitmapWrapper bw)
-        {
-            //GameGlobals.m_StaticTextureFcnMutex2.WaitOne();
-
-            System.Drawing.Bitmap image;
-
-            if (Path.GetExtension(sFullPath) == ".tga")
-            { // already tga
-                IImageFormat format;
-                using (var image2 = Image.Load(sFullPath, out format))
-                {
-                    MemoryStream memStr = new MemoryStream();
-                    image2.SaveAsPng(memStr);
-                    image = new System.Drawing.Bitmap(memStr);
-
-                    if (sFullPath.Contains("pjgrate2")) // only real tga in the game that converts incorrectly from tga to png to bmp so add alpha manually
-                    {
-                        AddAlphaToImage(ref image, sShaderName);
-                    }
-
-                    memStr.Dispose();
-                }
-            }
-            else
-            {
-                image = new System.Drawing.Bitmap(sFullPath);
-
-                if (bShouldBeTGA && !SpecialTexture(sFullPath))
-                {
-                    System.Diagnostics.Debug.Assert(Path.GetExtension(sFullPath) == ".jpg");
-
-                    AddAlphaToImage(ref image, sShaderName);
-
-                    if (sFullPath.Contains("sfx/beam") || sFullPath.Contains("spotlamp/beam"))
-                    {
-                        BrightenUpBeams(ref image, GetBeamColor(sFullPath));
-                    }
-                }
-            }
-
-            //GameGlobals.m_StaticTextureFcnMutex2.ReleaseMutex();
-
-            return image;
-        } */       
     }
 }

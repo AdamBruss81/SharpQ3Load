@@ -92,6 +92,7 @@
     <Compile Include="Figure\Portal.cs" />
     <Compile Include="Figure\Q3Shader.cs" />
     <Compile Include="Figure\Q3ShaderStage.cs" />
+    <Compile Include="Figure\ShapeTypes.cs" />
     <Compile Include="SoundManager.cs" />
     <Compile Include="StopWatchManager.cs" />
     <Compile Include="Zipping\Zipper.cs" />

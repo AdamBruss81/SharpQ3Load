@@ -11,7 +11,6 @@ namespace engine
 		private uint m_popoutPowerMS = 300;
 		private D3Vect m_d3Lookat = new D3Vect();
 
-
 		public Transporter(Shape s) : base(s)
         {
             m_d3Lookat.SetXYZ(0, -.1, 0); // default

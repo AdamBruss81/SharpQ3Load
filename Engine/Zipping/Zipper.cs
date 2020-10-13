@@ -45,13 +45,13 @@ namespace engine
             if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
 
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
+            GameGlobals.m_ZipExtractPak0Mutex.WaitOne();
             if (!File.Exists(sFullPathToExtractedFile))
-            {
-                GameGlobals.m_ZipExtractPak0Mutex.WaitOne();
-                zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, sInternalPath);
-                GameGlobals.m_ZipExtractPak0Mutex.ReleaseMutex();
+            {                
+                zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, sInternalPath);                
             }
-			return sFullPathToExtractedFile;
+            GameGlobals.m_ZipExtractPak0Mutex.ReleaseMutex();
+            return sFullPathToExtractedFile;
 		}
 
         public void ExtractAllShaderFiles()

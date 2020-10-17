@@ -376,7 +376,7 @@ namespace engine
                 }
 				else if(GameGlobals.IsLightBulb(s.GetMainTexture().GetPath()))
 				{
-					LOGGER.Info("Creating lightbulb subshape");
+					//LOGGER.Info("Creating lightbulb subshape");
 					sSubShape = new LightBulb(s);
 				}
 				else sSubShape = new Shape(s);

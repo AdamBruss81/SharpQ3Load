@@ -20,7 +20,7 @@ namespace engine
 
     public class DeformVertexes
     {
-        public enum EDeformVType { INVALID, WAVE, BULGE, MOVE, AUTOSPRITE };
+        public enum EDeformVType { INVALID, WAVE, BULGE, MOVE, AUTOSPRITE, AUTOSPRITE2 };
 
         public EDeformVType m_eType = EDeformVType.INVALID;
 
@@ -846,14 +846,19 @@ namespace engine
                                 Q3ShaderStage.SetWaveForm(dv.m_wf, tokens, 5);
                                 m_lDeformVertexes.Add(dv);
                             }
-                            else if(tokens[1] == "autosprite") // just do autosprite for now not autosprite2
+                            else if(tokens[1] == "autosprite") 
                             {
                                 dv.m_eType = DeformVertexes.EDeformVType.AUTOSPRITE;
                                 m_lDeformVertexes.Add(dv);
                             }
+                            else if (tokens[1] == "autosprite2") 
+                            {
+                                dv.m_eType = DeformVertexes.EDeformVType.AUTOSPRITE2;
+                                m_lDeformVertexes.Add(dv);
+                            }
                             else
                             {
-                                if (tokens[1] != "normal" && tokens[1] != "autosprite2") // not doing autosprite2 or normal right now  
+                                if (tokens[1] != "normal") // not doing autosprite2 or normal right now  
                                     throw new Exception("Found deformvertexes with type " + tokens[1]);
                             }
                         }
@@ -1012,7 +1017,9 @@ namespace engine
         {
             for(int i = 0; i < m_lDeformVertexes.Count; i++)
             {
-                if (m_lDeformVertexes[i].m_eType == DeformVertexes.EDeformVType.AUTOSPRITE) return true;
+                if (m_lDeformVertexes[i].m_eType == DeformVertexes.EDeformVType.AUTOSPRITE || 
+                    m_lDeformVertexes[i].m_eType == DeformVertexes.EDeformVType.AUTOSPRITE2) 
+                    return true;
             }
             return false;
         }

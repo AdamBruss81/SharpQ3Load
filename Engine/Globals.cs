@@ -204,7 +204,10 @@ namespace engine
 
 		public static bool IsPortalEntry(string sPath) { return sPath.Contains("sfx/portal_sfx.jpg"); }
 		public static bool IsTeleporterEntry(string sPath) { return sPath.Contains("teleporter/energy"); }
-		public static bool IsLightBulb(string sPath) { return sPath.Contains("flare03") || sPath.Contains("gratelamp_flare"); } // more tests later
+		public static bool IsLightBulb(string sPath) 
+		{
+			return sPath.Contains("flare03") || sPath.Contains("gratelamp_flare") || sPath.Contains("slamp/slamp3");
+		} 
 
 		public static void InitTables(Zipper zipper)
 		{

@@ -37,6 +37,7 @@ namespace engine
 		List<D3Vect> m_lVertexNormals = new List<D3Vect>();
 		List<List<List<int>>> m_lSubShapes = new List<List<List<int>>>(); // for dividing up shapes into sub shapes to fix transparency issues on rendering
 																		  // could also be used later to control properties of jumppads
+		D3Vect m_d3AutoSprite2UpVector = new D3Vect();
 
 		float m_fTempAngle = 0f;
         float[] m_util4x4 = new float[16];
@@ -247,9 +248,15 @@ namespace engine
 				{
 					bDeformMovePresent = true;
 				}
-				else if (dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE)
+				else if (dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE || dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE2)
 				{
 					bDeformAutoSprite = true;
+
+					if(dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE2)
+                    {
+						// setup fixed up vector
+						DefineFixedAS2UpVector();
+                    }
 				}
 			}
 
@@ -517,7 +524,7 @@ namespace engine
 						}
 						sb.AppendLine("MoveVertexes(" + dv.m_Move.m_x + ", " + dv.m_Move.m_y + ", " + dv.m_Move.m_z + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
 					}
-					else if(dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE)
+					else if(dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE || dv.m_eType == DeformVertexes.EDeformVType.AUTOSPRITE2)
 					{
 						sb.AppendLine("DeformAutoSprite(newPosition);");
 					}
@@ -534,7 +541,27 @@ namespace engine
 			return sb.ToString();
 		}
 
-		public string CreateGLSLFragShader()
+		/// <summary>
+		/// Find long axis of this shape and use it as up vector for autosprite2
+		/// </summary>
+        private void DefineFixedAS2UpVector()
+        {
+			List<Edge> lUniqueEdges = new List<Edge>();
+            for(int i = 0; i < m_lFaces.Count; i++)
+            {
+				m_lFaces[i].GatherUniqueEdges(lUniqueEdges, false);
+            }
+			for(int i = 0; i < lUniqueEdges.Count; i++)
+            {
+				if(lUniqueEdges[i].GetLength() > m_d3AutoSprite2UpVector.Length)
+                {
+					m_d3AutoSprite2UpVector = (lUniqueEdges[i].Vertice1 - lUniqueEdges[i].Vertice2);
+                }
+            }
+			m_d3AutoSprite2UpVector.normalize();
+        }
+
+        public string CreateGLSLFragShader()
 		{
 			System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
@@ -876,7 +903,7 @@ namespace engine
 
 			if(bRender)
 			{
-				//bRender = GetMainTexture().GetPath().Contains("bitch");
+				//bRender = GetMainTexture().GetPath().Contains("slamp3");
 			}
 
 			return !bRender;
@@ -1203,7 +1230,7 @@ namespace engine
 				{
 					nLoc = GL.GetUniformLocation(ShaderProgram, "autospriteMat");
 					// setup autosprite vertex rotation matrix
-					SetupAutospriteMat(nLoc);
+					SetupAutospriteMat(nLoc, m_d3AutoSprite2UpVector);
 				}
 
 				if (bSendSinTable)
@@ -1308,26 +1335,42 @@ namespace engine
 			}
 		}
 
-		private void SetupAutospriteMat(int nUniformLocation)
+		private void SetupAutospriteMat(int nUniformLocation, D3Vect upvectorOptional)
 		{
-			if(m_q3Shader.GetShaderName().Contains("flare03"))
-			{
-				int stop = 0;
-			}
-
 			D3Vect camForward = m_d3MidPoint - GameGlobals.m_CamPosition;
 			camForward.normalize();
 
-			D3Vect cross = new D3Vect(camForward, m_lVertexNormals[0]);
-			double dAngle = Math.Acos(D3Vect.DotProduct(m_lVertexNormals[0], camForward)) * GLB.RadToDeg;
+			double dDot = D3Vect.DotProduct(m_lVertexNormals[0], camForward);
+			double dAngle = Math.Acos(dDot) * GLB.RadToDeg;
 
-			dAngle = 180 - dAngle;
+			D3Vect d3RotationVector;
+
+			if (upvectorOptional.Empty)
+			{
+				d3RotationVector = new D3Vect(camForward, m_lVertexNormals[0]); // cross product	
+				dAngle = 180 - dAngle;
+			}
+			else
+			{				
+				d3RotationVector = upvectorOptional;
+				dAngle = 180 - dAngle;
+
+				// this doesn't work right yet
+
+				//dAngle = 0;
+
+				//dAngle = dAngle + 180;
+				/*if(dDot <= 0)
+                {
+					d3RotationVector.Negate();
+                }*/
+			}			
 
 			sgl.PUSHMAT();
 			GL.LoadIdentity();
 
 			GL.Translate((float)m_d3MidPoint.x, (float)m_d3MidPoint.y, (float)m_d3MidPoint.z);
-			GL.Rotate((float)dAngle, (float)cross.x, (float)cross.y, (float)cross.z);
+			GL.Rotate((float)dAngle, (float)d3RotationVector.x, (float)d3RotationVector.y, (float)d3RotationVector.z);
 			GL.Translate((float)-m_d3MidPoint.x, (float)-m_d3MidPoint.y, (float)-m_d3MidPoint.z);
 
 			GL.GetFloat(GetPName.ModelviewMatrix, m_util4x4);
@@ -1508,7 +1551,7 @@ namespace engine
 		/// </summary>
 		/// <param name="sToken"></param>
 		/// <returns></returns>
-		private bool PeakQ3Shader(string sToken)
+		private bool PeakQ3Shader(List<string> lSearchTokens)
 		{
 			bool bFound = false;
             List<string> lShaderLines;
@@ -1523,7 +1566,7 @@ namespace engine
 					string[] tokens = Q3Shader.GetTokens(lShaderLines[i]);
 					foreach(string token in tokens)
 					{
-						if(sToken == token)
+						if(lSearchTokens.Contains(token))
 						{
 							bFound = true;
 							break;
@@ -1539,22 +1582,16 @@ namespace engine
 		{
             string sTex = GetMainTexture().GetPath();
 
-            bool bPortal = GameGlobals.IsPortalEntry(GetMainTexture().GetPath());
-            bool bTeleporter = GameGlobals.IsTeleporterEntry(GetMainTexture().GetPath());
+            bool bPortal = GameGlobals.IsPortalEntry(sTex);
+            bool bTeleporter = GameGlobals.IsTeleporterEntry(sTex);
 
 			bool bEnabled = sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
 				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") ||
-				sTex.Contains("jets") || bPortal || bTeleporter;
+				sTex.Contains("jets") || sTex.Contains("liquids") || sTex.Contains("lamps/beam") || bPortal || bTeleporter;
 
 			if(!bEnabled)
 			{
-				// i really should and wish i knew whether something was autosprite or not by this time but i dont.
-				// the q3 shader is read later. i have to subshape to make autosprite work so each shape has a correct midpoint
-				// but ill just hardcode autosprites that i know of for now.
-
-				//bEnabled = sTex.Contains("slamp3") || sTex.Contains("bitch/orb") || sTex.Contains("lamps/flare03"); // skull lamps in many maps
-
-				bEnabled = PeakQ3Shader("autosprite");
+				bEnabled = PeakQ3Shader(new List<string> { "autosprite", "autosprite2" });
 			}
 
 			return bEnabled;

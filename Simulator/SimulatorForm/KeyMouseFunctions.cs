@@ -36,7 +36,7 @@ namespace simulator
         private void openGLControl_KeyUp(object sender, KeyEventArgs e)
         {            
             m_dictKeyStates[e.KeyCode] = false;
-            LOGGER.Debug("key up: " + e.KeyCode);
+            //LOGGER.Debug("key up: " + e.KeyCode);
         }
 
         private void ProcessMouseButtons()
@@ -152,7 +152,7 @@ namespace simulator
                 if (m_bRunning)
                 {
                     m_dictKeyStates[e.KeyCode] = true;
-                    LOGGER.Debug("key down: " + e.KeyCode);
+                    //LOGGER.Debug("key down: " + e.KeyCode);
 
                     if (e.KeyData == Keys.F1 && m_Engine.GetClass() != Engine.EEngineType.PLAYER)
                     {                                          

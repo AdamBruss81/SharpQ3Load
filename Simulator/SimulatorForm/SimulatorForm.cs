@@ -100,7 +100,7 @@ namespace simulator
 
 		private void Simulator_Load(object sender, EventArgs e)
 		{
-			Glut.glutInit();
+            Glut.glutInit();
 
 			m_fonter = new gl_font.BasicFont();
 

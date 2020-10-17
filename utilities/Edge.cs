@@ -24,6 +24,11 @@ namespace utilities
 			m_d3V2 = v2;
 		}
 
+		public double GetLength()
+        {
+			return (m_d3V1 - m_d3V2).Length;
+        }
+
 		public void Clear()
 		{
 			m_d3V1.Zero();

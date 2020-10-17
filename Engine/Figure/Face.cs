@@ -326,7 +326,7 @@ namespace engine
 		/// Fill out lEdges with new edges from this
 		/// </summary>
 		/// <param name="lEdges">A reference parameter of unique directional lines</param>
-        public void GatherUniqueEdges(List<Edge> lEdges)
+        public void GatherUniqueEdges(List<Edge> lEdges, bool bIncludeDups = true)
         {
 			bool bFound;
 
@@ -335,7 +335,13 @@ namespace engine
 				bFound = false;
 				for (int j = 0; j < lEdges.Count; j++)
 				{
-					if(m_edges.GetEdgeLine(i).LineEquals(lEdges[j])) {
+					if(m_edges.GetEdgeLine(i).LineEquals(lEdges[j])) 
+					{
+						if(!bIncludeDups)
+                        {
+							lEdges.RemoveAt(j); // this is not perfect. if this edge comes up again in m_edges it will get added.
+							// but i think it's enough for my needs as this will not happen in my case(autosprite2)
+                        }
 						bFound = true;
 						break;
 					}

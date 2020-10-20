@@ -253,15 +253,17 @@ namespace engine
             }
             else if (m_bWater)
             {
+                // q3 must be doing something special with water to make it look better.
+
                 if (m_bWaterGLZERO)
                 {
                     // more color and opaqueness because the blend functions are zeroing
-                    sb.AppendLine("outputColor = vec4(1.0, 1.0, 1.0, .3);");
+                    sb.AppendLine("outputColor = vec4(1.0, 1.0, 1.0, .5);");
                 }
                 else // gl_one
                 {
                     // less color and opaqueness because the blend functions are adding
-                    sb.AppendLine("outputColor = vec4(0.1, 0.2, 0.15, 0.05);");
+                    sb.AppendLine("outputColor = vec4(0.1, 0.2, 0.15, 0.1);");
                 }
             }
             else if(m_sShaderName.Contains("jesuswall"))
@@ -959,7 +961,12 @@ namespace engine
                         else if (sInsideTargetShaderLine.Contains("tcmod scale"))
                         {
                             string[] tokens = GetTokens(sInsideTargetShaderLine);
-                            m_lStages[m_lStages.Count - 1].SetTCModeScale(GetTokensAfterSecond(tokens));
+                            m_lStages[m_lStages.Count - 1].SetTCModScale(GetTokensAfterSecond(tokens));
+                        }
+                        else if(sInsideTargetShaderLine.Contains("tcmod transform"))
+                        {
+                            string[] tokens = GetTokens(sInsideTargetShaderLine);
+                            m_lStages[m_lStages.Count - 1].SetTCModTransform(GetTokensAfterSecond(tokens));
                         }
                         else if (sInsideTargetShaderLine.Contains("tcgen environment"))
                         {

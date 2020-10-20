@@ -223,6 +223,7 @@ namespace engine
 								}
 							case TCMOD.ETYPE.STRETCH: sb.AppendLine("uniform float stretch" + sIndex + "[6];"); break;
 							case TCMOD.ETYPE.ROTATE: sb.AppendLine("uniform float rotate" + sIndex + "[6];"); break;
+							case TCMOD.ETYPE.TRANSFORM: sb.AppendLine("uniform float transform" + sIndex + "[6];"); break;
 						}
 					}
 				}
@@ -460,20 +461,14 @@ namespace engine
 							{
 								// 0 - 3 are the 2x2 transform matrix
 								// 4-5 are the translate vector
-								sb.AppendLine("float " + sTexmod + "_stretch_x = " + sTexmod + ".x;");
-								sb.AppendLine("float " + sTexmod + "_stretch_y = " + sTexmod + ".y;");
-								sb.AppendLine(sTexmod + ".x = " + sTexmod + "_stretch_x * stretch" + sIndex + "[0] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[1] + stretch" + sIndex + "[4];");
-								sb.AppendLine(sTexmod + ".y = " + sTexmod + "_stretch_x * stretch" + sIndex + "[2] + " + sTexmod + "_stretch_y * stretch" + sIndex + "[3] + stretch" + sIndex + "[5];");
+								DefineTransformGLSL(sb, sTexmod, "stretch", sIndex);
 								break;
 							}
 						case TCMOD.ETYPE.ROTATE:
 							{
 								// 0 - 3 are the 2x2 transform matrix
 								// 4-5 are the translate vector
-								sb.AppendLine("float " + sTexmod + "_rotate_x = " + sTexmod + ".x;");
-								sb.AppendLine("float " + sTexmod + "_rotate_y = " + sTexmod + ".y;");
-								sb.AppendLine(sTexmod + ".x = " + sTexmod + "_rotate_x * rotate" + sIndex + "[0] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[1] + rotate" + sIndex + "[4];");
-								sb.AppendLine(sTexmod + ".y = " + sTexmod + "_rotate_x * rotate" + sIndex + "[2] + " + sTexmod + "_rotate_y * rotate" + sIndex + "[3] + rotate" + sIndex + "[5];");
+								DefineTransformGLSL(sb, sTexmod, "rotate", sIndex);
 								break;
 							}
 						case TCMOD.ETYPE.TURB:
@@ -486,7 +481,14 @@ namespace engine
 
 								break;
 							}
-					}
+						case TCMOD.ETYPE.TRANSFORM:
+                            {
+								// 0 - 3 are the 2x2 transform matrix
+								// 4-5 are the translate vector
+								DefineTransformGLSL(sb, sTexmod, "transform", sIndex);
+								break;
+                            }
+                    }
 				}
 			}
 
@@ -540,6 +542,16 @@ namespace engine
 
 			return sb.ToString();
 		}
+
+		private void DefineTransformGLSL(System.Text.StringBuilder sb, string sTexmod, string sTransformType, string sIndex)
+        {
+            // 0 - 3 are the 2x2 transform matrix
+            // 4-5 are the translate vector
+            sb.AppendLine("float " + sTexmod + "_" + sTransformType + "_x = " + sTexmod + ".x;");
+            sb.AppendLine("float " + sTexmod + "_" + sTransformType + "_y = " + sTexmod + ".y;");
+            sb.AppendLine(sTexmod + ".x = " + sTexmod + "_" + sTransformType + "_x * " + sTransformType + sIndex + "[0] + " + sTexmod + "_" + sTransformType + "_y * " + sTransformType + sIndex + "[1] + " + sTransformType + sIndex + "[4];");
+			sb.AppendLine(sTexmod + ".y = " + sTexmod + "_" + sTransformType + "_x * " + sTransformType + sIndex + "[2] + " + sTexmod + "_" + sTransformType + "_y * " + sTransformType + sIndex + "[3] + " + sTransformType + sIndex + "[5];");
+        }
 
 		/// <summary>
 		/// Find long axis of this shape and use it as up vector for autosprite2
@@ -1218,6 +1230,13 @@ namespace engine
 									GL.Uniform1(nLoc, 6, m_uniformFloat6);
 									break;
 								}
+							case TCMOD.ETYPE.TRANSFORM:
+                                {
+                                    nLoc = GL.GetUniformLocation(ShaderProgram, "transform" + Convert.ToString(i));
+                                    stage.GetTransformValues(ref m_uniformFloat6);
+                                    GL.Uniform1(nLoc, 6, m_uniformFloat6);
+                                    break;
+                                }
 						}
 					}
 				}

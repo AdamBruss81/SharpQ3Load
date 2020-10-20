@@ -5,7 +5,7 @@ namespace engine
 {
     public abstract class TCMOD
     {
-        public enum ETYPE { SCROLL, SCALE, TURB, ROTATE, STRETCH };
+        public enum ETYPE { SCROLL, SCALE, TURB, ROTATE, STRETCH, TRANSFORM };
 
         public abstract ETYPE GetModType();
     }
@@ -25,6 +25,13 @@ namespace engine
         public float t = 0f;
 
         public override ETYPE GetModType() { return ETYPE.SCROLL; }
+    }
+
+    class TCTRANSFORM : TCMOD
+    {
+        public float m00, m01, m10, m11, t0, t1;
+
+        public override ETYPE GetModType() { return ETYPE.TRANSFORM; }
     }
 
     class TCSCALE : TCMOD
@@ -78,6 +85,7 @@ namespace engine
         TCSCROLL m_scroll = new TCSCROLL();
         TCROTATE m_rotate = new TCROTATE();
         TCSTRETCH m_stretch = new TCSTRETCH();
+        TCTRANSFORM m_transform = new TCTRANSFORM();
         GEN m_rgbgen = new GEN();
         GEN m_alphagen = new GEN();
         Q3Shader m_ParentShader = null;
@@ -304,13 +312,27 @@ namespace engine
 
             m_TCMODS.Add(m_turb);
         }
-        public void SetTCModeScale(string s)
+        public void SetTCModScale(string s)
         {
             string[] tokens = s.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             m_scale.s = Convert.ToSingle(tokens[0]);
             m_scale.t = Convert.ToSingle(tokens[1]);
 
             m_TCMODS.Add(m_scale);
+        }
+
+        public void SetTCModTransform(string s)
+        {
+            string[] tokens = s.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            m_transform.m00 = Convert.ToSingle(tokens[0]);
+            m_transform.m01 = Convert.ToSingle(tokens[1]);
+            m_transform.m10 = Convert.ToSingle(tokens[2]);
+            m_transform.m11 = Convert.ToSingle(tokens[3]);
+            m_transform.t0 = Convert.ToSingle(tokens[4]);
+            m_transform.t1 = Convert.ToSingle(tokens[5]);
+
+            m_TCMODS.Add(m_transform);
         }
 
         public string GetTexturePath() { return m_sTexturePath; }
@@ -369,7 +391,9 @@ namespace engine
                 p = p * 1.2f; // not sure why needed but if fixes all bounce pads it seems
             else 
                 p = p * 1.6f; // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now
-            // without it the stretching doesn't go far enough in towards the center                                 
+            // without it the stretching doesn't go far enough in towards the center   
+            
+            // these adjustments are probably because the vertices are scaled down significantly in the vrml?
 
             vals[0] = p;
             vals[1] = 0;
@@ -377,6 +401,16 @@ namespace engine
             vals[2] = 0;
             vals[3] = p;
             vals[5] = (.5f - .5f * p);
+        }
+
+        public void GetTransformValues(ref float[] vals)
+        {
+            vals[0] = m_transform.m00;
+            vals[1] = m_transform.m01;
+            vals[2] = m_transform.m10;
+            vals[3] = m_transform.m11;
+            vals[4] = m_transform.t0;
+            vals[5] = m_transform.t1;
         }
 
         // first four values are 2 x 2 transform matrix, last two are a translation vector

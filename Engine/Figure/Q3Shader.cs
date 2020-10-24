@@ -855,8 +855,8 @@ namespace engine
                             }
                             else if (tokens[1] == "autosprite2") 
                             {
-                                dv.m_eType = DeformVertexes.EDeformVType.AUTOSPRITE2;
-                                m_lDeformVertexes.Add(dv);
+                                /*dv.m_eType = DeformVertexes.EDeformVType.AUTOSPRITE2;
+                                m_lDeformVertexes.Add(dv);*/
                             }
                             else
                             {
@@ -992,7 +992,7 @@ namespace engine
 
                             // this is a good spot to exit out of the shader reading process to debug shaders
                             // exit out after stages one by one to test stages one by one
-                            if (m_sShaderName.Contains("jesuswall"))
+                            if (m_sShaderName.Contains("largerblock3b_ow"))
                             {
                                 if (m_lStages.Count == 1)
                                 {

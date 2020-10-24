@@ -476,10 +476,13 @@ namespace engine
 								// get rid of sintable usage for now until i get to fixing this again
 								sb.AppendLine("float turbVal" + sIndex + " = turb" + sIndex + "[1] + timeS * turb" + sIndex + "[2];");
 
-								sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( vertice.x + vertice.z ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
-								sb.AppendLine(sTexmod + ".y = " + sTexmod + ".y + sinValues[ int ( ( ( vertice.y ) * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+								// The multiply by 40.0 below is needed to scale the vertice positions to account for the fact that my vrml values are scaled down from q3 values
+								// if you don't scale like this then the turbulence won't look right because the phases of the s and t will be too close
 
-								break;
+                                sb.AppendLine(sTexmod + ".x = " + sTexmod + ".x + sinValues[ int ( ( ( aPosition.x + aPosition.z ) * 40.0 * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+                                sb.AppendLine(sTexmod + ".y = " + sTexmod + ".y + sinValues[ int ( ( ( aPosition.y ) * 40.0 * 0.125 * 1.0/128 + turbVal" + sIndex + " ) * 1024 ) & 1023 ] * turb" + sIndex + "[0];");
+
+                                break;
 							}
 						case TCMOD.ETYPE.TRANSFORM:
                             {
@@ -1375,6 +1378,7 @@ namespace engine
 				dAngle = 180 - dAngle;
 
 				// this doesn't work right yet
+				// todo : get this to rotate correctly to face the camera always
 
 				//dAngle = 0;
 

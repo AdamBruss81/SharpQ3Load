@@ -293,7 +293,17 @@ namespace engine
 			}
 		}
 
-		override public void LeftMouseDown()
+        public override void MiddleMouseDown()
+        {
+			Notify((int)ESignals.ZOOMED_IN);			
+        }
+
+        public override void MiddleMouseUp()
+        {
+            Notify((int)ESignals.ZOOMED_OUT);
+        }
+
+        override public void LeftMouseDown()
 		{
 			Fire(); 
 		}

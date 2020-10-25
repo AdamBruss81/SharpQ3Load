@@ -342,7 +342,13 @@ namespace engine
             D3Vect disOne = s1.GetMidpoint() - GameGlobals.m_CamPosition;
             D3Vect disTwo = s2.GetMidpoint() - GameGlobals.m_CamPosition;
 
-            return disTwo.Length.CompareTo(disOne.Length);
+			if(Math.Abs(disOne.Length - disTwo.Length) <= 0.05)
+            {
+				// for lamps in ctf space when you line two of them up. this check is bogus but it works for the case i need it to
+				return s1.GetMapFaces().Count.CompareTo(s2.GetMapFaces().Count);
+			}
+            else 
+				return disTwo.Length.CompareTo(disOne.Length);
         }
 
         private static int CompareShapes(Shape s1, Shape s2)
@@ -376,7 +382,6 @@ namespace engine
                 }
 				else if(GameGlobals.IsLightBulb(s.GetMainTexture().GetPath()))
 				{
-					//LOGGER.Info("Creating lightbulb subshape");
 					sSubShape = new LightBulb(s);
 				}
 				else sSubShape = new Shape(s);

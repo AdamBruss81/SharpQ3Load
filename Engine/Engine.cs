@@ -25,7 +25,7 @@ namespace engine
 	/// </summary>
 	public abstract class Engine : Subject
 	{
-		public enum ESignals { DONE_READING_MAP = SignalStarts.g_nEngineStart };
+		public enum ESignals { DONE_READING_MAP = SignalStarts.g_nEngineStart, ZOOMED_IN, ZOOMED_OUT };
 
 		bool m_bDrawAxis = false;
 
@@ -273,6 +273,8 @@ namespace engine
 
 		virtual public void LeftMouseDown() { }
 		virtual public void RightMouseDown() { }
+		virtual public void MiddleMouseDown() { }
+		virtual public void MiddleMouseUp() { }
 
 		virtual public void KeyDown(KeyEventArgs e) 
 		{

@@ -7,5 +7,5 @@ namespace utilities
 		System.Drawing.Point Location { get; }
 		int Width { get; }
 		int Height { get; }
-	}
+	}	
 }

@@ -1134,11 +1134,6 @@ namespace engine
 			// filter shape showing here for debugging
 			//if (!m_q3Shader.GetShaderName().Contains("killblockgeomtrn")) return;
 
-			if(m_q3Shader.GetShaderName().Contains("flare03"))
-			{
-				int stop = 0;
-			}
-
 			if (DontRender()) return;
 
 			// these apply to entire shader
@@ -1610,7 +1605,8 @@ namespace engine
 
 			bool bEnabled = sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
 				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") ||
-				sTex.Contains("jets") || sTex.Contains("liquids") || sTex.Contains("lamps/beam") || bPortal || bTeleporter;
+				sTex.Contains("jets") || sTex.Contains("liquids") || sTex.Contains("lamps/beam") ||
+				sTex.Contains("colua0_lght") || bPortal || bTeleporter;
 
 			if(!bEnabled)
 			{

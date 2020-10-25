@@ -26,7 +26,7 @@ namespace simulator
 	/// <summary>
 	/// Console for driving entire application
 	/// </summary>
-	public partial class SimulatorForm : Form
+	public partial class SimulatorForm : Form, obsvr.IObserverHelper
 	{
 		private Engine m_Engine = null;
 
@@ -48,8 +48,10 @@ namespace simulator
 		private double m_dVelocity = 0.0;
 		Dictionary<Keys, bool> m_dictKeyStates = new Dictionary<Keys, bool>();
 		Dictionary<MouseButtons, bool> m_dictMouseButtonStates = new Dictionary<MouseButtons, bool>();
+		private bool m_bMiddleMouseUp = false;
 
-		private OpenGLControlModded.simpleOpenGlControlEx m_openGLControl;		
+		private OpenGLControlModded.simpleOpenGlControlEx m_openGLControl;
+		private obsvr.Communicator m_Observer = new obsvr.Communicator();
 		private MapChooserForm m_menu;
 
 		Point m_CursorPoint = new Point();
@@ -84,7 +86,9 @@ namespace simulator
 		/// </summary>
 		public SimulatorForm()
 		{
-			InitializeComponent();			
+			InitializeComponent();
+
+			m_Observer.SetListener(this);
 
 			m_menu = new MapChooserForm();
 
@@ -98,7 +102,23 @@ namespace simulator
 			GameGlobals.InitTables(m_zipper);
 		}
 
-		private void Simulator_Load(object sender, EventArgs e)
+        private void SetupProjectionMatrix(float fFOV)
+        {
+            GL.MatrixMode(MatrixMode.Projection);
+
+            GL.DepthFunc(DepthFunction.Lequal);
+            GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
+
+            GL.LoadIdentity();
+            // .07 for near was chosen so the depth test works well on faces close to eachother. Also, it is chosen so it's close to you.
+            // changed it to .2 to make walls work in long hallway of dm0
+            Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(fFOV * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .2f, 200.0f);
+            GL.LoadMatrix(ref persMat);
+
+            GL.MatrixMode(MatrixMode.Modelview);
+        }
+
+        private void Simulator_Load(object sender, EventArgs e)
 		{
             Glut.glutInit();
 
@@ -112,20 +132,10 @@ namespace simulator
 			GL.ClearColor(System.Drawing.Color.Black);			
 
 			GL.Enable(EnableCap.DepthTest);
-			GL.MatrixMode(MatrixMode.Projection);
 
-			GL.DepthFunc(DepthFunction.Lequal);
-			GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
+            SetupProjectionMatrix(GameGlobals.GetFOVOut());
 
-			GL.LoadIdentity();
-			// .07 for near was chosen so the depth test works well on faces close to eachother. Also, it is chosen so it's close to you.
-			// changed it to .2 to make walls work in long hallway of dm0
-			Matrix4 persMat = Matrix4.CreatePerspectiveFieldOfView(65f * (float)GLB.DegToRad, (float)m_openGLControl.Width / (float)m_openGLControl.Height, .2f, 200.0f);
-			GL.LoadMatrix(ref persMat);
-
-			GL.MatrixMode(MatrixMode.Modelview);
-
-			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			m_openGLControl.Focus();
 
@@ -247,6 +257,8 @@ namespace simulator
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			GL.Flush();
 
+			SetupProjectionMatrix(GameGlobals.GetFOVOut());
+
 			m_Engine.showScene(GetRecentKey);
 
 			m_bPostOpen = true;
@@ -346,6 +358,19 @@ namespace simulator
 			}
 		}
 
+		public void Notify(obsvr.Change pChange) // this is more like an update call. it's a way to get around c# single inheritance
+        {
+			// handle frame of view change
+			if(pChange.GetCode == (int)Engine.ESignals.ZOOMED_IN)
+            {
+				SetupProjectionMatrix(GameGlobals.GetFOVIn());
+			}
+			else if(pChange.GetCode == (int)Engine.ESignals.ZOOMED_OUT)
+            {
+				SetupProjectionMatrix(GameGlobals.GetFOVOut());
+			}
+        }
+
 		private void ProcessMap(MapInfo map)
 		{
 			// new map
@@ -366,6 +391,7 @@ namespace simulator
 				m_Engine = null;
 
 				m_Engine = new Player(m_openGLControl, m_SoundManager);
+				m_Observer.Subscribe(m_Engine);
 
 				BackgroundWorker bw = new BackgroundWorker();
 				bw.DoWork += workerthread_LoadMap;

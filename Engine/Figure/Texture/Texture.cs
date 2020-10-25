@@ -83,11 +83,7 @@ namespace engine
             {
                 aVal *= 0.5f; // make glass more transparent
             }
-            else if (sShaderName.Contains("flare03"))
-            {
-                aVal *= 2.0f;
-            }
-            else if (sShaderName.Contains("lamp"))
+            else if (sShaderName.Contains("slamp2"))
             {
                 // make things a lot less transparent from original value
                 // in dm4 the skull lights have lightbulbs rendered in the lamp glass

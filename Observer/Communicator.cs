@@ -16,9 +16,15 @@ using System.Text;
 
 namespace obsvr
 {
-	public class Communicator : Observer
+    public interface IObserverHelper
+    {
+		void Notify(Change pChange);
+    }
+
+    public class Communicator : Observer
 	{
 		private Subject m_pSubject = new Subject();
+		private IObserverHelper m_pHelper = null;
 
 		public void Notify(int nCode)
 		{
@@ -30,10 +36,18 @@ namespace obsvr
 			m_pSubject.Notify(m_pSubject, nCode, sMessage, true);
 		}
 
-		/*private void Notify(Subject pOriginatingSubject, int nCode, bool bOnlyIssueUpdates)
+		public void SetListener(IObserverHelper iHelper)
+        {
+			m_pHelper = iHelper;
+        }
+
+		public override void Update(Change pChange) 
 		{
-			m_pSubject.Notify(pOriginatingSubject, nCode, bOnlyIssueUpdates);
-		}*/
+			if(m_pHelper != null)
+            {
+				m_pHelper.Notify(pChange);
+            }
+		}
 
 		public Subject GetSubject
 		{

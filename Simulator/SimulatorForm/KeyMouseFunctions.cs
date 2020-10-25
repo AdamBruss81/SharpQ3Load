@@ -31,6 +31,13 @@ namespace simulator
 
         private void m_openGLControl_MouseUp(object sender, MouseEventArgs e)
         {
+            if(m_bRunning)
+            {
+                if(e.Button == MouseButtons.Middle)
+                {
+                    m_bMiddleMouseUp = true;
+                }
+            }
         }
 
         private void openGLControl_KeyUp(object sender, KeyEventArgs e)
@@ -57,9 +64,14 @@ namespace simulator
             }
             if(bMiddle)
             {
-                
+                m_Engine.MiddleMouseDown();
+            }
+            if(m_bMiddleMouseUp)
+            {
+                m_Engine.MiddleMouseUp();
             }
 
+            m_bMiddleMouseUp = false;
             m_dictMouseButtonStates.Clear();
         }
 
@@ -158,6 +170,7 @@ namespace simulator
                     {                                          
                         m_Engine.PreSwitchModes();
                         Player p = new Player(m_Engine);
+                        m_Observer.Subscribe(p);
                         p.SetSoundManager(m_SoundManager);
                         m_Engine = p;
 

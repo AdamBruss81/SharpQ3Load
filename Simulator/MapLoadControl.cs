@@ -22,6 +22,8 @@ using engine;
 using System.Diagnostics;
 using utilities;
 
+#pragma warning disable CS1591
+
 namespace simulator
 {		
 	/// <summary>

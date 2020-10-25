@@ -21,6 +21,8 @@ using ICSharpCode.SharpZipLib.Zip;
 using ICSharpCode.SharpZipLib.Core;
 using Microsoft.Win32;
 
+#pragma warning disable CS1591
+
 namespace simulator
 {
 	/// <summary>

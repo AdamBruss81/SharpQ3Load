@@ -21,6 +21,8 @@ namespace engine
         private readonly IWavePlayer outputDevice;
         private readonly MixingSampleProvider mixer;
 
+        Random random = new Random(DateTime.Now.Second);
+
         private bool m_bPlaybackStopped = false;
 
         public SoundManager()
@@ -80,9 +82,10 @@ namespace engine
             return m_bPlaybackStopped;
         }
 
-        private void PlaySound(string sPath)
+        private void PlaySound(string sPath, float fVolNormalized)
         {
             var input = new AudioFileReader(sPath);
+            input.Volume = fVolNormalized;
             mixer.AddMixerInput(ConvertToRightChannelCount(input));
         }
 
@@ -102,19 +105,19 @@ namespace engine
         public void PlayEffect(EEffects effect)
         {
             if(effect != EEffects.NONE)
-                PlaySound(m_zipper.ExtractSoundTextureOther(m_dictEffects[effect]));
+                PlaySound(m_zipper.ExtractSoundTextureOther(m_dictEffects[effect]), 0.8f);
         }
 
         public void PlaySong(ESongs song)
         {            
-            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]));
+            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.35f);
         }
 
         public void PlayRandomSong()
         {
             Array values = Enum.GetValues(typeof(ESongs));
-            Random random = new Random();
             ESongs randomSong = (ESongs)values.GetValue(random.Next(values.Length));
+            LOGGER.Info("Playing song " + randomSong.ToString());
             PlaySong(randomSong);
         }
 

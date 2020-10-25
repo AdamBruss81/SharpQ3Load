@@ -39,12 +39,10 @@ namespace engine
 																		  // could also be used later to control properties of jumppads
 		D3Vect m_d3AutoSprite2UpVector = new D3Vect();
 
-		float m_fTempAngle = 0f;
         float[] m_util4x4 = new float[16];
 
         D3Vect m_d3MidPoint = null;
 		bool m_bSubShape = false;
-		bool m_bMergeReceiver = false;
 		bool m_bMergeSource = false;
 
 		string m_autoGenereatedFragShader = "";
@@ -95,7 +93,6 @@ namespace engine
 
 		public void Merge(Shape s)
 		{
-			m_bMergeReceiver = true;
 			s.m_bMergeSource = true;
 
 			int nOriginalVertCount = m_lVertices.Count;

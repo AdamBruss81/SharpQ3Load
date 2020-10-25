@@ -21,6 +21,8 @@ using Tao.FreeGlut;
 using engine;
 using utilities;
 
+#pragma warning disable CS1591
+
 namespace simulator
 {
 	/// <summary>

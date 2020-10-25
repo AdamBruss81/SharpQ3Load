@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 
+#pragma warning disable CS0414
+
 namespace engine
 {
     public class DVBulge

@@ -182,7 +182,7 @@ namespace engine
         /// <param name="customLookAt">optional vector to jump along</param>
         public void Jump(double dDecelJumpMS, D3Vect customLookAt = null)
         {
-            LOGGER.Debug("JUMP!");
+            //LOGGER.Debug("JUMP!");
             m_currentJumpVector = customLookAt;
             m_swJumpTimer.Reset();
             m_dictMaxDecelMS[MovableCamera.DIRECTION.UP] = dDecelJumpMS;
@@ -243,7 +243,7 @@ namespace engine
         {
             if(stoppedMovingStates.GetState(MovableCamera.DIRECTION.FORWARD))
             {
-                LOGGER.Debug("Stopped moving forward");
+                //LOGGER.Debug("Stopped moving forward");
 
                 m_swStartMoveForwardAccelTimer.Reset(); // if you stop moving, reset the accel stopwatch
 

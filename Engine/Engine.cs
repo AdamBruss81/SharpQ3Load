@@ -213,6 +213,7 @@ namespace engine
 		virtual public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) { }
 		virtual public void CacheMove(MovableCamera.DIRECTION direction) { }
 		virtual public double GetVelocity() { return 0.0; }
+		virtual public void DoMapSounds() { }
 
 		virtual protected void Draw()
 		{

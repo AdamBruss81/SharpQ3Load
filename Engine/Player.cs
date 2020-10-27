@@ -15,6 +15,7 @@ using System.Windows.Forms;
 using utilities;
 using Tao.FreeGlut;
 using OpenTK.Graphics.OpenGL;
+using NAudio.Wave;
 
 namespace engine
 {
@@ -660,7 +661,34 @@ namespace engine
 			m_swmgr.StopAccelTimers();
 		}
 
-		override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) 
+		/// <summary>
+		/// get lava shapes and see how close to their mid points we are
+		/// if we are close enough to any, determine if any lava sounds are already playing
+		/// if not: play a sound based on how far you are from the closest lava shape
+		/// else: do nothing
+		/// </summary>
+        public override void DoMapSounds()
+        {
+			// lava sounds
+			//int iClosestLavaShapeIndex = -1;
+			double dDisToClosest = System.Double.MaxValue;
+            for(int i = 0; i < m_lStaticFigList[0].GetLavaShapes().Count; i++)
+            {
+				double dDisFromLava = (m_lStaticFigList[0].GetLavaShapes()[i].GetMidpoint() - m_cam.Position).Length;
+				if(dDisFromLava < dDisToClosest)
+                {
+					//iClosestLavaShapeIndex = i;
+					dDisToClosest = dDisFromLava;
+                }
+            }
+			if(dDisToClosest <= 5.0 && !m_SoundManager.PlayingSound((int)SoundManager.EEffects.LAVA_SHORT))
+            {
+				float fVolume = 0.8f - GameGlobals.ConvertToOtherRange(0f, 5f, 0f, 0.8f, (float)dDisToClosest);	
+				m_SoundManager.PlayEffect(SoundManager.EEffects.LAVA_SHORT, fVolume);	
+            }
+        }
+
+        override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) 
 		{
 			m_dLastGameTickMoveScale = 0.0;
 			m_nLastFrameTimeMilliFromForm = nLastFrameTimeMilli;

@@ -1602,7 +1602,7 @@ namespace engine
 
 			bool bEnabled = sTex.Contains("sfx/console01") || sTex.Contains("sfx/beam") ||
 				sTex.Contains("sfx/console03") || sTex.Contains("teleporter/energy") ||
-				sTex.Contains("jets") || sTex.Contains("liquids") || sTex.Contains("lamps/beam") ||
+				sTex.Contains("jets") || (sTex.Contains("liquids") && !sTex.Contains("lava")) || sTex.Contains("lamps/beam") ||
 				sTex.Contains("colua0_lght") || bPortal || bTeleporter;
 
 			if(!bEnabled)

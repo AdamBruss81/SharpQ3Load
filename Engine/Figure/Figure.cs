@@ -46,6 +46,7 @@ namespace engine
 		protected List<Tuple<string, string>> m_lShapesToCombine = new List<Tuple<string, string>>();
 		protected List<Shape> m_lShapesCustomRenderOrder = new List<Shape>();
 		protected List<Shape> m_lAllShapes = new List<Shape>();
+		protected List<Shape> m_lLavaShapes = new List<Shape>();
 
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
@@ -79,6 +80,8 @@ namespace engine
 
 		private int m_nMapFileLineCounter = 0;
 
+		Random random = new Random(DateTime.Now.Second);
+
 		public Figure()
 		{
 			m_lBoxColors.Add(new Color(255, 0, 0));
@@ -101,6 +104,8 @@ namespace engine
 		{
 			get { return m_lMapFaceReferences.Count; }
 		}
+
+		public List<Shape> GetLavaShapes() { return m_lLavaShapes; }
 
 		public List<BoundingBox> GetFaceContainingBoundingBoxes() { return m_lFaceContainingBoundingBoxes; }
 
@@ -215,20 +220,19 @@ namespace engine
 		/// </summary>
 		public Viewpoint GetRandomViewPoint(bool bSpawnpoint)
 		{
-			Random ran = new Random();
 			if (bSpawnpoint)
 			{
 				if (m_SpawnPoints.Count == 0)
 					return null;
 				else
-					return m_SpawnPoints[ran.Next(0, m_SpawnPoints.Count - 1)];
+					return m_SpawnPoints[random.Next(0, m_SpawnPoints.Count - 1)];
 			}
 			else
 			{
 				if (m_SpecPoints.Count == 0)
 					return null;
 				else
-					return m_SpecPoints[ran.Next(0, m_SpecPoints.Count - 1)];
+					return m_SpecPoints[random.Next(0, m_SpecPoints.Count - 1)];
 			}
 		}
 
@@ -617,12 +621,7 @@ namespace engine
 		}
 
 		public void InitializeLists(bool bProjectile)
-		{
-			//Stopwatch sw = new Stopwatch();
-			//sw.Start();
-
-			//Stopwatch swShape = new Stopwatch();
-			
+		{			
 			m_fonter = new BasicFont();
 
 			// start up threads and divide up all shapes into containers for each thread.
@@ -691,6 +690,10 @@ namespace engine
 
 				foreach (Shape s in m_lAllShapes)
 				{
+					if(s.GetQ3Shader().Lava())
+                    {
+						m_lLavaShapes.Add(s);
+                    }
 					s.InitializeGL();
 				}
 			}
@@ -698,74 +701,18 @@ namespace engine
 			{
                 foreach (Shape s in m_lShapes)
                 {
-					//swShape.Start();
 					s.InitializeNonGL();
 					s.InitializeGL();
-                    //swShape.Stop();
-                    //LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
-                    //swShape.Reset();
-
-                    //m_mutProgress.WaitOne();
-                    //m_nInitializeProgress++;
-                    //m_mutProgress.ReleaseMutex();
-
-                    //Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
                 }
 
                 m_lShapes.Sort(CompareShapes);
 
                 foreach (Shape s in m_lShapesCustomRenderOrder)
                 {
-					//swShape.Start();
 					s.InitializeNonGL();
                     s.InitializeGL();
-                    //swShape.Stop();
-                    //LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
-                    //swShape.Reset();
-
-                    /*m_mutProgress.WaitOne();
-                    m_nInitializeProgress++;
-                    m_mutProgress.ReleaseMutex();*/
-
-                    //Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
                 }
             }
-
-            // thread shape inits below
-            /*foreach (Shape s in m_lShapes)
-			{
-				swShape.Start();
-				//s.InitializeLists();
-				swShape.Stop();
-				LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
-				swShape.Reset();
-
-				m_mutProgress.WaitOne();
-				m_nInitializeProgress++;				
-				m_mutProgress.ReleaseMutex();
-
-				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
-			}
-
-            m_lShapes.Sort(CompareShapes);
-
-            foreach (Shape s in m_lShapesCustomRenderOrder)
-            {
-				swShape.Start();
-				//s.InitializeLists();
-                swShape.Stop();
-                LOGGER.Debug("Took " + swShape.Elapsed.TotalSeconds + " seconds to initialize shape " + s.GetQ3Shader().GetShaderName());
-                swShape.Reset();
-
-                m_mutProgress.WaitOne();
-                m_nInitializeProgress++;
-                m_mutProgress.ReleaseMutex();
-
-				Notify(s.GetQ3Shader().GetShaderName(), (int)ESignals.SHAPE_READ);
-			}*/
-
-			//sw.Stop();
-			//LOGGER.Info("Figure took " + sw.Elapsed.TotalSeconds + " seconds to initialize.");
         }
 
 		private void workerthread_InitShapeNonGL(object sender, DoWorkEventArgs e)

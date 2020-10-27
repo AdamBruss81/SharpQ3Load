@@ -726,6 +726,8 @@ namespace engine
             foreach (Q3ShaderStage s in m_lStages) s.Delete();
         }
 
+        public bool Lava() { return m_bLava; }
+
         /// <summary>
         /// Reads the shader files and finds the right texture
         /// </summary>

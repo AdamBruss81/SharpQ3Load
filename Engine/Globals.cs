@@ -207,9 +207,23 @@ namespace engine
 		public static bool IsLightBulb(string sPath) 
 		{
 			return sPath.Contains("flare03") || sPath.Contains("gratelamp_flare") || sPath.Contains("slamp/slamp3");
-		} 
+		}
 
-		public static void InitTables(Zipper zipper)
+        public static float ConvertToOtherRange(float oldmin, float oldmax, float newmin, float newmax, float oldval)
+        {
+            float newVal;
+            float OldRange = (oldmax - oldmin);
+            if (OldRange == 0)
+                newVal = newmin;
+            else
+            {
+                float NewRange = (newmax - newmin);
+                newVal = (((oldval - oldmin) * NewRange) / OldRange) + newmin;
+            }
+            return newVal;
+        }
+
+        public static void InitTables(Zipper zipper)
 		{
 			for (int i = 0; i < 1024; i++)
 			{

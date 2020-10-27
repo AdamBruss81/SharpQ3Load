@@ -22,6 +22,7 @@ namespace simulator
             MoveStates startedMovingStates = new MoveStates();
             ProcessKeyStates(stoppedMovingStates, startedMovingStates);
             m_Engine.GameTick(stoppedMovingStates, startedMovingStates, m_nLastFrameTimeMilli);
+            m_Engine.DoMapSounds();
             SetLastMoveStates();
             m_Engine.showScene(GetRecentKey);
             // ###            

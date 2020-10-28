@@ -91,6 +91,8 @@ namespace engine
 			m_q3Shader = new Q3Shader(this);
 		}
 
+		public List<D3Vect> GetVertices() { return m_lVertices; }
+
 		public void Merge(Shape s)
 		{
 			s.m_bMergeSource = true;

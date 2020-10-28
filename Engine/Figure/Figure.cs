@@ -46,7 +46,10 @@ namespace engine
 		protected List<Tuple<string, string>> m_lShapesToCombine = new List<Tuple<string, string>>();
 		protected List<Shape> m_lShapesCustomRenderOrder = new List<Shape>();
 		protected List<Shape> m_lAllShapes = new List<Shape>();
+
+		// shape lists for sound effects
 		protected List<Shape> m_lLavaShapes = new List<Shape>();
+		protected List<Shape> m_lPowerGenShapes = new List<Shape>();
 
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
@@ -106,6 +109,7 @@ namespace engine
 		}
 
 		public List<Shape> GetLavaShapes() { return m_lLavaShapes; }
+		public List<Shape> GetPowerGenShapes() { return m_lPowerGenShapes; }
 
 		public List<BoundingBox> GetFaceContainingBoundingBoxes() { return m_lFaceContainingBoundingBoxes; }
 
@@ -694,6 +698,11 @@ namespace engine
                     {
 						m_lLavaShapes.Add(s);
                     }
+					else if(s.GetQ3Shader().GetShaderName().Contains("proto_zzztblu3"))
+                    {
+						m_lPowerGenShapes.Add(s);
+                    }
+
 					s.InitializeGL();
 				}
 			}

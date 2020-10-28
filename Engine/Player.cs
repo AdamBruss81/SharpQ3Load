@@ -16,6 +16,7 @@ using utilities;
 using Tao.FreeGlut;
 using OpenTK.Graphics.OpenGL;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 namespace engine
 {
@@ -661,31 +662,68 @@ namespace engine
 			m_swmgr.StopAccelTimers();
 		}
 
-		/// <summary>
-		/// get lava shapes and see how close to their mid points we are
-		/// if we are close enough to any, determine if any lava sounds are already playing
-		/// if not: play a sound based on how far you are from the closest lava shape
-		/// else: do nothing
-		/// </summary>
-        public override void DoMapSounds()
+        private void DoMapSound(List<Shape> lShapes, SoundManager.EEffects eEffect, float fDistanceBeforeHearing, long lCoolDownTimeMS)
         {
-			// lava sounds
-			//int iClosestLavaShapeIndex = -1;
-			double dDisToClosest = System.Double.MaxValue;
-            for(int i = 0; i < m_lStaticFigList[0].GetLavaShapes().Count; i++)
+            double dDisToClosest = System.Double.MaxValue;
+            for (int i = 0; i < lShapes.Count; i++)
             {
-				double dDisFromLava = (m_lStaticFigList[0].GetLavaShapes()[i].GetMidpoint() - m_cam.Position).Length;
-				if(dDisFromLava < dDisToClosest)
+                Shape sSoundEmittingShape = lShapes[i];
+				// this will probably be too slow - checking against every vertice of the shape
+				// im guessing in q3 there are certain points in the map which emit the sound and these are disconnected from the structures
+				// that make up the shapes. i don't have access to these theoretical points
+                for (int j = 0; j < sSoundEmittingShape.GetVertices().Count; j++)
                 {
-					//iClosestLavaShapeIndex = i;
-					dDisToClosest = dDisFromLava;
+                    double dDisFromShape = (sSoundEmittingShape.GetVertices()[j] - m_cam.Position).Length;
+                    if (dDisFromShape < dDisToClosest)
+                    {
+                        dDisToClosest = dDisFromShape;
+                    }
                 }
             }
-			if(dDisToClosest <= 5.0 && !m_SoundManager.PlayingSound((int)SoundManager.EEffects.LAVA_SHORT))
+
+			bool bInRange = dDisToClosest <= fDistanceBeforeHearing;
+			MonoToStereoSampleProvider mssp;
+			bool bCurrentlyPlaying = m_SoundManager.PlayingSound((int)eEffect, out mssp);
+
+			if(bCurrentlyPlaying)
             {
-				float fVolume = 0.8f - GameGlobals.ConvertToOtherRange(0f, 5f, 0f, 0.8f, (float)dDisToClosest);	
-				m_SoundManager.PlayEffect(SoundManager.EEffects.LAVA_SHORT, fVolume);	
+				// adjust volume for where you are now
+				if(!bInRange)
+                {
+					mssp.LeftVolume = 0.0f;
+					mssp.RightVolume = 0.0f;
+                }
+				else
+                {
+					mssp.LeftVolume = CalculateVolume(fDistanceBeforeHearing, (float)dDisToClosest);
+					mssp.RightVolume = mssp.LeftVolume;
+                }
             }
+			else if(dDisToClosest <= fDistanceBeforeHearing)
+            {
+				long timeWhenEnded = m_SoundManager.GetMSSinceSoundEnded((int)eEffect);
+				if (timeWhenEnded == -1 || GameGlobals.m_InstanceStopWatch.ElapsedMilliseconds - timeWhenEnded >= lCoolDownTimeMS)
+                {
+                    m_SoundManager.PlayEffect(eEffect, CalculateVolume(fDistanceBeforeHearing, (float)dDisToClosest));
+                }
+            }
+        }
+
+		private float CalculateVolume(float fDisBeforeHearing, float fDisToClosest)
+        {
+			return 0.8f - GameGlobals.ConvertToOtherRange(0f, fDisBeforeHearing, 0f, 0.8f, fDisToClosest);
+		}
+
+        /// <summary>
+        /// get lava shapes and see how close to their mid points we are
+        /// if we are close enough to any, determine if any lava sounds are already playing
+        /// if not: play a sound based on how far you are from the closest lava shape
+        /// else: do nothing
+        /// </summary>
+        public override void DoMapSounds()
+        {
+            DoMapSound(m_lStaticFigList[0].GetLavaShapes(), SoundManager.EEffects.LAVA_LONG, 10f, 2500);
+			DoMapSound(m_lStaticFigList[0].GetPowerGenShapes(), SoundManager.EEffects.POWER_GEN, 30f, 0);
         }
 
         override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) 

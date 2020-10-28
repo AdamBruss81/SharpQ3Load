@@ -184,7 +184,7 @@ namespace engine
 
 	public class GameGlobals
 	{
-		public static System.Diagnostics.Stopwatch m_SW = new System.Diagnostics.Stopwatch();
+		public static System.Diagnostics.Stopwatch m_InstanceStopWatch = new System.Diagnostics.Stopwatch();
 		public static utilities.D3Vect m_CamPosition = new utilities.D3Vect();
 		public static float m_fFrameStartElapsedS = 0f;
 		public static long m_fFrameStartElapsedMS = 0;

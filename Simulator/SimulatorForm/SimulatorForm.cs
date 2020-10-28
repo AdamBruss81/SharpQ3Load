@@ -100,7 +100,7 @@ namespace simulator
 
 			SetViewMode(true);
 
-			GameGlobals.m_SW.Start(); // start this once and let it go.
+			GameGlobals.m_InstanceStopWatch.Start(); // start this once and let it go.
 			GameGlobals.InitTables(m_zipper);
 		}
 
@@ -246,6 +246,7 @@ namespace simulator
 			LOGGER.Info("Entered load map completed function");
 
 			SetCursor(false, false);
+			m_SoundManager.Clear();
 
 			m_openGLControl.MakeCurrent();
 

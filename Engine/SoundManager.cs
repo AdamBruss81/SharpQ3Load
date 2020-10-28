@@ -11,12 +11,14 @@ namespace engine
     {
         public enum EEffects { NONE = 0, SPAWN, ROCKET_AWAY, PLASMA_AWAY, 
             FALL, FALL_MINOR, LAND, CLANK1, CLANK2, CLANK3, CLANK4, STEP1, STEP2, STEP3, STEP4,
-            JUMPPAD, JUMP, LAVA_SHORT };
+            JUMPPAD, JUMP, LAVA_SHORT, LAVA_LONG, POWER_GEN
+        };
         public enum ESongs { SONIC4 = 1000, SONIC3, SONIC6, SONIC5, SONIC1, SONIC2, FLA22K_03, FLA22K_06, FLA22K_05, FLA22K_04, FLA22K_02 };
 
         private Dictionary<EEffects, string> m_dictEffects = new Dictionary<EEffects, string>();
         private Dictionary<ESongs, string> m_dictSongs = new Dictionary<ESongs, string>();
         private Dictionary<int, ISampleProvider> m_dictPlayingSounds = new Dictionary<int, ISampleProvider>();
+        private Dictionary<int, long> m_dictElapsedMSWhenLastSoundEnded = new Dictionary<int, long>();
         private Zipper m_zipper = new Zipper();
 
         private readonly IWavePlayer outputDevice;
@@ -53,14 +55,13 @@ namespace engine
             m_dictEffects[EEffects.CLANK1] = "sound/player/footsteps/clank1.wav";
             m_dictEffects[EEffects.CLANK2] = "sound/player/footsteps/clank2.wav";
             m_dictEffects[EEffects.CLANK3] = "sound/player/footsteps/clank3.wav";
-            m_dictEffects[EEffects.CLANK4] = "sound/player/footsteps/clank4.wav";
 
-            m_dictEffects[EEffects.STEP1] = "sound/player/footsteps/step1.wav";
             m_dictEffects[EEffects.STEP2] = "sound/player/footsteps/step2.wav";
             m_dictEffects[EEffects.STEP3] = "sound/player/footsteps/step3.wav";
-            m_dictEffects[EEffects.STEP4] = "sound/player/footsteps/step4.wav";
 
             m_dictEffects[EEffects.LAVA_SHORT] = "sound/world/lava_short.wav";
+            m_dictEffects[EEffects.LAVA_LONG] = "sound/world/lava1.wav";
+            m_dictEffects[EEffects.POWER_GEN] = "sound/world/tim_hole.wav";
 
             // songs
             m_dictSongs[ESongs.SONIC4] = "music/sonic4.wav";
@@ -76,9 +77,22 @@ namespace engine
             m_dictSongs[ESongs.FLA22K_02] = "music/fla22k_02.wav";
         }
 
-        public bool PlayingSound(int effect)
+        public void Clear()
         {
-            return m_dictPlayingSounds.ContainsKey(effect);
+            m_dictPlayingSounds.Clear();
+            m_dictElapsedMSWhenLastSoundEnded.Clear();
+        }
+
+        public bool PlayingSound(int effect, out MonoToStereoSampleProvider mssp)
+        {
+            ISampleProvider sp;
+            bool b = m_dictPlayingSounds.TryGetValue(effect, out sp);
+            if (b)
+            {
+                mssp = (MonoToStereoSampleProvider)sp;
+            }
+            else mssp = null;
+            return b;
         }        
 
         private void OutputDevice_PlaybackStopped(object sender, StoppedEventArgs e)
@@ -99,14 +113,23 @@ namespace engine
             {
                 int effect = m_dictPlayingSounds.FirstOrDefault(x => x.Value == sp).Key;
                 bool b = m_dictPlayingSounds.Remove(effect);
+                m_dictElapsedMSWhenLastSoundEnded[effect] = GameGlobals.m_InstanceStopWatch.ElapsedMilliseconds;
                 if (!b) throw new Exception("Couldn't remove effect " + effect);
             }
+        }
+
+        public long GetMSSinceSoundEnded(int effect)
+        {
+            long ms;
+            if (!m_dictElapsedMSWhenLastSoundEnded.TryGetValue(effect, out ms)) ms = -1;
+            return ms;
         }
 
         private void PlaySound(string sPath, float fVolNormalized, int effect)
         {
             var input = new AudioFileReader(sPath);
             input.Volume = fVolNormalized;
+
             if(NonRepeatingSound(effect) && m_dictPlayingSounds.ContainsKey(effect))
             {
                 throw new Exception("Cannot play a sound again before it has finished: " + effect);
@@ -115,6 +138,7 @@ namespace engine
 
             if (NonRepeatingSound(effect))
             {
+                m_dictElapsedMSWhenLastSoundEnded.Remove(effect);
                 m_dictPlayingSounds[effect] = sp;
             }
             mixer.AddMixerInput(sp);
@@ -122,7 +146,8 @@ namespace engine
 
         private bool NonRepeatingSound(int effect)
         {
-            return effect == (int)SoundManager.EEffects.LAVA_SHORT;
+            return effect == (int)SoundManager.EEffects.LAVA_LONG || effect == (int)SoundManager.EEffects.POWER_GEN ||
+                effect == (int)SoundManager.EEffects.LAVA_SHORT;
         }
 
         private ISampleProvider ConvertToRightChannelCount(ISampleProvider input)
@@ -152,7 +177,7 @@ namespace engine
 
         public void PlaySong(ESongs song)
         {            
-            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.30f, (int)song);
+            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.10f, (int)song);
         }
 
         public void PlayRandomSong()

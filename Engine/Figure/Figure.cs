@@ -50,6 +50,7 @@ namespace engine
 		// shape lists for sound effects
 		protected List<Shape> m_lLavaShapes = new List<Shape>();
 		protected List<Shape> m_lPowerGenShapes = new List<Shape>();
+		protected List<Shape> m_lTeslaCoil3Shapes = new List<Shape>();
 
 		private List<BoundingBox> m_lFaceContainingBoundingBoxes = new List<BoundingBox>();
 		private List<Viewpoint> m_SpecPoints = new List<Viewpoint>();
@@ -110,6 +111,7 @@ namespace engine
 
 		public List<Shape> GetLavaShapes() { return m_lLavaShapes; }
 		public List<Shape> GetPowerGenShapes() { return m_lPowerGenShapes; }
+		public List<Shape> GetTeslaCoil3Shapes() { return m_lTeslaCoil3Shapes; }
 
 		public List<BoundingBox> GetFaceContainingBoundingBoxes() { return m_lFaceContainingBoundingBoxes; }
 
@@ -624,7 +626,23 @@ namespace engine
 			}
 		}
 
-		public void InitializeLists(bool bProjectile)
+        private void GatherShapesForMapSounds(Shape s)
+        {
+            if (s.GetQ3Shader().Lava())
+            {
+                m_lLavaShapes.Add(s);
+            }
+            else if (s.GetQ3Shader().GetShaderName().Contains("proto_zzztblu3"))
+            {
+                m_lPowerGenShapes.Add(s);
+            }
+			else if (s.GetMainTexture().GetPath().Contains("base_trim/wire02_f1"))
+			{
+                m_lTeslaCoil3Shapes.Add(s);
+            }
+        }
+
+        public void InitializeLists(bool bProjectile)
 		{			
 			m_fonter = new BasicFont();
 
@@ -694,16 +712,10 @@ namespace engine
 
 				foreach (Shape s in m_lAllShapes)
 				{
-					if(s.GetQ3Shader().Lava())
-                    {
-						m_lLavaShapes.Add(s);
-                    }
-					else if(s.GetQ3Shader().GetShaderName().Contains("proto_zzztblu3"))
-                    {
-						m_lPowerGenShapes.Add(s);
-                    }
+                    GatherShapesForMapSounds(s);
 
-					s.InitializeGL();
+
+                    s.InitializeGL();
 				}
 			}
 			else

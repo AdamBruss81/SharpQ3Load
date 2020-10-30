@@ -662,7 +662,8 @@ namespace engine
 			m_swmgr.StopAccelTimers();
 		}
 
-        private void DoMapSound(List<Shape> lShapes, SoundManager.EEffects eEffect, float fDistanceBeforeHearing, long lCoolDownTimeMS)
+        private void DoMapSound(List<Shape> lShapes, SoundManager.EEffects eEffect, float fDistanceBeforeHearing, long lCoolDownTimeMS, bool bDoDistanceCheckUsingMidpoint,
+			float fMaxVol)
         {
             double dDisToClosest = System.Double.MaxValue;
             for (int i = 0; i < lShapes.Count; i++)
@@ -671,9 +672,20 @@ namespace engine
 				// this will probably be too slow - checking against every vertice of the shape
 				// im guessing in q3 there are certain points in the map which emit the sound and these are disconnected from the structures
 				// that make up the shapes. i don't have access to these theoretical points
-                for (int j = 0; j < sSoundEmittingShape.GetVertices().Count; j++)
+				if (!bDoDistanceCheckUsingMidpoint)
+				{
+					for (int j = 0; j < sSoundEmittingShape.GetVertices().Count; j++)
+					{
+						double dDisFromShape = (sSoundEmittingShape.GetVertices()[j] - m_cam.Position).Length;
+						if (dDisFromShape < dDisToClosest)
+						{
+							dDisToClosest = dDisFromShape;
+						}
+					}
+				}
+                else
                 {
-                    double dDisFromShape = (sSoundEmittingShape.GetVertices()[j] - m_cam.Position).Length;
+                    double dDisFromShape = (sSoundEmittingShape.GetMidpoint() - m_cam.Position).Length;
                     if (dDisFromShape < dDisToClosest)
                     {
                         dDisToClosest = dDisFromShape;
@@ -695,7 +707,7 @@ namespace engine
                 }
 				else
                 {
-					mssp.LeftVolume = CalculateVolume(fDistanceBeforeHearing, (float)dDisToClosest);
+					mssp.LeftVolume = CalculateVolume(fDistanceBeforeHearing, (float)dDisToClosest, fMaxVol);
 					mssp.RightVolume = mssp.LeftVolume;
                 }
             }
@@ -704,14 +716,14 @@ namespace engine
 				long timeWhenEnded = m_SoundManager.GetMSSinceSoundEnded((int)eEffect);
 				if (timeWhenEnded == -1 || GameGlobals.m_InstanceStopWatch.ElapsedMilliseconds - timeWhenEnded >= lCoolDownTimeMS)
                 {
-                    m_SoundManager.PlayEffect(eEffect, CalculateVolume(fDistanceBeforeHearing, (float)dDisToClosest));
+                    m_SoundManager.PlayEffect(eEffect, CalculateVolume(fDistanceBeforeHearing, (float)dDisToClosest, fMaxVol));
                 }
             }
         }
 
-		private float CalculateVolume(float fDisBeforeHearing, float fDisToClosest)
+		private float CalculateVolume(float fDisBeforeHearing, float fDisToClosest, float fMaxVol)
         {
-			return 0.8f - GameGlobals.ConvertToOtherRange(0f, fDisBeforeHearing, 0f, 0.8f, fDisToClosest);
+			return fMaxVol - GameGlobals.ConvertToOtherRange(0f, fDisBeforeHearing, 0f, fMaxVol, fDisToClosest);
 		}
 
         /// <summary>
@@ -722,8 +734,9 @@ namespace engine
         /// </summary>
         public override void DoMapSounds()
         {
-            DoMapSound(m_lStaticFigList[0].GetLavaShapes(), SoundManager.EEffects.LAVA_LONG, 10f, 2500);
-			DoMapSound(m_lStaticFigList[0].GetPowerGenShapes(), SoundManager.EEffects.POWER_GEN, 30f, 0);
+            DoMapSound(m_lStaticFigList[0].GetLavaShapes(), SoundManager.EEffects.LAVA_LONG, 10f, 2500, false, .8f);
+			DoMapSound(m_lStaticFigList[0].GetPowerGenShapes(), SoundManager.EEffects.POWER_GEN, 30f, 0, true, .8f);
+			DoMapSound(m_lStaticFigList[0].GetTeslaCoil3Shapes(), SoundManager.EEffects.TIM_ELECT, 15f, 0, false, .5f);
         }
 
         override public void GameTick(MoveStates stoppedMovingStates, MoveStates startedMovingStates, long nLastFrameTimeMilli) 

@@ -11,7 +11,7 @@ namespace engine
     {
         public enum EEffects { NONE = 0, SPAWN, ROCKET_AWAY, PLASMA_AWAY, 
             FALL, FALL_MINOR, LAND, CLANK1, CLANK2, CLANK3, CLANK4, STEP1, STEP2, STEP3, STEP4,
-            JUMPPAD, JUMP, LAVA_SHORT, LAVA_LONG, POWER_GEN
+            JUMPPAD, JUMP, LAVA_SHORT, LAVA_LONG, POWER_GEN, TIM_ELECT
         };
         public enum ESongs { SONIC4 = 1000, SONIC3, SONIC6, SONIC5, SONIC1, SONIC2, FLA22K_03, FLA22K_06, FLA22K_05, FLA22K_04, FLA22K_02 };
 
@@ -62,6 +62,7 @@ namespace engine
             m_dictEffects[EEffects.LAVA_SHORT] = "sound/world/lava_short.wav";
             m_dictEffects[EEffects.LAVA_LONG] = "sound/world/lava1.wav";
             m_dictEffects[EEffects.POWER_GEN] = "sound/world/tim_hole.wav";
+            m_dictEffects[EEffects.TIM_ELECT] = "sound/world/tim_elect.wav";
 
             // songs
             m_dictSongs[ESongs.SONIC4] = "music/sonic4.wav";
@@ -147,7 +148,7 @@ namespace engine
         private bool NonRepeatingSound(int effect)
         {
             return effect == (int)SoundManager.EEffects.LAVA_LONG || effect == (int)SoundManager.EEffects.POWER_GEN ||
-                effect == (int)SoundManager.EEffects.LAVA_SHORT;
+                effect == (int)SoundManager.EEffects.LAVA_SHORT || effect == (int)SoundManager.EEffects.TIM_ELECT;
         }
 
         private ISampleProvider ConvertToRightChannelCount(ISampleProvider input)

@@ -1447,7 +1447,7 @@ namespace engine
 					p.D3TargetLocation = new D3Vect(-4.1, 7, 1.1 + dZOffset);
 					p.PHI = 90;
 					p.Theta = 270;
-					p.PopoutPowerMS = 300;
+					p.PopoutPowerMS = 200;
 				}
 				else if (m_map.GetNick == "q3dm7")
 				{
@@ -1457,19 +1457,28 @@ namespace engine
 				}
 				else if (m_map.GetNick == "q3dm11")
 				{
-					p.D3TargetLocation = new D3Vect(70.9, 51.6, -.18 + dZOffset);
+					p.D3TargetLocation = new D3Vect(70.9, 52.6, -.18 + dZOffset);
 					p.PHI = 90;
 					p.Theta = -44;
+					p.D3Lookat = new D3Vect(0.07, -0.07, 0.0);
 				}
 			}
 			else if(p is Teleporter)
 			{
                 if (m_map.GetNick == "q3dm4")
-                {
+                {					
 					p.D3TargetLocation = new D3Vect(4.3, 7.6, -4.43 + dZOffset);
                     p.PHI = 90;
-                    p.Theta = -90;
-                }     
+                    p.Theta = -90;					
+                }    
+				else if(m_map.GetNick == "q3dm12")
+                {
+					dZOffset = .25f;
+					p.D3TargetLocation = new D3Vect(-4.21, -3.65, 7 + dZOffset);
+                    p.PHI = 90;
+                    p.Theta = -270;
+					p.D3Lookat = new D3Vect(0, .1, 0);
+				}
 				else if(m_map.GetNick == "q3tourney2")
 				{
 					if(i == 1) // into big room with fog in pit
@@ -1492,10 +1501,11 @@ namespace engine
 				else if(m_map.GetNick == "q3dm11")
 				{
                     dZOffset = .5;
-                    p.D3TargetLocation = new D3Vect(36.7, 2.73, -1.62 + dZOffset);
+                    p.D3TargetLocation = new D3Vect(35.5, 1.3, -1.62 + dZOffset);
                     p.PopoutPowerMS = 300;
                     p.PHI = 90;
-                    p.Theta = 180;
+                    p.Theta = 90;
+					p.D3Lookat = new D3Vect(0, .1, 0);
                 }
             }
 		}

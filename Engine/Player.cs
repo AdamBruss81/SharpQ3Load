@@ -44,6 +44,7 @@ namespace engine
 		double[] m_pvUtilMatrix = new double[16];
         SoundManager m_SoundManager = null;
 		long m_nLastFrameTimeMilliFromForm;
+		bool m_bComingOutOfTeleporter = false;
 
 		MoveStates m_MovesForThisTick = new MoveStates();				
 
@@ -549,18 +550,6 @@ namespace engine
 				case MovableCamera.DIRECTION.RIGHT: 
 					m_cam.TurnRight();
 					break;
-				case MovableCamera.DIRECTION.FORWARD_LEFT: 
-					m_cam.TurnLeftHalf();
-					break;
-				case MovableCamera.DIRECTION.FORWARD_RIGHT: 
-					m_cam.TurnRightHalf();
-					break;
-				case MovableCamera.DIRECTION.BACK_LEFT: 
-					m_cam.TurnBackLeft();
-					break;
-				case MovableCamera.DIRECTION.BACK_RIGHT: 
-					m_cam.TurnBackRight();
-					break;
 				case MovableCamera.DIRECTION.UP:
 					m_cam.TurnUp();
 					break;
@@ -572,7 +561,7 @@ namespace engine
 			}			
 
 			int nMoveAttemptCount = 0;
-			bool bMoveAlongWall = true; // dir != MovableCamera.DIRECTION.UP;
+			bool bMoveAlongWall = true;
 			D3Vect lookatToUse = m_cam.GetLookAtNew;
 			if(m_swmgr.GetCurrentJumpVector() != null && m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) && dir == MovableCamera.DIRECTION.UP)
 			{
@@ -646,11 +635,14 @@ namespace engine
 				}
 			}
 
+			// move for jumps
 			if(m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false))
 			{
                 if (m_swmgr.GetElapsed(MovableCamera.DIRECTION.UP, false) >= m_swmgr.GetMaxMS(MovableCamera.DIRECTION.UP, false))
                 {
                     m_swmgr.Command(MovableCamera.DIRECTION.UP, false, StopWatchManager.SWCommand.RESET);
+
+					if(m_bComingOutOfTeleporter) m_bComingOutOfTeleporter = false; 
                 }
                 else
                 {
@@ -768,7 +760,7 @@ namespace engine
 				MoveInternal(MovableCamera.DIRECTION.RIGHT);
 			}
 
-			if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false)) // don't fall if jumping
+			if (!m_swmgr.IsRunning(MovableCamera.DIRECTION.UP, false) || m_bComingOutOfTeleporter) // don't fall if jumping
 			{
 				SoundManager.EEffects eEffectToPlay = SoundManager.EEffects.NONE;
 				Fall(ref eEffectToPlay);
@@ -821,8 +813,10 @@ namespace engine
                 m_swmgr.Jump(mcd_PadPowerInMS, jumpDir); // this should also jump straight up a bit first
                 eEffect = SoundManager.EEffects.JUMPPAD;
             }
+			// portals
 			else if(transporter != null)
 			{
+				m_bComingOutOfTeleporter = true;
                 m_swmgr.Jump(transporter.PopoutPowerMS, transporter.D3Lookat); // this should also jump straight up a bit first
             }
 

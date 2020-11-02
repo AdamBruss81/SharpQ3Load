@@ -11,7 +11,7 @@ namespace engine
     {
         public enum EEffects { NONE = 0, SPAWN, ROCKET_AWAY, PLASMA_AWAY, 
             FALL, FALL_MINOR, LAND, CLANK1, CLANK2, CLANK3, CLANK4, STEP1, STEP2, STEP3, STEP4,
-            JUMPPAD, JUMP, LAVA_SHORT, LAVA_LONG, POWER_GEN, TIM_ELECT
+            JUMPPAD, JUMP, LAVA_SHORT, LAVA_LONG, POWER_GEN, TIM_ELECT, FIRE1
         };
         public enum ESongs { SONIC4 = 1000, SONIC3, SONIC6, SONIC5, SONIC1, SONIC2, FLA22K_03, FLA22K_06, FLA22K_05, FLA22K_04, FLA22K_02 };
 
@@ -63,6 +63,7 @@ namespace engine
             m_dictEffects[EEffects.LAVA_LONG] = "sound/world/lava1.wav";
             m_dictEffects[EEffects.POWER_GEN] = "sound/world/tim_hole.wav";
             m_dictEffects[EEffects.TIM_ELECT] = "sound/world/tim_elect.wav";
+            m_dictEffects[EEffects.FIRE1] = "sound/world/fire1.wav";
 
             // songs
             m_dictSongs[ESongs.SONIC4] = "music/sonic4.wav";

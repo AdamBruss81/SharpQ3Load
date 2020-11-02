@@ -42,10 +42,6 @@ namespace utilities
 
 		public MovableCamera.DIRECTION GetRelevant()
 		{
-			if(GetState(MovableCamera.DIRECTION.BACK_LEFT)) return MovableCamera.DIRECTION.BACK_LEFT;
-			if (GetState(MovableCamera.DIRECTION.BACK_RIGHT)) return MovableCamera.DIRECTION.BACK_RIGHT;
-			if (GetState(MovableCamera.DIRECTION.FORWARD_LEFT)) return MovableCamera.DIRECTION.FORWARD_LEFT;
-			if (GetState(MovableCamera.DIRECTION.FORWARD_RIGHT)) return MovableCamera.DIRECTION.FORWARD_RIGHT;
 			if (GetState(MovableCamera.DIRECTION.LEFT)) return MovableCamera.DIRECTION.LEFT;
 			if (GetState(MovableCamera.DIRECTION.RIGHT)) return MovableCamera.DIRECTION.RIGHT;
 			if (GetState(MovableCamera.DIRECTION.FORWARD)) return MovableCamera.DIRECTION.FORWARD;
@@ -62,10 +58,6 @@ namespace utilities
 				case 1: return MovableCamera.DIRECTION.BACK;
 				case 2: return MovableCamera.DIRECTION.LEFT;
 				case 3: return MovableCamera.DIRECTION.RIGHT;
-				case 4: return MovableCamera.DIRECTION.FORWARD_LEFT;
-				case 5: return MovableCamera.DIRECTION.FORWARD_RIGHT;
-				case 6: return MovableCamera.DIRECTION.BACK_LEFT;
-				case 7: return MovableCamera.DIRECTION.BACK_RIGHT;
 			}
 
             throw new Exception("Invalid direction");
@@ -79,10 +71,6 @@ namespace utilities
                 case MovableCamera.DIRECTION.BACK: return 1;
 				case MovableCamera.DIRECTION.LEFT: return 2;
 				case MovableCamera.DIRECTION.RIGHT: return 3;
-                case MovableCamera.DIRECTION.FORWARD_LEFT: return 4;
-                case MovableCamera.DIRECTION.FORWARD_RIGHT: return 5;
-                case MovableCamera.DIRECTION.BACK_LEFT: return 6;
-                case MovableCamera.DIRECTION.BACK_RIGHT: return 7;
 				case MovableCamera.DIRECTION.UP: return 8;
             }
 
@@ -122,7 +110,7 @@ namespace utilities
 
 	public class MovableCamera
 	{
-		public enum DIRECTION { FORWARD, RIGHT, LEFT, BACK, FORWARD_RIGHT, FORWARD_LEFT, BACK_LEFT, BACK_RIGHT, UP, DOWN, NONE };
+		public enum DIRECTION { FORWARD, RIGHT, LEFT, BACK, UP, DOWN, NONE };
 
 		private double m_dPhi;   
 		private double m_dTheta;

@@ -185,7 +185,7 @@ namespace engine
             //LOGGER.Debug("JUMP!");
             m_currentJumpVector = customLookAt;
             m_swJumpTimer.Reset();
-            m_dictMaxDecelMS[MovableCamera.DIRECTION.UP] = dDecelJumpMS;
+            m_dictMaxDecelMS[MovableCamera.DIRECTION.UP] = dDecelJumpMS;            
             m_swJumpTimer.Start(); 
         }
 

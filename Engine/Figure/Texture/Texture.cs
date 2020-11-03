@@ -98,6 +98,10 @@ namespace engine
             {
                 aVal *= 1.5f;
             }
+            else if(sShaderName.Contains("teleporter/transparency"))
+            {
+                aVal *= 2.0f;
+            }
 
             if (aVal > 1.0f) aVal = 1.0f;
 

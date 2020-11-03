@@ -1507,6 +1507,42 @@ namespace engine
                     p.Theta = 90;
 					p.D3Lookat = new D3Vect(0, .1, 0);
                 }
+				else if(m_map.GetNick == "q3dm13")
+                {
+                    dZOffset = 0;
+                    p.D3TargetLocation = new D3Vect(-13.6, -19.8, 4.6 + dZOffset);
+                    p.PopoutPowerMS = 300;
+                    p.PHI = 90;
+                    p.Theta = 234;
+                    p.D3Lookat = new D3Vect(-.07, -.07, 0);
+                }
+                else if (m_map.GetNick == "q3dm15")
+                {
+                    dZOffset = 0;
+                    p.D3TargetLocation = new D3Vect(14.8, 12.8, -.15 + dZOffset);
+                    p.PopoutPowerMS = 300;
+                    p.PHI = 90;
+                    p.Theta = -227;
+                    p.D3Lookat = new D3Vect(-.07, .07, 0);
+                }
+                else if (m_map.GetNick == "q3dm17")
+                {
+                    dZOffset = 0;
+                    p.D3TargetLocation = new D3Vect(-18.6, -1.3, 8.4 + dZOffset);
+                    p.PopoutPowerMS = 200;
+                    p.PHI = 90;
+                    p.Theta = 0;
+                    p.D3Lookat = new D3Vect(.1, .0, 0);
+                }
+                else if (m_map.GetNick == "q3tourney6")
+                {
+                    dZOffset = 0;
+                    p.D3TargetLocation = new D3Vect(3, -41, 1.22 + dZOffset);
+                    p.PopoutPowerMS = 200;
+                    p.PHI = 90;
+                    p.Theta = 90;
+                    p.D3Lookat = new D3Vect(0, .1, 0);
+                }
             }
 		}
 	}

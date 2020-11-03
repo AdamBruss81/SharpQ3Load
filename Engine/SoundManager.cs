@@ -179,7 +179,7 @@ namespace engine
 
         public void PlaySong(ESongs song)
         {            
-            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.10f, (int)song);
+            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.25f, (int)song);
         }
 
         public void PlayRandomSong()

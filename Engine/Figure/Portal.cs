@@ -62,4 +62,17 @@ namespace engine
 
         }
     }
+
+    class Jumppad : Shape
+    {
+        public Jumppad(Shape s) : base(s) { }
+
+        private float m_fLaunchPower = 500;
+
+        public float LaunchPower
+        {
+            get { return m_fLaunchPower; }
+            set { m_fLaunchPower = value; }
+        }
+    }
 }

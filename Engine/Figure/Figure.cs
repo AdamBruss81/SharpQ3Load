@@ -394,6 +394,11 @@ namespace engine
 				{
 					sSubShape = new LightBulb(s);
 				}
+				else if(GameGlobals.IsJumpLaunchPad(s.GetMainTexture().GetPath()))
+                {
+					sSubShape = new Jumppad(s);
+					DefineJumpLaunchPad((Jumppad)(sSubShape), i);
+                }
 				else sSubShape = new Shape(s);
 
 				sSubShape.SetSubShape(true);
@@ -402,14 +407,14 @@ namespace engine
 				sSubShape.SetCoordIndices(s.GetSubShapes()[i]);
 				sSubShape.CreateFaces(m_lMapFaceReferences);
 
-				if (sSubShape is Portal || sSubShape is Teleporter || sSubShape is LightBulb) m_lShapes.Add(sSubShape); // don't need sorting
+				if (sSubShape is Portal || sSubShape is Teleporter || sSubShape is LightBulb || sSubShape is Jumppad) m_lShapes.Add(sSubShape); // don't need sorting
 				else m_lShapesCustomRenderOrder.Add(sSubShape); // transparent so need sorting ...
 				// some of the subshapes like ones for autosprite may not need the custom render order sorting but it shouldn't hurt anything
 				// except a little performance. can look into later.
 			}
-		}
+		}        
 
-		private void ProcessEquivalents(Shape sNewShape)
+        private void ProcessEquivalents(Shape sNewShape)
 		{
 			bool bNewShapeIsEquivType = false;
 			Tuple<string, string> tup = null;
@@ -1434,7 +1439,21 @@ namespace engine
 			}
         }
 
-		private void DefineTransporter(Transporter p, int i)
+        private void DefineJumpLaunchPad(Jumppad sSubShape, int i)
+        {
+			if(m_map.GetNick == "q3dm17")
+            {
+				switch(i)
+                {
+					case 0:
+						sSubShape.LaunchPower = 700;
+						break;
+                }
+
+            }
+        }
+
+        private void DefineTransporter(Transporter p, int i)
 		{
 			double dZOffset = 1f;
 

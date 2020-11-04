@@ -208,6 +208,20 @@ namespace engine
 		{
 			return sPath.Contains("flare03") || sPath.Contains("gratelamp_flare") || sPath.Contains("slamp/slamp3");
 		}
+		public static bool IsJumpPad(string sPath)
+        {
+			return sPath.Contains("bounce") || sPath.Contains("jumppad") || sPath.Contains("jumpad");
+		}
+
+        public static bool IsLaunchPad(string sPath)
+        {
+            return sPath.Contains("launchpad");
+        }
+
+		public static bool IsJumpLaunchPad(string sPath)
+        {
+			return IsJumpPad(sPath) || IsLaunchPad(sPath);
+        }
 
         public static float ConvertToOtherRange(float oldmin, float oldmax, float newmin, float newmax, float oldval)
         {

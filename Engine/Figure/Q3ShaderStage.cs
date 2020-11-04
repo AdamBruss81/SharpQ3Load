@@ -387,7 +387,7 @@ namespace engine
         {
             float p = CalculateWaveForm(m_stretch.wf);
 
-            if (m_ParentShader.GetShaderName().Contains("bounce") || m_ParentShader.GetShaderName().Contains("jumppad") || m_ParentShader.GetShaderName().Contains("jumpad"))
+            if (GameGlobals.IsJumpPad(m_ParentShader.GetShaderName()))
                 p = p * 1.2f; // not sure why needed but if fixes all bounce pads it seems
             else 
                 p = p * 1.6f; // don't know why i have to do this but it makes the flaming turners look right in dm1 so leaving it for now

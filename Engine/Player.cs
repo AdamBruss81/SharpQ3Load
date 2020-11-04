@@ -418,7 +418,7 @@ namespace engine
 				m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
 
 				// pop out
-				HandleJumpsAndPopouts("", null, pTransporter);
+				HandleJumpsAndPopouts("", null, pTransporter, null);
 			}
 			return b;
 		}
@@ -770,7 +770,7 @@ namespace engine
                     if(STATE.Gravity) DetectJumppads(ref eEffectToPlay);
                 }
 
-				if (eEffectToPlay != SoundManager.EEffects.NONE) m_SoundManager.PlayEffect(eEffectToPlay);
+				if (eEffectToPlay != SoundManager.EEffects.NONE) m_SoundManager.PlayEffect(eEffectToPlay, 0.3f);
 			}
 
 			bool bUserMoved = m_MovesForThisTick.AnyTrue();
@@ -787,12 +787,12 @@ namespace engine
 			}
         }
 
-		private SoundManager.EEffects HandleJumpsAndPopouts(string sTextureInfo, IntersectionInfo intersection, Transporter transporter)
+		private SoundManager.EEffects HandleJumpsAndPopouts(string sTextureInfo, IntersectionInfo intersection, Transporter transporter, Jumppad jumppad)
 		{
 			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
 
 			// jumppads
-			if (sTextureInfo.Contains("jumppad") || sTextureInfo.Contains("bounce") || sTextureInfo.Contains("jumpad"))
+			if (GameGlobals.IsJumpPad(sTextureInfo))
 			{
 				D3Vect jumpDir = intersection.Face.GetNewNormal;
 				jumpDir.Negate();
@@ -803,10 +803,10 @@ namespace engine
 					jumpDir.Negate();
 				}
 				jumpDir.Length = m_cam.RHO;				
-                m_swmgr.Jump(mcd_PadPowerInMS, jumpDir); 
+                m_swmgr.Jump((double)jumppad.LaunchPower, jumpDir); 
 				eEffect = SoundManager.EEffects.JUMPPAD;
 			} // launch pads
-            else if (sTextureInfo.Contains("launchpad"))
+            else if (GameGlobals.IsLaunchPad(sTextureInfo))
             {
 				D3Vect jumpDir = GetLaunchPadDirection(intersection.Face);
 				jumpDir.Length = m_cam.RHO;
@@ -855,7 +855,8 @@ namespace engine
 			}
 
 			SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
-			eEffectReturn = HandleJumpsAndPopouts(sTextureInfo, m_Intersection, null);
+			Jumppad jp = m_Intersection.Face.GetParentShape() as Jumppad;
+			eEffectReturn = HandleJumpsAndPopouts(sTextureInfo, m_Intersection, null, jp);
 			if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;			
 
 			// check that we are the right distance from the ground(player's height)

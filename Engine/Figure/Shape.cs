@@ -1614,6 +1614,11 @@ namespace engine
 				bEnabled = PeakQ3Shader(new List<string> { "autosprite", "autosprite2" });
 			}
 
+			if(!bEnabled)
+            {
+				bEnabled = GameGlobals.IsJumpLaunchPad(sTex);
+            }
+
 			return bEnabled;
         }
 

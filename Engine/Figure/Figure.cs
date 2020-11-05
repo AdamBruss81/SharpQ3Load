@@ -394,10 +394,17 @@ namespace engine
 				{
 					sSubShape = new LightBulb(s);
 				}
-				else if(GameGlobals.IsJumpLaunchPad(s.GetMainTexture().GetPath()))
+				else if(GameGlobals.IsJumpPad(s.GetMainTexture().GetPath()))
                 {
 					sSubShape = new Jumppad(s);
-					DefineJumpLaunchPad((Jumppad)(sSubShape), i);
+					(sSubShape as Jumppad).Index = i;
+					DefineJumpPad((Jumppad)(sSubShape), i);
+                }
+				else if(GameGlobals.IsLaunchPad(s.GetMainTexture().GetPath()))
+                {
+                    sSubShape = new LaunchPad(s);
+                    (sSubShape as LaunchPad).Index = i;
+                    DefineLaunchPad((LaunchPad)(sSubShape), i);
                 }
 				else sSubShape = new Shape(s);
 
@@ -1439,14 +1446,50 @@ namespace engine
 			}
         }
 
-        private void DefineJumpLaunchPad(Jumppad sSubShape, int i)
+        private void DefineJumpPad(Jumppad sSubShape, int i)
         {
 			if(m_map.GetNick == "q3dm17")
             {
 				switch(i)
                 {
+					case 5:
 					case 0:
-						sSubShape.LaunchPower = 700;
+					case 9:
+						sSubShape.LaunchPower = 1200; // middle and two to get to top platform
+						break;
+					case 1:
+					case 4:
+                        sSubShape.LaunchPower = 800; // upper level two
+                        break;
+                    case 7:
+					case 6:
+						sSubShape.LaunchPower = 900; // lower side ones
+                        break;					
+					case 8:
+						sSubShape.LaunchPower = 1000; // one to jump to armor in game
+						break;
+					case 2:
+					case 3: // far away ones
+						sSubShape.LaunchPower = 1600;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = Math.PI / 4 * -1.0;
+						break;
+                }
+
+            }
+        }
+
+        private void DefineLaunchPad(LaunchPad sSubShape, int i)
+        {
+            if (m_map.GetNick == "q3dm17")
+            {
+                switch (i)
+                {
+					case 0:
+					case 1:
+						sSubShape.LaunchPower = 1100;
+						break;
+					case 2:
+						sSubShape.LaunchPower = 1200;
 						break;
                 }
 

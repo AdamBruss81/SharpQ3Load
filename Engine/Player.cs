@@ -28,7 +28,6 @@ namespace engine
 		// ### MEMBER VARIABLES
 		const double mcd_Height = 1.2;
 		const double mcd_HalfWidth = 0.8;
-		const double mcd_PadPowerInMS = 1200;
 		const double mdc_StairHeight = 0.1;
 		const int mnc_LastFrameTimeAdjuster = 60;
 
@@ -418,7 +417,7 @@ namespace engine
 				m_SoundManager.PlayEffect(SoundManager.EEffects.SPAWN);
 
 				// pop out
-				HandleJumpsAndPopouts("", null, pTransporter, null);
+				HandleJumpsAndPopouts("", null, pTransporter, null, null);
 			}
 			return b;
 		}
@@ -787,7 +786,7 @@ namespace engine
 			}
         }
 
-		private SoundManager.EEffects HandleJumpsAndPopouts(string sTextureInfo, IntersectionInfo intersection, Transporter transporter, Jumppad jumppad)
+		private SoundManager.EEffects HandleJumpsAndPopouts(string sTextureInfo, IntersectionInfo intersection, Transporter transporter, Jumppad jumppad, LaunchPad launchpad)
 		{
 			SoundManager.EEffects eEffect = SoundManager.EEffects.NONE;
 
@@ -799,20 +798,27 @@ namespace engine
 				if (jumpDir.x != 0.0 || jumpDir.y != 0.0)
 				{
 					// rotate pi over 8 radians towards up vector z
-					jumpDir = GetLaunchPadDirection(intersection.Face, (Math.PI / 8) * GLB.RadToDeg * -1.0);
+					jumpDir = GetLaunchPadDirection(intersection.Face, jumppad.RotationAmountFromFaceNormalToUpZRad * GLB.RadToDeg * -1.0);
 					jumpDir.Negate();
 				}
-				jumpDir.Length = m_cam.RHO;				
+				jumpDir.Length = m_cam.RHO;
+				LOGGER.Debug("Hit jumppad " + jumppad.Index);
                 m_swmgr.Jump((double)jumppad.LaunchPower, jumpDir); 
 				eEffect = SoundManager.EEffects.JUMPPAD;
 			} // launch pads
             else if (GameGlobals.IsLaunchPad(sTextureInfo))
             {
-				D3Vect jumpDir = GetLaunchPadDirection(intersection.Face);
+                D3Vect jumpDir = GetLaunchPadDirection(intersection.Face, launchpad.RotationAmountFromFaceNormalToUpZRad);
 				jumpDir.Length = m_cam.RHO;
-                m_swmgr.Jump(mcd_PadPowerInMS, jumpDir); // this should also jump straight up a bit first
+				LOGGER.Debug("Hit launchpad " + launchpad.Index);
+				m_swmgr.Jump((double)launchpad.LaunchPower, jumpDir); // this should also jump straight up a bit first
                 eEffect = SoundManager.EEffects.JUMPPAD;
-            }
+
+                /*D3Vect jumpDir = GetLaunchPadDirection(intersection.Face);
+                jumpDir.Length = m_cam.RHO;
+                m_swmgr.Jump(1200, jumpDir);
+				eEffect = SoundManager.EEffects.JUMPPAD;*/
+			}
 			// portals
 			else if(transporter != null)
 			{
@@ -832,6 +838,7 @@ namespace engine
 		private D3Vect GetLaunchPadDirection(Face face, double degRotation = 90.0)
 		{
 			D3Vect d3Dir = new D3Vect(face.GetNormal);
+
 			D3Vect rotationVec = new D3Vect(face.GetNormal, new D3Vect(0, 0, 1));
 			rotationVec.normalize();
 
@@ -856,7 +863,8 @@ namespace engine
 
 			SoundManager.EEffects eEffectReturn = SoundManager.EEffects.NONE;
 			Jumppad jp = m_Intersection.Face.GetParentShape() as Jumppad;
-			eEffectReturn = HandleJumpsAndPopouts(sTextureInfo, m_Intersection, null, jp);
+			LaunchPad lp = m_Intersection.Face.GetParentShape() as LaunchPad;
+			eEffectReturn = HandleJumpsAndPopouts(sTextureInfo, m_Intersection, null, jp, lp);
 			if (eEffectReturn != SoundManager.EEffects.NONE) eEffectToPlay = eEffectReturn;			
 
 			// check that we are the right distance from the ground(player's height)

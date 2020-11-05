@@ -67,12 +67,34 @@ namespace engine
     {
         public Jumppad(Shape s) : base(s) { }
 
-        private float m_fLaunchPower = 500;
+        private float m_fLaunchPower = 100; // so low that it will be obvious in game so i can fix it
+        private int m_nIndex = -1; // this is initially for determining quickly at runtime which jumppad i hit to help in setting their jump values
+        protected double dRotationAmountFromFaceNormalToUpZRad = (Math.PI / 8.0);
+
+        public double RotationAmountFromFaceNormalToUpZRad
+        {
+            get { return dRotationAmountFromFaceNormalToUpZRad; }
+            set { dRotationAmountFromFaceNormalToUpZRad = value; }
+        }
+
+        public int Index
+        {
+            get { return m_nIndex; }
+            set { m_nIndex = value; }
+        }
 
         public float LaunchPower
         {
             get { return m_fLaunchPower; }
             set { m_fLaunchPower = value; }
+        }
+    }
+
+    class LaunchPad : Jumppad
+    {
+        public LaunchPad(Shape s) : base(s)
+        {
+            dRotationAmountFromFaceNormalToUpZRad = 90; 
         }
     }
 }

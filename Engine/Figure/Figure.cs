@@ -72,6 +72,7 @@ namespace engine
 
 		private int m_nInitializeProgress = 0;
 		private int m_nThreadShutdownCounter = 0;
+		private int m_nJumpPadIndex = 0;
 
 		private bool m_bUpToDateBoundingBoxes = false;
 		int m_nTraversalCounter;
@@ -397,8 +398,9 @@ namespace engine
 				else if(GameGlobals.IsJumpPad(s.GetMainTexture().GetPath()))
                 {
 					sSubShape = new Jumppad(s);
-					(sSubShape as Jumppad).Index = i;
-					DefineJumpPad((Jumppad)(sSubShape), i);
+					(sSubShape as Jumppad).Index = m_nJumpPadIndex;
+					DefineJumpPad((Jumppad)(sSubShape), m_nJumpPadIndex);
+					m_nJumpPadIndex++;
                 }
 				else if(GameGlobals.IsLaunchPad(s.GetMainTexture().GetPath()))
                 {
@@ -1475,6 +1477,54 @@ namespace engine
 						break;
                 }
 
+            }
+			else if(m_map.GetNick == "q3dm5")
+            {
+				sSubShape.LaunchPower = 600;
+            }
+			else if(m_map.GetNick == "q3dm6")
+            {
+				switch(i)
+                {
+					case 0:
+						sSubShape.LaunchPower = 700;
+						break;
+					case 1:
+					case 2:
+						sSubShape.LaunchPower = 1000;
+						break;
+                }
+            }
+            else if (m_map.GetNick == "q3dm7")
+            {
+                switch (i)
+                {
+                    case 0:
+                    case 1:
+                        sSubShape.LaunchPower = 600;
+                        break;
+                }
+            }
+            else if (m_map.GetNick == "q3dm8")
+            {
+                switch (i)
+                {
+                    case 0:
+                        sSubShape.LaunchPower = 1050;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = Math.PI / 10 * -1.0;
+						break;
+                    case 1:
+					case 2:
+                        sSubShape.LaunchPower = 500;
+                        break;
+					case 3:
+						sSubShape.LaunchPower = 750;
+						break;
+					case 4:
+						sSubShape.LaunchPower = 1200;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = Math.PI / 10 * -1.0 ;
+						break;
+                }
             }
         }
 

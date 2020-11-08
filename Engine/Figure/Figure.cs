@@ -1524,8 +1524,33 @@ namespace engine
 						sSubShape.LaunchPower = 1200;
 						sSubShape.RotationAmountFromFaceNormalToUpZRad = Math.PI / 10 * -1.0 ;
 						break;
+                }                
+            }
+            else if (m_map.GetNick == "q3dm9")
+            {
+                switch (i)
+                {
+                    case 0:
+                    case 1:
+                        sSubShape.LaunchPower = 650;
+                        break;
+                    case 5:
+					case 4:
+                        sSubShape.LaunchPower = 800;
+                        break;
+					case 6:
+						sSubShape.LaunchPower = 900;
+						break;
+					case 2:
+						sSubShape.LaunchPower = 1400;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = Math.PI / 4.5 * -1.0;
+						break;
+					case 3:
+						sSubShape.LaunchPower = 950;
+						break;
                 }
             }
+
         }
 
         private void DefineLaunchPad(LaunchPad sSubShape, int i)
@@ -1541,6 +1566,21 @@ namespace engine
 					case 2:
 						sSubShape.LaunchPower = 1200;
 						break;
+                }
+
+            }
+            if (m_map.GetNick == "q3dm9")
+            {
+                switch (i)
+                {
+                    case 0:
+                    case 1:
+                        sSubShape.LaunchPower = 1100;
+                        break;
+					case 2:
+						sSubShape.LaunchPower = 850;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 110 * GLB.DegToRad;
+						break;                   
                 }
 
             }

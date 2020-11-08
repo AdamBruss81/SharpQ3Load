@@ -802,22 +802,17 @@ namespace engine
 					jumpDir.Negate();
 				}
 				jumpDir.Length = m_cam.RHO;
-				LOGGER.Debug("Hit jumppad " + jumppad.Index);
+				LOGGER.Info("Hit jumppad " + jumppad.Index);
                 m_swmgr.Jump((double)jumppad.LaunchPower, jumpDir); 
 				eEffect = SoundManager.EEffects.JUMPPAD;
 			} // launch pads
             else if (GameGlobals.IsLaunchPad(sTextureInfo))
             {
-                D3Vect jumpDir = GetLaunchPadDirection(intersection.Face, launchpad.RotationAmountFromFaceNormalToUpZRad);
+                D3Vect jumpDir = GetLaunchPadDirection(intersection.Face, launchpad.RotationAmountFromFaceNormalToUpZRad * GLB.RadToDeg);
 				jumpDir.Length = m_cam.RHO;
-				LOGGER.Debug("Hit launchpad " + launchpad.Index);
+				LOGGER.Info("Hit launchpad " + launchpad.Index);
 				m_swmgr.Jump((double)launchpad.LaunchPower, jumpDir); // this should also jump straight up a bit first
                 eEffect = SoundManager.EEffects.JUMPPAD;
-
-                /*D3Vect jumpDir = GetLaunchPadDirection(intersection.Face);
-                jumpDir.Length = m_cam.RHO;
-                m_swmgr.Jump(1200, jumpDir);
-				eEffect = SoundManager.EEffects.JUMPPAD;*/
 			}
 			// portals
 			else if(transporter != null)

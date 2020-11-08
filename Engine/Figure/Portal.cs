@@ -94,7 +94,7 @@ namespace engine
     {
         public LaunchPad(Shape s) : base(s)
         {
-            dRotationAmountFromFaceNormalToUpZRad = 90; 
+            dRotationAmountFromFaceNormalToUpZRad = 90 * GLB.DegToRad; 
         }
     }
 }

@@ -620,26 +620,28 @@ namespace engine
 
 				// texture uniform samplers
 				sb.AppendLine("uniform " + Q3Shader.GetSampler2DName() + " texture0;"); // main texture
-				if (m_lTextures.Count > 0) sb.AppendLine("uniform " + Q3Shader.GetSampler2DName() + " texture1;");
+				if (m_lTextures.Count > 1) sb.AppendLine("uniform " + Q3Shader.GetSampler2DName() + " texture1;");
+				sb.AppendLine("");
 
 				sb.AppendLine("void main()");
 				sb.AppendLine("{");
-				sb.AppendLine("if (lightmapTexCoord.x != -1.0) {");
-				sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
-				sb.AppendLine("vec4 lightmap_texel = texture(texture1, lightmapTexCoord);");
-				sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * " + GameGlobals.GetBaseLightmapScale() + ", 0.0, 1.0);");
-				sb.AppendLine("}");
-				sb.AppendLine("else {");
-				sb.AppendLine("vec4 texel0 = texture(texture0, mainTexCoord);");
-				sb.AppendLine("outputColor = texel0 * color * 3.0;");
-				sb.AppendLine("}");
+
+				if (GetLightmapTexture() != null)
+                {
+                    
+                    sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
+                    sb.AppendLine("vec4 lightmap_texel = texture(texture1, lightmapTexCoord);");
+                    sb.AppendLine("outputColor = clamp(main_tex_texel * lightmap_texel * " + GameGlobals.GetBaseLightmapScale() + ", 0.0, 1.0);");
+                }
+				else
+                {
+                    sb.AppendLine("vec4 main_tex_texel = texture(texture0, mainTexCoord);");
+                    sb.AppendLine("outputColor = main_tex_texel * color * 3.0;");
+                }
+
 				sb.AppendLine("}");
 			}
 
-			if(GetMainTexture().GetPath().Contains("storch"))
-            {
-				int stop = 0;
-            }
 			return sb.ToString();
 		}
 

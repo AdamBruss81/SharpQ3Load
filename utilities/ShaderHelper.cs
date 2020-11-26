@@ -154,12 +154,12 @@ namespace utilities
 			{
 				if (sHelperStr == "")
 				{
-					Console.WriteLine(s);
+					System.Diagnostics.Trace.WriteLine(s);
 					//System.IO.File.WriteAllText("c:\\temp\\glout_release.txt", s);
 				}
 				else
 				{
-					Console.WriteLine(s + " from " + sHelperStr);
+					System.Diagnostics.Trace.WriteLine(s + " from " + sHelperStr);
 					//System.IO.File.WriteAllText("c:\\temp\\glout_release.txt", s + " from " + sHelperStr);
 				}
 			}
@@ -196,7 +196,7 @@ namespace utilities
 			{
 				string infoLog;
 				GL.GetShaderInfoLog(nShader, infologLength, out charsWritten, out infoLog);
-				Console.WriteLine(sLabel + " : Shader InfoLog:\n" + infoLog);
+				System.Diagnostics.Trace.WriteLine(sLabel + " : Shader InfoLog:\n" + infoLog);
 			}
 		}
 
@@ -212,7 +212,7 @@ namespace utilities
 				string infoLog;
 				GL.GetProgramInfoLog(nProgram, infologLength, out charsWritten, out infoLog);
 				if(infoLog.Trim().Length > 0)
-					Console.WriteLine("Program InfoLog:\n" + infoLog);
+					System.Diagnostics.Trace.WriteLine("Program InfoLog:\n" + infoLog);
 			}
 		}
 

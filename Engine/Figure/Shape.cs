@@ -60,6 +60,7 @@ namespace engine
 		int VertexBufferObject;
 		int VertexArrayObject;
 		int ElementBufferObject;
+		int ShaderStorageBufferObject;
 		// ===
 
 		// consts
@@ -163,6 +164,10 @@ namespace engine
 			sb.AppendLine("layout(location = 2) in vec2 aTexCoord2;");
 			sb.AppendLine("layout(location = 3) in vec4 aColor;");
 			sb.AppendLine("layout(location = 4) in vec3 vertexNormal;");
+			sb.AppendLine("layout(std430, binding = 3) buffer layoutName");
+			sb.AppendLine("{");
+			sb.AppendLine("float sinValues[];");
+			sb.AppendLine("};");
 			sb.AppendLine("");
 			sb.AppendLine("out vec2 mainTexCoord;");
 			sb.AppendLine("out vec2 lightmapTexCoord;");
@@ -262,7 +267,7 @@ namespace engine
 
 			if (bSendSinTable)
 			{
-				sb.AppendLine("uniform float sinValues[1024];");
+				//sb.AppendLine("uniform float sinValues[1024];");
 			}
 
 			if (bUsesTCGen)
@@ -607,7 +612,7 @@ namespace engine
 
 			if (!string.IsNullOrEmpty(m_q3Shader.GetShaderName()))
 			{
-				m_q3Shader.ConvertQ3ShaderToGLSL(sb);
+				m_q3Shader.ConvertQ3ShaderToFragGLSL(sb);
 			}
 			else
 			{
@@ -631,6 +636,10 @@ namespace engine
 				sb.AppendLine("}");
 			}
 
+			if(GetMainTexture().GetPath().Contains("storch"))
+            {
+				int stop = 0;
+            }
 			return sb.ToString();
 		}
 
@@ -794,6 +803,7 @@ namespace engine
 			VertexBufferObject = GL.GenBuffer();
 			VertexArrayObject = GL.GenVertexArray();
 			ElementBufferObject = GL.GenBuffer();
+			ShaderStorageBufferObject = GL.GenBuffer();
 
 			ShaderHelper.printOpenGLError("");
 
@@ -825,6 +835,11 @@ namespace engine
 			// setup element buffer for vertex indices
 			GL.BindBuffer(BufferTarget.ElementArrayBuffer, ElementBufferObject);
 			GL.BufferData(BufferTarget.ElementArrayBuffer, m_arIndices.Length * sizeof(uint), m_arIndices, BufferUsageHint.StaticDraw);
+
+			// setup ssbo for sin values table 
+			GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ShaderStorageBufferObject);
+			GL.BufferData(BufferTarget.ShaderStorageBuffer, sizeof(float) * 1024, GameGlobals.m_SinTable, BufferUsageHint.StaticDraw);
+			GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 3, ShaderStorageBufferObject);
 			// ===
 
 			ShaderHelper.printOpenGLError("");
@@ -1253,8 +1268,8 @@ namespace engine
 
 				if (bSendSinTable)
 				{
-					nLoc = GL.GetUniformLocation(ShaderProgram, "sinValues");
-					GL.Uniform1(nLoc, 1024, GameGlobals.m_SinTable);
+					//nLoc = GL.GetUniformLocation(ShaderProgram, "sinValues");
+					//GL.Uniform1(nLoc, 1024, GameGlobals.m_SinTable);
 				}
 
 				// rgbgen and alphagen

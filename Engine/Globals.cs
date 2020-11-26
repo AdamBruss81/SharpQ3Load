@@ -135,21 +135,21 @@ namespace engine
 			get { return Path.Combine(Path.GetTempPath(), NAMES.GetTempFolderName); }
 		}
 
-		public static string GetProgramDataDir
-		{
-			get { return SpecialDirectories.AllUsersApplicationData; }
-		}
+		//public static string GetProgramDataDir
+		//{
+		//	get { return SpecialDirectories.AllUsersApplicationData; }
+		//}
 
 		public static string GetLogFile
 		{
-			get { return Path.Combine(SpecialDirectories.AllUsersApplicationData, NAMES.GetLogFileName); }
+			get { return Path.Combine(GetTempDir, NAMES.GetLogFileName); }
 		}
 
 		public static string GetProgramDataMapsZipFile
 		{
 			get
 			{
-				return Path.Combine(GetProgramDataDir, NAMES.GetMapsName);
+				return Path.Combine(GetTempDir, NAMES.GetMapsName);
 			}
 		}
 

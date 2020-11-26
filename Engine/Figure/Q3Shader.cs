@@ -298,7 +298,7 @@ namespace engine
         /// This functions puts in the q3 shader specific content.
         /// </summary>
         /// <param name="sb"></param>
-        public void ConvertQ3ShaderToGLSL(System.Text.StringBuilder sb)
+        public void ConvertQ3ShaderToFragGLSL(System.Text.StringBuilder sb)
         {
             // add samplers to frag shader based on stage count
             for (int i = 0; i < m_lStages.Count; i++)

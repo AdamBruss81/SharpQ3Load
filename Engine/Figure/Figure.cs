@@ -1550,7 +1550,120 @@ namespace engine
 						break;
                 }
             }
-
+            else if (m_map.GetNick == "q3dm11")
+            {
+                switch (i)
+                {
+                    case 0:
+						sSubShape.LaunchPower = 800;
+						break;
+                    case 1:
+						sSubShape.LaunchPower = 900;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 20 * GLB.DegToRad * -1.0;
+                        break;                   
+                }
+            }
+            else if (m_map.GetNick == "q3dm12")
+            {
+                switch (i)
+                {
+                    case 0:
+                        sSubShape.LaunchPower = 600;
+                        break;
+                    case 1:
+                        sSubShape.LaunchPower = 900;
+                        break;
+					case 2:
+						sSubShape.LaunchPower = 1100;
+						break;
+					case 3:
+						sSubShape.LaunchPower = 700;
+						break;
+					case 4:
+						sSubShape.LaunchPower = 600;
+						break;
+					case 5:
+						sSubShape.LaunchPower = 700;
+						break;
+					case 6:
+						sSubShape.LaunchPower = 800;
+						break;
+                }
+            }
+			else if(m_map.GetNick == "q3dm13")
+            {
+				switch(i)
+                {
+					case 0:
+						sSubShape.LaunchPower = 700;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 15 * GLB.DegToRad * -1.0;
+						break;
+					case 1:
+						sSubShape.LaunchPower = 800;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 15 * GLB.DegToRad * -1.0;
+						break;
+                }
+            }
+            else if (m_map.GetNick == "q3dm14")
+            {
+                switch (i)
+                {
+                    case 0:
+                        sSubShape.LaunchPower = 900;
+                        break;
+                    case 3:
+                        sSubShape.LaunchPower = 700;
+                        break;
+					case 1:
+						sSubShape.LaunchPower = 900;
+						break;
+					case 2:
+						sSubShape.LaunchPower = 900;
+						break;
+                }
+            }
+            else if (m_map.GetNick == "q3dm15")
+            {
+                switch (i)
+                {
+                    case 0:
+                        sSubShape.LaunchPower = 1100;
+                        break;
+					case 1:
+						sSubShape.LaunchPower = 700;
+						break;
+					case 2: // one above lava you can't easily get to. this is untested.
+						sSubShape.LaunchPower = 1200;
+						break;
+					case 3:
+						sSubShape.LaunchPower = 600;
+						break;
+					case 4:
+						sSubShape.LaunchPower = 800;
+						break;
+					case 5:
+					case 6:
+						sSubShape.LaunchPower = 800;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 5 * GLB.DegToRad * -1.0;
+						break;
+                }
+            }
+            else if (m_map.GetNick == "q3dm16") // bouncy map
+            {
+                switch (i)
+                {
+					case 0:
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        break;
+                    case 4:
+                        break;
+                }
+            }
         }
 
         private void DefineLaunchPad(LaunchPad sSubShape, int i)
@@ -1581,6 +1694,37 @@ namespace engine
 						sSubShape.LaunchPower = 850;
 						sSubShape.RotationAmountFromFaceNormalToUpZRad = 110 * GLB.DegToRad;
 						break;                   
+                }
+
+            }
+            if (m_map.GetNick == "q3dm12")
+            {
+                switch (i)
+                {
+                    case 0:
+                        sSubShape.LaunchPower = 1150;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 100 * GLB.DegToRad;
+                        break;
+                    case 1:
+                        sSubShape.LaunchPower = 1100;
+						sSubShape.RotationAmountFromFaceNormalToUpZRad = 80 * GLB.DegToRad;
+                        break;
+                }
+            }
+            if (m_map.GetNick == "q3dm15")
+            {
+                switch (i)
+                {
+                    case 0:
+					case 1:
+                        sSubShape.LaunchPower = 1000;
+                        sSubShape.RotationAmountFromFaceNormalToUpZRad = 100 * GLB.DegToRad;
+                        break;
+					case 2:
+					case 3:
+                        sSubShape.LaunchPower = 1000;
+                        sSubShape.RotationAmountFromFaceNormalToUpZRad = 100 * GLB.DegToRad;
+                        break;
                 }
 
             }

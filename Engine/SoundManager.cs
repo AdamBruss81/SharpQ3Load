@@ -109,7 +109,9 @@ namespace engine
 
         private void Mixer_MixerInputEnded(object sender, SampleProviderEventArgs e)
         {
-            NAudio.Wave.SampleProviders.MonoToStereoSampleProvider sp = (NAudio.Wave.SampleProviders.MonoToStereoSampleProvider)e.SampleProvider;
+            NAudio.Wave.SampleProviders.MonoToStereoSampleProvider sp = null;
+            if (e.SampleProvider is NAudio.Wave.SampleProviders.MonoToStereoSampleProvider)
+                sp = (NAudio.Wave.SampleProviders.MonoToStereoSampleProvider)e.SampleProvider;
 
             if (sp != null && m_dictPlayingSounds.ContainsValue(sp))
             {

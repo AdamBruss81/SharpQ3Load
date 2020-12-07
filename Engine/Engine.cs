@@ -145,6 +145,56 @@ namespace engine
 		public virtual void LoadMap(MapInfo map)
 		{
 			Figure mapFigure = new Figure();
+
+			// handle pk3 maps here. convert them to the vrml style and alter map to point to the vrml.
+			if (System.IO.Path.GetExtension(map.GetMapPathOnDisk) == ".pk3")
+			{
+				string pk3 = map.GetMapPathOnDisk; // need later
+				string wrl = System.IO.Path.ChangeExtension(map.GetMapPathOnDisk, "wrl");
+
+                string sTempFile = System.IO.Path.GetTempFileName();
+                System.IO.File.Delete(sTempFile);
+                string sTempDir = System.IO.Path.ChangeExtension(sTempFile, null);
+                System.IO.Directory.CreateDirectory(sTempDir);
+
+				Zipper zipper = new Zipper();
+
+				if (System.IO.File.Exists(wrl))
+                {
+					map.ConvertToWRL(wrl);
+                }
+				else
+                {
+					// extract bsp from pk3					
+					zipper.ExtractArbitrary(map.GetMapPathOnDisk, "maps/" + System.IO.Path.GetFileNameWithoutExtension(map.GetMapPathOnDisk) + ".bsp", sTempDir);
+
+					// run q3bsp on bsp
+					string sq3bsp = System.IO.Path.Combine(sTempDir + "\\maps", "q3bsp.exe");
+					System.IO.File.Copy("q3bsp.exe", sq3bsp, true);
+					System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(sq3bsp, "-2me " + System.IO.Path.GetFileNameWithoutExtension(map.GetMapPathOnDisk));
+					startInfo.RedirectStandardOutput = false;
+					startInfo.UseShellExecute = false;
+					startInfo.WorkingDirectory = System.IO.Path.Combine(sTempDir, "maps");
+					System.Diagnostics.Process.Start(startInfo).WaitForExit();					
+
+					// copy lightmap pngs to simulator temp folder and copy wrl to be in same folder as user chosen pk3
+					string[] pngs = System.IO.Directory.GetFiles(startInfo.WorkingDirectory, "*.png");
+					foreach(string sPNG in pngs)
+                    {
+						System.IO.File.Copy(sPNG, PATHS.GetTempDir + "\\" + System.IO.Path.GetFileName(sPNG), true);
+                    }
+					System.IO.File.Copy(startInfo.WorkingDirectory + "\\" + System.IO.Path.GetFileNameWithoutExtension(map.GetMapPathOnDisk) + ".wrl", wrl);					
+
+					map.ConvertToWRL(wrl);
+				}
+
+                // read custom shaders
+                zipper.ExtractAllShaderFiles(pk3, sTempDir);
+                Q3Shader.ReadAllShadersInDir(sTempDir, GameGlobals.m_dictQ3ShaderContent);
+
+				System.IO.Directory.Delete(sTempDir, true);
+			}
+
 			mapFigure.CheckBoundingBoxes(map);
 			m_lStaticFigList.Add(mapFigure);
 			mapFigure.Read(map);

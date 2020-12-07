@@ -59,6 +59,8 @@ namespace engine
 
         public string GetPath() { return m_sInternalZipPath; }
 
+        public bool WrapperNull() { return m_pWrapper == null; }
+
         public void Delete()
 		{
             if (m_pWrapper != null)

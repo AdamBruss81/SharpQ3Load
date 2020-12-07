@@ -12,6 +12,12 @@ namespace engine
 	{
 		protected FastZip zipper = new FastZip();
 
+        public void ExtractArbitrary(string sZip, string sInternalPath, string sTargetDir)
+        {
+            if (File.Exists(sZip))
+                zipper.ExtractZip(sZip, sTargetDir, sInternalPath);
+        }
+
 		public string ExtractMap(string sInternalPath)
 		{
             if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
@@ -19,7 +25,7 @@ namespace engine
             string sPath = Path.Combine(PATHS.GetTempDir, sInternalPath);
 
             if (!File.Exists(sPath))
-                zipper.ExtractZip(PATHS.GetProgramDataMapsZipFile, PATHS.GetTempDir, sInternalPath);
+                zipper.ExtractZip(PATHS.GetMapsZipFile, PATHS.GetTempDir, sInternalPath);
 
             System.Diagnostics.Debug.Assert(File.Exists(sPath));
             return sPath;
@@ -40,23 +46,27 @@ namespace engine
             return sFullPathToExtractedFile;
         }
 
-        public string ExtractSoundTextureOther(string sInternalPath)
+        public string ExtractSoundTextureOther(string sInternalPath, string sPAKFile = "")
         {
             if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
+
+            if (sPAKFile == "") sPAKFile = PATHS.GetPak0Path;
 
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             GameGlobals.m_ZipExtractPak0Mutex.WaitOne();
             if (!File.Exists(sFullPathToExtractedFile))
             {                
-                zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, sInternalPath);                
+                zipper.ExtractZip(sPAKFile, PATHS.GetTempDir, sInternalPath);                
             }
             GameGlobals.m_ZipExtractPak0Mutex.ReleaseMutex();
             return sFullPathToExtractedFile;
 		}
 
-        public void ExtractAllShaderFiles()
+        public void ExtractAllShaderFiles(string sZipFile = "", string sTempDir = "")
         {
-            zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, FastZip.Overwrite.Never, null, "scripts/*.*", "", false);
+            if (sZipFile == "") sZipFile = PATHS.GetPak0Path;
+            if (sTempDir == "") sTempDir = PATHS.GetTempDir;
+            zipper.ExtractZip(sZipFile, sTempDir, FastZip.Overwrite.Never, null, "scripts/*.*", "", false);
         }
 
         public string ExtractShaderFile(string sShaderName)
@@ -68,15 +78,15 @@ namespace engine
             {
                 zipper.ExtractZip(PATHS.GetPak0Path, PATHS.GetTempDir, "scripts/" + sShaderName + ".shader");
             }
-            return sFullPathToExtractedFile;
+            return sFullPathToExtractedFile;         
         }
 
         public void UpdateMap(string sMapPathOnDisk, string sInternalZipPath)
 		{
-			if (!File.Exists(PATHS.GetProgramDataMapsZipFile)) 
-				throw new Exception("Could not find map archive to update at " + PATHS.GetProgramDataMapsZipFile);
+			if (!File.Exists(PATHS.GetMapsZipFile)) 
+				throw new Exception("Could not find map archive to update at " + PATHS.GetMapsZipFile);
 
-			ZipFile file = new ZipFile(PATHS.GetProgramDataMapsZipFile);
+			ZipFile file = new ZipFile(PATHS.GetMapsZipFile);
 
 			file.BeginUpdate();
 			file.Delete(sInternalZipPath);

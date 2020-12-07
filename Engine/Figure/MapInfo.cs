@@ -56,6 +56,12 @@ namespace engine
 			m_bExtractedFromZip = true;
 		}
 
+		public void ConvertToWRL(string wrlPath)
+        {
+			m_sPath = Path.GetFileName(wrlPath);
+			m_sMapPathOnDisk = wrlPath;
+		}
+
 		public override string ToString()
 		{
 			if (m_sLongMapName == null)

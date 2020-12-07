@@ -145,7 +145,7 @@ namespace engine
 			get { return Path.Combine(GetTempDir, NAMES.GetLogFileName); }
 		}
 
-		public static string GetProgramDataMapsZipFile
+		public static string GetMapsZipFile
 		{
 			get
 			{

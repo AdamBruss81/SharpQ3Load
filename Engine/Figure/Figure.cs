@@ -479,9 +479,8 @@ namespace engine
             m_srMapReader = new StreamReader(m_map.GetMapPathOnDisk);
 			while (Read(lShapeTextureObjects))
 			{
-				Shape s = new Shape();
+				Shape s = new Shape(m_map);
 
-				//LOGGER.Debug("Create shape");
 				Subscribe(s);
 
 				bool bReadSuccess = s.ReadMain(lShapeTextureObjects, m_srMapReader, ref m_nMapFileLineCounter);
@@ -517,8 +516,6 @@ namespace engine
 				}
 				else throw new Exception("Shape read error");
 			}
-
-			//LOGGER.Info("Read in " + m_lShapes.Count.ToString() + " shapes for " + map.GetMapPathOnDisk);
 
 			ReadEntities();
 		}
@@ -728,8 +725,8 @@ namespace engine
 				{
                     GatherShapesForMapSounds(s);
 
-
-                    s.InitializeGL();
+					if(s.GetRenderMember())
+						s.InitializeGL();
 				}
 			}
 			else
@@ -898,7 +895,7 @@ namespace engine
 		{
 			m_srMapReader.Close();
 
-			if (m_lFaceContainingBoundingBoxes.Count > 0 && m_map.ExtractedFromZip)
+			if (m_lFaceContainingBoundingBoxes.Count > 0)
 			{
 				string sTempPath = "";
 				StreamReader sr = new StreamReader(m_map.GetMapPathOnDisk);
@@ -960,7 +957,8 @@ namespace engine
                     File.Delete(sTempPath);                    
                 }
 
-                m_zipper.UpdateMap(m_map.GetMapPathOnDisk, m_map.GetPath);
+				if(m_map.ExtractedFromZip)
+					m_zipper.UpdateMap(m_map.GetMapPathOnDisk, m_map.GetPath);
 			}
 		}
 
@@ -1450,7 +1448,9 @@ namespace engine
 
         private void DefineJumpPad(Jumppad sSubShape, int i)
         {
-			if(m_map.GetNick == "q3dm17")
+			sSubShape.LaunchPower = 1000; // default
+
+			if (m_map.GetNick == "q3dm17")
             {
 				switch(i)
                 {
@@ -1668,6 +1668,8 @@ namespace engine
 
         private void DefineLaunchPad(LaunchPad sSubShape, int i)
         {
+			sSubShape.LaunchPower = 1000; // default
+
             if (m_map.GetNick == "q3dm17")
             {
                 switch (i)

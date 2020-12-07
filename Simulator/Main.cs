@@ -30,9 +30,10 @@ namespace simulator
 
 			try
 			{
-				if(!File.Exists(PATHS.GetProgramDataMapsZipFile)) 
+				if(!File.Exists(PATHS.GetMapsZipFile)) 
 				{
-					File.Copy(PATHS.GetSourceMapsZipFile, PATHS.GetProgramDataMapsZipFile);
+					Directory.CreateDirectory(PATHS.GetTempDir);
+					File.Copy(PATHS.GetSourceMapsZipFile, PATHS.GetMapsZipFile);
 				}
 
 				LOGGER.Info("Running simulator on " + DateTime.Now.ToString());

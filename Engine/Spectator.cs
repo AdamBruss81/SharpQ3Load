@@ -73,11 +73,14 @@ namespace engine
 
 		private void RepositionMovableCamera()
 		{
-			m_cam = new MovableCamera(m_CamPositions[m_ViewPointIndex].Position[0], m_CamPositions[m_ViewPointIndex].Position[1],
-							   m_CamPositions[m_ViewPointIndex].Position[2] + JUMP_OFFSET,
-							   Math.PI / 2, m_CamPositions[m_ViewPointIndex].Orientation[3], m_GControl as IGLControl);
+			if (m_CamPositions.Count > 0)
+			{
+				m_cam = new MovableCamera(m_CamPositions[m_ViewPointIndex].Position[0], m_CamPositions[m_ViewPointIndex].Position[1],
+								   m_CamPositions[m_ViewPointIndex].Position[2] + JUMP_OFFSET,
+								   Math.PI / 2, m_CamPositions[m_ViewPointIndex].Orientation[3], m_GControl as IGLControl);
 
-			m_CamPosCounter = 0;
+				m_CamPosCounter = 0;
+			}
 		}
 
 		public override void showScene(Keys keys)

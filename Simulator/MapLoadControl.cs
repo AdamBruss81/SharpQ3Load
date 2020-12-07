@@ -242,6 +242,7 @@ namespace simulator
 			}
 			else
 			{
+				LOGGER.Info("Could not find level shot for map " + SimulatorForm.static_theMap.GetLongMapName);
 				m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));                    
             }
 

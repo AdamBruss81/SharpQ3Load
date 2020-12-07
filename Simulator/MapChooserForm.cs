@@ -135,7 +135,7 @@ namespace simulator
 		private List<string> GetMapPathsInZip()
 		{
 			List<string> lPaths = new List<string>();
-			using (ZipFile zipFile = new ZipFile(PATHS.GetProgramDataMapsZipFile))
+			using (ZipFile zipFile = new ZipFile(PATHS.GetMapsZipFile))
 			{
 				for (int i = 0; i < zipFile.Count; ++i)
 				{
@@ -262,12 +262,13 @@ namespace simulator
 		private void m_btnFromFile_Click(object sender, EventArgs e)
 		{
 			OpenFileDialog dlg = new OpenFileDialog();
-			dlg.Filter = "VRML Files (*.wrl)|*.wrl";
+			dlg.Filter = "VRML Files (*.wrl)|*.wrl|PK3 Files (*.pk3)|*.pk3";
 			DialogResult result = dlg.ShowDialog(this);
 			if (result == DialogResult.OK)
 			{
 				string sFile = dlg.FileName;
 				m_chosenMap = new MapInfo(sFile);
+				m_bChoseMap = true;
 				Close();
 			}
 		}

@@ -159,7 +159,7 @@ namespace simulator
             this.m_btnFromFile.Text = "Load From File";
             this.m_btnFromFile.UseVisualStyleBackColor = true;
             this.m_btnFromFile.Click += new System.EventHandler(this.m_btnFromFile_Click);
-            this.m_btnFromFile.Enabled = false;
+            this.m_btnFromFile.Enabled = true;
             // 
             // MapChooserForm
             // 

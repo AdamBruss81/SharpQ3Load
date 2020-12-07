@@ -27,6 +27,7 @@ namespace engine
 		public enum ESignals { FACE_CREATED = SignalStarts.g_nShapeStart };
 		public enum ETextureType { NONE, SINGLE, MULTI };
 
+		MapInfo m_map = null;
 		List<Texture> m_lTextures;
 		List<Face> m_lFaces = new List<Face>();
 		List<List<int>> m_lCoordinateIndexes = new List<List<int>>(); // the inner list always has 3 elements
@@ -44,6 +45,7 @@ namespace engine
         D3Vect m_d3MidPoint = null;
 		bool m_bSubShape = false;
 		bool m_bMergeSource = false;
+		bool m_bRender = true;
 
 		string m_autoGenereatedFragShader = "";
 		string m_autoGenereatedVertexShader = "";
@@ -73,7 +75,7 @@ namespace engine
 
 		ETextureType m_TextureType;
 
-		public Shape() { m_q3Shader = new Q3Shader(this); }
+		public Shape(MapInfo map) { m_map = map; m_q3Shader = new Q3Shader(this); }
 
 		public List<Face> GetMapFaces() { return m_lFaces; }
 
@@ -90,9 +92,12 @@ namespace engine
 			m_lVerticeColors.AddRange(s.m_lVerticeColors);
 			m_TextureType = s.m_TextureType;
 			m_q3Shader = new Q3Shader(this);
+			m_map = s.m_map;
 		}
 
 		public List<D3Vect> GetVertices() { return m_lVertices; }
+
+		public MapInfo GetMap() { return m_map; }
 
 		public void Merge(Shape s)
 		{
@@ -582,6 +587,11 @@ namespace engine
 			m_d3AutoSprite2UpVector.normalize();
         }
 
+		public void SetDontRender(bool b)
+        {
+			m_bRender = !b;
+        }
+
         public string CreateGLSLFragShader()
 		{
 			System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -651,7 +661,34 @@ namespace engine
 			string sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(bLightmap, t.GetPath(), ref bShouldBeTGA);
 			t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
 			t.SetFullPath(sFullTexPath);
-			t.SetTexture(m_q3Shader.GetShaderName());
+			bool bFoundTexture = false;
+			if (!File.Exists(sFullTexPath))
+			{
+				//LOGGER.Info("Could not find texture at location " + sFullTexPath + ". This is probably a problem with loading a custom map.");
+				//SetDontRender(true);
+
+				string sPK3 = Path.ChangeExtension(GetMap().GetMapPathOnDisk, "pk3");
+				if (File.Exists(sPK3))
+				{
+					sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA, sPK3);
+					if (File.Exists(sFullTexPath))
+					{
+						bFoundTexture = true;
+					}
+					else
+					{
+						LOGGER.Info("Could not find texture at location " + sFullTexPath + ". This is probably a problem with loading a custom map.");
+						SetDontRender(true);
+					}
+				}
+			}
+			else
+				bFoundTexture = true;
+
+			if(bFoundTexture)
+            {
+				t.SetTexture(m_q3Shader.GetShaderName());
+			}
 		}
 
 		public void InitializeNonGL()
@@ -690,12 +727,7 @@ namespace engine
 				// i should probably not create or delete the main texture in this case but it doesn't do any harm right now
 			}
 
-			GameGlobals.m_SharedTextureInit.ReleaseMutex();
-
-			foreach (Face f in m_lFaces)
-            {
-                f.InitializeLists();
-            }
+			GameGlobals.m_SharedTextureInit.ReleaseMutex();			
 
             // use modern open gl via vertex buffers, vertex array, element buffer and shaders
             // setup vertices
@@ -787,6 +819,8 @@ namespace engine
 #endif
         }
 
+		public bool GetRenderMember() { return m_bRender; }
+
         public void InitializeGL()
 		{
 			// define gl aspects of all textures for this shape
@@ -800,7 +834,12 @@ namespace engine
 			}
 			m_q3Shader.GLDefineTextures();
 
-			ShaderProgram = ShaderHelper.CreateProgramFromContent(m_autoGenereatedVertexShader, m_autoGenereatedFragShader, m_q3Shader.GetShaderName());
+            foreach (Face f in m_lFaces)
+            {
+                f.InitializeLists();
+            }
+
+            ShaderProgram = ShaderHelper.CreateProgramFromContent(m_autoGenereatedVertexShader, m_autoGenereatedFragShader, m_q3Shader.GetShaderName());
 
 			VertexBufferObject = GL.GenBuffer();
 			VertexArrayObject = GL.GenVertexArray();
@@ -924,19 +963,23 @@ namespace engine
 
 		public bool DontRender()
 		{
-			bool bRender = true;
-			if (GetMainTexture() != null)
-			{
-				string sName = Path.GetFileName(GetMainTexture().GetPath());
-				if (sName.Contains("fog") || sName.Contains("clip"))
-					bRender = false;
-			}
-			if (bRender) 
-				bRender = m_lCoordinateIndexes.Count > 0;
+			bool bRender = m_bRender;
 
-			if(bRender)
+			if (bRender)
 			{
-				//bRender = GetMainTexture().GetPath().Contains("slamp3");
+				if (GetMainTexture() != null)
+				{
+					string sName = Path.GetFileName(GetMainTexture().GetPath());
+					if (sName.Contains("fog") || sName.Contains("clip"))
+						bRender = false;
+				}
+				if (bRender)
+					bRender = m_lCoordinateIndexes.Count > 0;
+
+				if (bRender)
+				{
+					//bRender = GetMainTexture().GetPath().Contains("slamp3");
+				}
 			}
 
 			return !bRender;
@@ -1045,7 +1088,7 @@ namespace engine
 		public void ShowWireframe()
 		{
 			// for debugging can only show certain shapes here
-			if (!m_q3Shader.GetShaderName().Contains("flame")) return;
+			//if (!m_q3Shader.GetShaderName().Contains("flame")) return;
 
 			for (int i = 0; i < m_lFaces.Count; i++)
 				m_lFaces[i].Draw(Engine.EGraphicsMode.WIREFRAME);

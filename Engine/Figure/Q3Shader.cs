@@ -195,7 +195,7 @@ namespace engine
             return false;
         }
 
-        public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL, ref bool bShouldBeTGA)
+        public string GetPathToTextureNoShaderLookup(bool bLightmap, string sURL, ref bool bShouldBeTGA, string sPAKPath = "")
         {
             string sFullPath;
 
@@ -205,25 +205,25 @@ namespace engine
             }
             else
             {
-                sFullPath = m_zipper.ExtractSoundTextureOther(sURL);
+                sFullPath = m_zipper.ExtractSoundTextureOther(sURL, sPAKPath);
 
                 if (!File.Exists(sFullPath))
                 {
                     // try to find texture as tga or jpg
                     // when quake 3 was near shipping, id had to convert some tgas to jpg to reduce pak0 size					
                     if (Path.GetExtension(sFullPath) == ".jpg")
-                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"));
+                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"), sPAKPath);
                     else
                     {
                         bShouldBeTGA = true;
-                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"));
+                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"), sPAKPath);
                     }
 
                     if (!File.Exists(sFullPath))
                     {
                         // the only texture in the game of this nature
                         if (sFullPath.Contains("nightsky_xian_dm1"))
-                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg");
+                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg", sPAKPath);
                         else if (sFullPath.Contains("stars"))
                         {
                             // this is the lightimage for the dm10 sky. i think the sky is somehow broken up into multiple
@@ -362,16 +362,47 @@ namespace engine
                     m_lStageTextures.Add(t);
                     bool bShouldBeTGA = false;
                     t.SetClamp(stage.GetClampmap());
+
                     string sFullTexPath = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bShouldBeTGA);
-                    t.SetFullPath(sFullTexPath);
-                    t.SetShouldBeTGA(bShouldBeTGA);
-                    t.SetTexture(m_sShaderName);
+                    bool bFoundTexture = false;
+                    if (!File.Exists(sFullTexPath))
+                    {
+                        // this has only happened so far when loading non built in maps such as museum which comes with q3radiant I think
+                        //LOGGER.Info("Could not find texture at location " + sFullTexPath + ". This is probably a problem with loading a custom map.");
+                        //m_pParent.SetDontRender(true);
 
-                    string sTexCoordName = "mainTexCoord";
-                    if (stage.GetTCGEN_CS() == "environment") sTexCoordName = "tcgenEnvTexCoord";
-                    if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex; // this can have started with tcgen environment already
+                        string sPK3 = Path.ChangeExtension(m_pParent.GetMap().GetMapPathOnDisk, "pk3");
+                        if (File.Exists(sPK3))
+                        {
+                            sFullTexPath = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bShouldBeTGA, sPK3);
+                            if(File.Exists(sFullTexPath))
+                            {
+                                bFoundTexture = true;
+                            }
+                            else
+                            {
+                                LOGGER.Info("Could not find texture at location " + sFullTexPath + ". This is probably a problem with loading a custom map.");
+                                m_pParent.SetDontRender(true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        bFoundTexture = true;
+                    }
 
-                    sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
+                    if(bFoundTexture)
+                    {
+                        t.SetFullPath(sFullTexPath);
+                        t.SetShouldBeTGA(bShouldBeTGA);
+                        t.SetTexture(m_sShaderName);
+
+                        string sTexCoordName = "mainTexCoord";
+                        if (stage.GetTCGEN_CS() == "environment") sTexCoordName = "tcgenEnvTexCoord";
+                        if (stage.GetTCMODS().Count > 0) sTexCoordName = "texmod" + sIndex; // this can have started with tcgen environment already
+
+                        sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
+                    }
                 }
                 else if (stage.IsAnimmap())
                 {
@@ -524,6 +555,10 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = " + sSource + " + outputColor * (" + sSource + ".w);");
                 }
+                else if (sBlendFunc == "gl_one gl_src_color")
+                {
+                    sb.AppendLine("outputColor = " + sSource + " + outputColor * " + sSource + ";");
+                }
                 else if(sBlendFunc.Contains("gl_"))
                 {
                     throw new Exception("Unknown blend function encountered. Provide an implementation for " + sBlendFunc);
@@ -621,95 +656,112 @@ namespace engine
             sb.AppendLine("outputColor = clamp(outputColor, 0.0, 1.0);");
         }
 
+        public static void ReadShadersFromFile(string sShaderFile, Dictionary<string, List<string>> dictShaderNameToShaderContent)
+        {
+            StreamReader sr = new StreamReader(sShaderFile);
+            string sCurrentShaderName = "";
+            int nCurlyCounter = 0;
+
+            while (!sr.EndOfStream)
+            {
+                string sLine = sr.ReadLine();
+
+                if (sLine.Contains("//"))
+                {
+                    sLine = sLine.Substring(0, sLine.IndexOf("//"));
+                }
+
+                string sLineTrimmed = sLine.Trim().ToLower();
+
+                if (sLine.Contains("//") || string.IsNullOrEmpty(sLineTrimmed)) continue;
+
+                if (sLine.Contains("{"))
+                {
+                    nCurlyCounter++;
+
+                    if (nCurlyCounter == 1)
+                    {
+                        // new q3 shader
+
+                        // HANDLE DUPLICATE SHADERS SOMEHOW. REPLACE. I ran into three and then decided to just overwrite anymore i find. will test later.
+                        if (dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName))
+                        {
+                            dictShaderNameToShaderContent.Remove(sCurrentShaderName);
+                        }
+
+                        System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == false);
+                        dictShaderNameToShaderContent[sCurrentShaderName] = new List<string>();
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
+                    }
+
+                    dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
+                }
+                else if (sLine.Contains("}"))
+                {
+                    nCurlyCounter--;
+
+                    if (nCurlyCounter == 0)
+                    {
+                        // end of current q3 shader
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
+                    }
+
+                    dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
+                }
+                else if (nCurlyCounter == 0) // new q3 shader name
+                {
+                    sCurrentShaderName = sLineTrimmed;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
+                    dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
+                }
+            }
+
+            sr.Close();
+        }
+
+        public static void ReadAllShadersInDir(string sDir, Dictionary<string, List<string>> dictShaderNameToShaderContent)
+        {
+            string sScriptsDir = Path.Combine(sDir, "scripts");
+
+            if (Directory.Exists(sScriptsDir))
+            {
+                string[] shaders = Directory.GetFiles(sScriptsDir, "*.shader");
+
+                try
+                {
+                    foreach (string sShaderFile in shaders)
+                    {
+                        ReadShadersFromFile(sShaderFile, dictShaderNameToShaderContent);
+                    }
+                }
+                catch (Exception e)
+                {
+                    System.Windows.Forms.MessageBox.Show(e.Message + "\n\n" + e.StackTrace);
+                }
+            }
+        }
+
         public static void ReadQ3ShaderContentOnceAtStartup(Dictionary<string, List<string>> dictShaderNameToShaderContent, Zipper zip)
         {
             zip.ExtractAllShaderFiles();
 
-            string[] shaders = Directory.GetFiles(Path.Combine(PATHS.GetTempDir, "scripts"), "*.shader");
-
-            try
-            {
-                foreach (string sShaderFile in shaders)
-                {
-                    StreamReader sr = new StreamReader(sShaderFile);
-                    string sCurrentShaderName = "";
-                    int nCurlyCounter = 0;
-
-                    while (!sr.EndOfStream)
-                    {
-                        string sLine = sr.ReadLine();
-
-                        if(sLine.Contains("//"))
-                        {
-                            sLine = sLine.Substring(0, sLine.IndexOf("//"));
-                        }
-
-                        string sLineTrimmed = sLine.Trim().ToLower();
-
-                        if (sLine.Contains("//") || string.IsNullOrEmpty(sLineTrimmed)) continue;
-
-                        if (sLine.Contains("{"))
-                        {
-                            nCurlyCounter++;
-
-                            if (nCurlyCounter == 1)
-                            {
-                                // new q3 shader
-
-                                // HANDLE DUPLICATE SHADERS SOMEHOW. REPLACE. I ran into three and then decided to just overwrite anymore i find. will test later.
-                                if(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName))
-                                {
-                                    dictShaderNameToShaderContent.Remove(sCurrentShaderName);
-                                }
-
-                                System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == false);
-                                dictShaderNameToShaderContent[sCurrentShaderName] = new List<string>();
-                            }
-                            else
-                            {
-                                System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);                                
-                            }
-
-                            dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
-                        }
-                        else if (sLine.Contains("}"))
-                        {
-                            nCurlyCounter--;
-
-                            if (nCurlyCounter == 0)
-                            {
-                                // end of current q3 shader
-                            }
-                            else
-                            {
-                                System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
-                            }
-
-                            dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
-                        }
-                        else if (nCurlyCounter == 0) // new q3 shader name
-                        {
-                            sCurrentShaderName = sLineTrimmed;
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.Assert(dictShaderNameToShaderContent.ContainsKey(sCurrentShaderName) == true);
-                            dictShaderNameToShaderContent[sCurrentShaderName].Add(sLineTrimmed);
-                        }
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                System.Windows.Forms.MessageBox.Show(e.Message + "\n\n" + e.StackTrace);
-            }
+            ReadAllShadersInDir(PATHS.GetTempDir, dictShaderNameToShaderContent);
         }
 
         public void Delete()
         {
             foreach (Texture t in m_lStageTextures)
             {
-                if (t != null)
+                if (t != null && !t.WrapperNull())
                 {
                     if(!t.Deleted()) // it could be deleted if it's a lightmap
                         t.Delete();
@@ -737,6 +789,8 @@ namespace engine
             string sPathNoExt = sPathFromVRML.Substring(0, sPathFromVRML.IndexOf(".")).ToLower();
             List<string> lShaderLines;
             bool bFound = GameGlobals.m_dictQ3ShaderContent.TryGetValue(sPathNoExt, out lShaderLines);
+
+            // Need to add code here to find shaders from custom map shader files. These will be in the pk3 loaded as the map.
 
             if (bFound)
             {

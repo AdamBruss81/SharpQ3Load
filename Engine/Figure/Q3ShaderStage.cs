@@ -56,8 +56,11 @@ namespace engine
 
     public class GEN
     {
-        public string type = "";
+        public enum ETYPE { IDENTITY, VERTEX, CONSTANT, WAVEFORM, LIGHTING_SPECULAR };
+
+        public ETYPE m_eType = ETYPE.IDENTITY;
         public WaveForm wf = new WaveForm();
+        public float[] m_fConst = new float[3];
     }
 
     public class WaveForm
@@ -116,7 +119,7 @@ namespace engine
         public void SetSkip(bool b) { m_bSkip = b; }
         public bool IsRGBGENIdentity()  
         {
-            return (m_rgbgen.type.ToLower() == "identity" || string.IsNullOrEmpty(m_rgbgen.type));
+            return (m_rgbgen.m_eType == GEN.ETYPE.IDENTITY);
         }
         public void SetCustomRenderRules()
         {
@@ -214,20 +217,48 @@ namespace engine
         {
             string[] tokens = sInput.Split(' ');
 
-            if (tokens.Length == 1) gen.type = tokens[0];
-            else
+            if(tokens.Length == 1)
             {
-                gen.type = tokens[0].ToLower();
-
-                SetWaveForm(gen.wf, tokens, 1);                
+                if(tokens[0].ToLower() == "vertex")
+                {
+                    gen.m_eType = GEN.ETYPE.VERTEX;
+                } 
+                else if(tokens[0].ToLower() == "lightingspecular")
+                {
+                    gen.m_eType = GEN.ETYPE.LIGHTING_SPECULAR;
+                }
+                else if(tokens[0].ToLower() != "identity" && tokens[0].ToLower() != "identitylighting")
+                {
+                    throw new Exception("Encountered unknown gen type : " + tokens[0]);
+                }
+            }
+            else if (tokens.Length > 1) 
+            {
+                // known kinds at this point : waveform and constant
+                if (tokens[0].ToLower() == "wave")
+                {
+                    gen.m_eType = GEN.ETYPE.WAVEFORM;
+                    SetWaveForm(gen.wf, tokens, 1);
+                }
+                else if(tokens[0].ToLower() == "const")
+                {
+                    gen.m_eType = GEN.ETYPE.CONSTANT;
+                    gen.m_fConst[0] = Convert.ToSingle(tokens[2]);
+                    gen.m_fConst[1] = Convert.ToSingle(tokens[3]);
+                    gen.m_fConst[2] = Convert.ToSingle(tokens[4]);
+                }
+                else
+                {
+                    throw new Exception("Encountered unknown gen type : " + tokens[0]);
+                }
             }
         }
 
-        public bool IsVertexColor() { return m_rgbgen.type.ToLower() == "vertex"; }
+        public bool IsVertexColor() { return m_rgbgen.m_eType == GEN.ETYPE.VERTEX; }
 
         public string GetBlendFunc() { return m_sBlendFunc; }
         public string GetAlphaFunc() { return m_sAlphaFunc; }
-        public string GetAlphaGenFunc() { return m_alphagen.type; }
+        public GEN.ETYPE GetAlphaGenFunc() { return m_alphagen.m_eType; }
 
         public void SetTexturePath(string s) { m_sTexturePath = s; }
         public void SetAnimmap(string s)
@@ -520,13 +551,12 @@ namespace engine
 
         public float GetAlphaGenValue()
         {
-            if (m_alphagen.type == "wave")
+            if (m_alphagen.m_eType == GEN.ETYPE.WAVEFORM)
             {
                 float f = CalculateWaveForm(m_alphagen.wf);
-                LOGGER.Debug("alphagen wave val: " + f);
                 return f;
             }
-            throw new Exception("invalid alpha gen type: " + m_alphagen.type);
+            throw new Exception("invalid alpha gen type: " + m_alphagen.m_eType);
         }
 
         public void GetRGBGenValue(ref float[] rgb)
@@ -535,11 +565,17 @@ namespace engine
             rgb[1] = 1f; 
             rgb[2] = 1f;
 
-            if (m_rgbgen.type == "wave")
+            if (m_rgbgen.m_eType == GEN.ETYPE.WAVEFORM)
             {
                 rgb[0] = CalculateWaveForm(m_rgbgen.wf);
                 rgb[1] = rgb[0];
                 rgb[2] = rgb[0];                
+            }
+            else if(m_rgbgen.m_eType == GEN.ETYPE.CONSTANT)
+            {
+                rgb[0] = m_rgbgen.m_fConst[0];
+                rgb[1] = m_rgbgen.m_fConst[1];
+                rgb[2] = m_rgbgen.m_fConst[2];
             }
         }
     }

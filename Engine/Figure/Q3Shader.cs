@@ -190,7 +190,7 @@ namespace engine
         {
             for (int i = 0; i < m_lStages.Count; i++)
             {
-                if (m_lStages[i].GetAlphaGenFunc() == "lightingspecular") return true;
+                if (m_lStages[i].GetAlphaGenFunc() == GEN.ETYPE.LIGHTING_SPECULAR) return true;
             }
             return false;
         }
@@ -324,7 +324,7 @@ namespace engine
                 {
                     sb.AppendLine("uniform vec4 rgbgen" + sIndex + ";");
                 }
-                if(stage.GetAlphaGenFunc() == "wave")
+                if(stage.GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM)
                 {
                     sb.AppendLine("uniform float alphagen" + sIndex + ";");
                 }                                 
@@ -462,12 +462,12 @@ namespace engine
                 sb.AppendLine("// ## STAGE " + i + " ##");
 
                 // alphaGen
-                if (stage.GetAlphaGenFunc() == "lightingspecular")
+                if (stage.GetAlphaGenFunc() == GEN.ETYPE.LIGHTING_SPECULAR)
                 {
                     sb.AppendLine(sTexel + ".w *= alphaGenSpecular;"); // this doesn't work exactly right but it has 
                     // a dramatic positive effect on some maps like the bouncy map(floor)
                 }
-                else if(stage.GetAlphaGenFunc() == "wave")
+                else if(stage.GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM)
                 {
                     sb.AppendLine(sTexel + ".w *= alphagen" + sIndex + ";");
                 }
@@ -551,6 +551,10 @@ namespace engine
                 {
                     sb.AppendLine("outputColor = outputColor * (" + sSource + ".w);");
                 }
+                else if (sBlendFunc == "gl_zero gl_one_minus_src_alpha")
+                {
+                    sb.AppendLine("outputColor = outputColor * (1 - " + sSource + ".w);");
+                }
                 else if (sBlendFunc == "gl_one gl_src_alpha")
                 {
                     sb.AppendLine("outputColor = " + sSource + " + outputColor * (" + sSource + ".w);");
@@ -558,7 +562,7 @@ namespace engine
                 else if (sBlendFunc == "gl_one gl_src_color")
                 {
                     sb.AppendLine("outputColor = " + sSource + " + outputColor * " + sSource + ";");
-                }
+                }                               
                 else if(sBlendFunc.Contains("gl_"))
                 {
                     throw new Exception("Unknown blend function encountered. Provide an implementation for " + sBlendFunc);

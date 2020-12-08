@@ -151,6 +151,7 @@ namespace engine
 			{
 				string pk3 = map.GetMapPathOnDisk; // need later
 				string wrl = System.IO.Path.ChangeExtension(map.GetMapPathOnDisk, "wrl");
+				map.SetPK3(pk3);
 
                 string sTempFile = System.IO.Path.GetTempFileName();
                 System.IO.File.Delete(sTempFile);

@@ -123,7 +123,7 @@ namespace engine
                 {
                     GameGlobals.m_BitmapInitMutex.ReleaseMutex();
                     MemoryStream memStr = new MemoryStream();
-                    image2.SaveAsPng(memStr);
+                    image2.SaveAsPng(memStr);                    
                     m_bitMap = new System.Drawing.Bitmap(memStr);
 
                     if (m_sFullPath.Contains("pjgrate2")) // only real tga in the game that converts incorrectly from tga to png to bmp so add alpha manually

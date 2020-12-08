@@ -26,6 +26,7 @@ namespace engine
 		private string m_sLongMapName;
 		private string m_sMapPathOnDisk;
 		private bool m_bExtractedFromZip;
+		private string m_sPK3 = ""; // if user picks a pk3 to load, keep that path here
 		
 		public MapInfo(string sPath, string sNick, string sLongName, int nMapNumber)
 		{
@@ -40,7 +41,7 @@ namespace engine
 		public MapInfo(string sFullPath)
 		{
 			m_sPath = Path.GetFileName(sFullPath);
-			m_sNick = null;
+			m_sNick = Path.GetFileNameWithoutExtension(sFullPath);
 			m_nNumber = -1;
 			m_sLongMapName = null;
 			m_sMapPathOnDisk = sFullPath;
@@ -74,6 +75,9 @@ namespace engine
 			else
 				return m_sLongMapName; 
 		}
+
+		public void SetPK3(string s) { m_sPK3 = s; }
+		public string GetPK3() { return m_sPK3; }
 
 		public void CleanUpMap()
 		{

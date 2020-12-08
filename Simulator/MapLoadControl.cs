@@ -10,17 +10,14 @@
 //*===================================================================================
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using obsvr;
 using System.IO;
 using System.Threading;
 using engine;
-using System.Diagnostics;
 using utilities;
+using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
 
@@ -233,17 +230,37 @@ namespace simulator
 		{
 			LOGGER.Info("Entered Begin function in maploadprogress control");
 
-			string sFullPath = m_zip.ExtractSoundTextureOther("levelshots/" +
-				System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg");
+			string sPAKPath = "";
+			if(SimulatorForm.static_theMap.GetPK3() != "")
+            {
+				sPAKPath = SimulatorForm.static_theMap.GetPK3();
+			}
 
-			if (File.Exists(sFullPath)) {
-				m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("levelshots/" +
-					System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg"));
+			string sFullPath = m_zip.ExtractSoundTextureOther("levelshots/" +
+				System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg", sPAKPath);
+
+            string sFullPath2 = m_zip.ExtractSoundTextureOther("levelshots/" +
+                System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".tga", sPAKPath);
+
+            if (File.Exists(sFullPath)) 
+			{
+				m_picLevelShot.Image = System.Drawing.Image.FromFile(sFullPath);
+			}
+			else if(File.Exists(sFullPath2))
+            {
+				SixLabors.ImageSharp.Image image2 = SixLabors.ImageSharp.Image.Load(sFullPath2);
+
+                MemoryStream memStr = new MemoryStream();
+                image2.SaveAsPng(memStr);
+				m_picLevelShot.Image = System.Drawing.Image.FromStream(memStr);
+				memStr.Dispose();
+
+				image2.Dispose();
 			}
 			else
 			{
 				LOGGER.Info("Could not find level shot for map " + SimulatorForm.static_theMap.GetLongMapName);
-				m_picLevelShot.Image = Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));                    
+				m_picLevelShot.Image = System.Drawing.Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));                    
             }
 
 			m_bLoading = true;

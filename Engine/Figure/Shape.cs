@@ -659,8 +659,6 @@ namespace engine
 		{
 			bool bShouldBeTGA = false;
 			string sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(bLightmap, t.GetPath(), ref bShouldBeTGA);
-			t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
-			t.SetFullPath(sFullTexPath);
 			bool bFoundTexture = false;
 			if (!File.Exists(sFullTexPath))
 			{
@@ -674,6 +672,8 @@ namespace engine
 					if (File.Exists(sFullTexPath))
 					{
 						bFoundTexture = true;
+						t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
+						t.SetFullPath(sFullTexPath);
 					}
 					else
 					{
@@ -683,7 +683,11 @@ namespace engine
 				}
 			}
 			else
+			{
 				bFoundTexture = true;
+                t.SetShouldBeTGA(bShouldBeTGA); // lm so never should be tga
+                t.SetFullPath(sFullTexPath);
+            }
 
 			if(bFoundTexture)
             {
@@ -1243,7 +1247,6 @@ namespace engine
 				// tcmods - these need to be before the rgbgen at the moment because some of these calculations can 
 				// affect rgbgen
 				// tcmod scroll can also dictate animmap for example for launch pads
-				bool bSendSinTable = false;
 				for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
 					Q3ShaderStage stage = m_q3Shader.GetStages()[i];
@@ -1272,7 +1275,6 @@ namespace engine
 									nLoc = GL.GetUniformLocation(ShaderProgram, "turb" + Convert.ToString(i));
 									stage.GetTurbValues(ref m_uniformFloat3);
 									GL.Uniform3(nLoc, 1, m_uniformFloat3);
-									bSendSinTable = true;
 									break;
 								}
 							case TCMOD.ETYPE.STRETCH:
@@ -1311,12 +1313,6 @@ namespace engine
 					SetupAutospriteMat(nLoc, m_d3AutoSprite2UpVector);
 				}
 
-				if (bSendSinTable)
-				{
-					//nLoc = GL.GetUniformLocation(ShaderProgram, "sinValues");
-					//GL.Uniform1(nLoc, 1024, GameGlobals.m_SinTable);
-				}
-
 				// rgbgen and alphagen
 				for (int i = 0; i < m_q3Shader.GetStages().Count; i++)
 				{
@@ -1326,7 +1322,7 @@ namespace engine
 						m_q3Shader.GetStages()[i].GetRGBGenValue(ref m_uniformFloat3);
 						GL.Uniform4(nLoc, m_uniformFloat3[0], m_uniformFloat3[1], m_uniformFloat3[2], 1.0f);
 					}
-					if (m_q3Shader.GetStages()[i].GetAlphaGenFunc() == "wave")
+					if (m_q3Shader.GetStages()[i].GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM)
 					{
 						nLoc = GL.GetUniformLocation(ShaderProgram, "alphagen" + i);
 						GL.Uniform1(nLoc, m_q3Shader.GetStages()[i].GetAlphaGenValue());

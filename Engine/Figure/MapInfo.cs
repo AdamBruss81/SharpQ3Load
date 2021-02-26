@@ -25,7 +25,8 @@ namespace engine
 		private int m_nNumber;
 		private string m_sLongMapName;
 		private string m_sMapPathOnDisk;
-		private bool m_bExtractedFromZip;
+		private bool m_bCollisionDetection = true;        
+        private bool m_bExtractedFromZip;
 		private string m_sPK3 = ""; // if user picks a pk3 to load, keep that path here
 		
 		public MapInfo(string sPath, string sNick, string sLongName, int nMapNumber)
@@ -57,7 +58,13 @@ namespace engine
 			m_bExtractedFromZip = true;
 		}
 
-		public void ConvertToWRL(string wrlPath)
+        public bool CollisionDetection
+        {
+            get { return m_bCollisionDetection; }
+            set { m_bCollisionDetection = value; }
+        }
+
+        public void ConvertToWRL(string wrlPath)
         {
 			m_sPath = Path.GetFileName(wrlPath);
 			m_sMapPathOnDisk = wrlPath;

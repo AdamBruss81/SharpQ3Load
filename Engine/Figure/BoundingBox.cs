@@ -587,7 +587,7 @@ namespace engine
 				throw new Exception("Bounding box must have 12 edges. Found to have " + m_lEdgeLines.Count.ToString());
 
 #if DEBUG
-			for (int i = 0; i < m_lFaces.Count; i++)
+			/*for (int i = 0; i < m_lFaces.Count; i++)
 			{
 				D3Vect normal = m_lFaces[i].GetNewNormal;
 				for (int j = 0; j < m_lFaces.Count; j++)
@@ -598,7 +598,7 @@ namespace engine
                             throw new System.Exception("Duplicate normal detected for two faces of a bounding box");
 					}
 				}
-			}
+			}*/
 #endif // DEBUG
 		}
 

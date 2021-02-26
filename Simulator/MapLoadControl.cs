@@ -231,37 +231,45 @@ namespace simulator
 			LOGGER.Info("Entered Begin function in maploadprogress control");
 
 			string sPAKPath = "";
-			if(SimulatorForm.static_theMap.GetPK3() != "")
+			if(System.IO.Path.GetExtension(SimulatorForm.static_theMap.GetMapPathOnDisk) == ".pk3")
             {
-				sPAKPath = SimulatorForm.static_theMap.GetPK3();
-			}
+				sPAKPath = SimulatorForm.static_theMap.GetMapPathOnDisk;
+            }
 
-			string sFullPath = m_zip.ExtractSoundTextureOther("levelshots/" +
-				System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".jpg", sPAKPath);
-
-            string sFullPath2 = m_zip.ExtractSoundTextureOther("levelshots/" +
-                System.IO.Path.GetFileNameWithoutExtension(SimulatorForm.static_theMap.GetNick) + ".tga", sPAKPath);
-
-            if (File.Exists(sFullPath)) 
+			string sTempDir = PathHelper.GetUniqueTempDir();
+			string sFilter = "levelshots;";
+			m_zip.ExtractArbitrary(sPAKPath, sFilter, sTempDir);
+			if (Directory.Exists(sTempDir + "\\levelshots"))
 			{
-				m_picLevelShot.Image = System.Drawing.Image.FromFile(sFullPath);
-			}
-			else if(File.Exists(sFullPath2))
-            {
-				SixLabors.ImageSharp.Image image2 = SixLabors.ImageSharp.Image.Load(sFullPath2);
+				string sFullPath = "";
+				string[] sLevelShots = System.IO.Directory.GetFiles(sTempDir + "/levelshots");
 
-                MemoryStream memStr = new MemoryStream();
-                image2.SaveAsPng(memStr);
-				m_picLevelShot.Image = System.Drawing.Image.FromStream(memStr);
-				memStr.Dispose();
+				if (sLevelShots.Length > 0)
+				{
+					sFullPath = sLevelShots[0];
+				}
 
-				image2.Dispose();
+				if (File.Exists(sFullPath) && System.IO.Path.GetExtension(sFullPath) == ".jpg")
+				{
+					m_picLevelShot.Image = System.Drawing.Image.FromFile(sFullPath);
+				}
+				else if (File.Exists(sFullPath) && System.IO.Path.GetExtension(sFullPath) == ".tga")
+				{
+					SixLabors.ImageSharp.Image image2 = SixLabors.ImageSharp.Image.Load(sFullPath);
+
+					MemoryStream memStr = new MemoryStream();
+					image2.SaveAsPng(memStr);
+					m_picLevelShot.Image = System.Drawing.Image.FromStream(memStr);
+					memStr.Dispose();
+
+					image2.Dispose();
+				}
 			}
 			else
 			{
 				LOGGER.Info("Could not find level shot for map " + SimulatorForm.static_theMap.GetLongMapName);
-				m_picLevelShot.Image = System.Drawing.Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));                    
-            }
+				m_picLevelShot.Image = System.Drawing.Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));
+			}
 
 			m_bLoading = true;
 

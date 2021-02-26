@@ -147,9 +147,9 @@ namespace utilities
 
 		public double GetStandardMovementScale() 
 		{
-			//return 1.5;
-			//return 5.0;
-			return 1.5;
+			return 1.5; // changing this will change your speed in a effective way but it will also change jumppad force.
+			// I probably should figure out a way to make the jumppad behavior not be tied to this number so I can change walking speed
+			// without the jumppads being affected.
 		}
 
 		public D3Vect GetVector(DIRECTION dir)

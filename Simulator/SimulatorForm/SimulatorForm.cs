@@ -16,8 +16,6 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Platform.Windows;
-using Tao.FreeGlut;
 using engine;
 using utilities;
 
@@ -122,7 +120,7 @@ namespace simulator
 
         private void Simulator_Load(object sender, EventArgs e)
 		{
-            Glut.glutInit();
+            //Glut.glutInit();
 
 			m_fonter = new gl_font.BasicFont();
 

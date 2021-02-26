@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using utilities;
-using Tao.FreeGlut;
 using OpenTK.Graphics.OpenGL;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -229,9 +228,15 @@ namespace engine
 				sgl.PUSHMAT();
 				GL.Translate(i.Intersection.x, i.Intersection.y, i.Intersection.z);
 				GL.Color3(intensity, intensity, intensity);
-				if (intensity == 15) intensity = 255;
-				else intensity -= 60;
-				Glut.glutSolidSphere(0.1, 20, 20);
+
+				/*if (intensity == 15) intensity = 255;
+				else intensity -= 60;*/
+				//Glut.glutSolidSphere(0.1, 20, 20);
+
+				//DrawHelper.drawSphere(0.001, 5, 5);
+
+				//GL.primiti
+
 				sgl.POPMAT();
 			}
 

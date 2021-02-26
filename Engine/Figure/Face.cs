@@ -10,7 +10,6 @@
 //*===================================================================================
 
 using System;
-using Tao.FreeGlut;
 using System.Collections.Generic;
 using utilities;
 using OpenTK.Graphics.OpenGL;
@@ -304,14 +303,14 @@ namespace engine
             D3Vect rotAxis = new D3Vect(zup, normal);
             GL.Translate(startPt[0], startPt[1], startPt[2]);
             GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
-            Glut.glutSolidCylinder(0.01, (startPt - normEnd).Length, 7, 1);
+            //Glut.glutSolidCylinder(0.01, (startPt - normEnd).Length, 7, 1);
             sgl.POPMAT();
 
             GL.Color3(capColor.GetColor);
             sgl.PUSHMAT();
             GL.Translate(normEnd[0], normEnd[1], normEnd[2]);
             GL.Rotate(rotAngle, rotAxis[0], rotAxis[1], rotAxis[2]);
-            Glut.glutSolidCone(0.01, 0.3, 7, 1);
+            //Glut.glutSolidCone(0.01, 0.3, 7, 1);
             sgl.POPMAT();
 
             sgl.POPATT();

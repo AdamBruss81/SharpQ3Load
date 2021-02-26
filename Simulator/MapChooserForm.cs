@@ -259,30 +259,41 @@ namespace simulator
 				ChooseMap(m_lsttest);
 		}
 
-		private void m_btnFromFile_Click(object sender, EventArgs e)
-		{
-			OpenFileDialog dlg = new OpenFileDialog();
-			dlg.Filter = "VRML Files (*.wrl)|*.wrl|PK3 Files (*.pk3)|*.pk3";
-			DialogResult result = dlg.ShowDialog(this);
-			if (result == DialogResult.OK)
-			{
-				string sFile = dlg.FileName;
-				m_chosenMap = new MapInfo(sFile);
-				m_bChoseMap = true;
-				Close();
-			}
-		}
+        private void GetMapFromFile(bool bCollisionDetectionOn)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Filter = "PK3 Files (*.pk3)|*.pk3|VRML Files (*.wrl)|*.wrl";
+            DialogResult result = dlg.ShowDialog(this);
+            if (result == DialogResult.OK)
+            {
+                string sFile = dlg.FileName;
+                m_chosenMap = new MapInfo(sFile);
+				m_chosenMap.CollisionDetection = bCollisionDetectionOn;
+                m_bChoseMap = true;
+                Close();
+            }
+        }
 
-		private void MapChooserForm_FormClosing(object sender, FormClosingEventArgs e)
+        private void m_btnFromFile_Click(object sender, EventArgs e)
+		{
+            GetMapFromFile(true);
+        }
+
+        private void MapChooserForm_FormClosing(object sender, FormClosingEventArgs e)
 		{
 			if (!m_bChoseMap) m_chosenMap = null;
 		}
-	}
 
-	/// <summary>
-	/// Sorts mapinfos based on the map number
-	/// </summary>
-	public class MapSorter : IComparer<MapInfo>
+        private void loadCustomMapNOCDToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+			GetMapFromFile(false);
+        }
+    }
+
+    /// <summary>
+    /// Sorts mapinfos based on the map number
+    /// </summary>
+    public class MapSorter : IComparer<MapInfo>
 	{
 		/// <summary>
 		/// Sort by mapnumber

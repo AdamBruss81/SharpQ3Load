@@ -189,7 +189,7 @@ namespace engine
 		public static float m_fFrameStartElapsedS = 0f;
 		public static long m_fFrameStartElapsedMS = 0;
 		public static float[] m_SinTable = new float[1024];
-		public static Dictionary<string, List<string>> m_dictQ3ShaderContent = new Dictionary<string, List<string>>();			
+		public static Dictionary<string, List<string>> m_dictQ3ShaderContent = new Dictionary<string, List<string>>();
 
 		public static Mutex m_ZipExtractPak0Mutex = new Mutex();
 		public static Mutex m_ZipExtractLMMutex = new Mutex();

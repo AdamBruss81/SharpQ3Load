@@ -18,6 +18,7 @@ namespace engine
         private Dictionary<EEffects, string> m_dictEffects = new Dictionary<EEffects, string>();
         private Dictionary<ESongs, string> m_dictSongs = new Dictionary<ESongs, string>();
         private Dictionary<int, ISampleProvider> m_dictPlayingSounds = new Dictionary<int, ISampleProvider>();
+        private Dictionary<int, ISampleProvider> m_dictPlayingSongs = new Dictionary<int, ISampleProvider>();
         private Dictionary<int, long> m_dictElapsedMSWhenLastSoundEnded = new Dictionary<int, long>();
         private Zipper m_zipper = new Zipper();
 
@@ -82,6 +83,7 @@ namespace engine
         public void Clear()
         {
             m_dictPlayingSounds.Clear();
+            m_dictPlayingSongs.Clear();
             m_dictElapsedMSWhenLastSoundEnded.Clear();
         }
 
@@ -110,15 +112,36 @@ namespace engine
         private void Mixer_MixerInputEnded(object sender, SampleProviderEventArgs e)
         {
             NAudio.Wave.SampleProviders.MonoToStereoSampleProvider sp = null;
+
             if (e.SampleProvider is NAudio.Wave.SampleProviders.MonoToStereoSampleProvider)
                 sp = (NAudio.Wave.SampleProviders.MonoToStereoSampleProvider)e.SampleProvider;
 
-            if (sp != null && m_dictPlayingSounds.ContainsValue(sp))
+            if (sp != null) 
             {
-                int effect = m_dictPlayingSounds.FirstOrDefault(x => x.Value == sp).Key;
-                bool b = m_dictPlayingSounds.Remove(effect);
-                m_dictElapsedMSWhenLastSoundEnded[effect] = GameGlobals.m_InstanceStopWatch.ElapsedMilliseconds;
-                if (!b) throw new Exception("Couldn't remove effect " + effect);
+                if (m_dictPlayingSounds.ContainsValue(sp))
+                {
+                    int effect = m_dictPlayingSounds.FirstOrDefault(x => x.Value == sp).Key;
+                    bool b = m_dictPlayingSounds.Remove(effect);
+                    m_dictElapsedMSWhenLastSoundEnded[effect] = GameGlobals.m_InstanceStopWatch.ElapsedMilliseconds;
+                    if (!b) throw new Exception("Couldn't remove effect " + effect);
+                }                
+            }
+            else
+            {
+                NAudio.Wave.AudioFileReader afr = null;
+
+                if (e.SampleProvider is NAudio.Wave.AudioFileReader)
+                    afr = (NAudio.Wave.AudioFileReader)e.SampleProvider;
+
+                if (afr != null)
+                {
+                    if (m_dictPlayingSongs.ContainsValue(afr))
+                    {
+                        int song = m_dictPlayingSongs.FirstOrDefault(x => x.Value == afr).Key;
+                        bool b = m_dictPlayingSongs.Remove(song);
+                        if (!b) throw new Exception("Couldn't remove song " + song);
+                    }
+                }
             }
         }
 
@@ -134,21 +157,29 @@ namespace engine
             var input = new AudioFileReader(sPath);
             input.Volume = fVolNormalized;
 
-            if(NonRepeatingSound(effect) && m_dictPlayingSounds.ContainsKey(effect))
+            if(IsMapSound(effect) && m_dictPlayingSounds.ContainsKey(effect))
             {
                 throw new Exception("Cannot play a sound again before it has finished: " + effect);
             }            
             ISampleProvider sp = ConvertToRightChannelCount(input);
 
-            if (NonRepeatingSound(effect))
+            if (IsMapSound(effect))
             {
                 m_dictElapsedMSWhenLastSoundEnded.Remove(effect);
                 m_dictPlayingSounds[effect] = sp;
             }
+            else
+            {
+                if(m_dictSongs.ContainsKey((ESongs)(effect)))
+                {
+                    m_dictPlayingSongs[effect] = sp;
+                }
+            }
+
             mixer.AddMixerInput(sp);
         }
 
-        private bool NonRepeatingSound(int effect)
+        private bool IsMapSound(int effect)
         {
             return effect == (int)SoundManager.EEffects.LAVA_LONG || effect == (int)SoundManager.EEffects.POWER_GEN ||
                 effect == (int)SoundManager.EEffects.LAVA_SHORT || effect == (int)SoundManager.EEffects.TIM_ELECT;
@@ -179,9 +210,15 @@ namespace engine
                 PlaySound(m_zipper.ExtractSoundTextureOther(m_dictEffects[effect]), 0.8f, (int)effect);
         }
 
-        public void PlaySong(ESongs song)
+        private void PlaySong(ESongs song)
         {            
             PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.25f, (int)song);
+        }
+
+        public bool IsSongPlaying()
+        {
+            if (m_dictPlayingSongs.Count > 1) throw new Exception("More than 1 song playing at one time. This should not happen.");
+            return m_dictPlayingSongs.Count > 0;
         }
 
         public void PlayRandomSong()

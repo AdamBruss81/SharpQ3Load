@@ -569,6 +569,8 @@ namespace engine
 		/// </summary>
 		public void Initialize()
 		{
+			if (!m_map.CollisionDetection) return;
+
 			// Done every time ***
 			CreateFaceContainingBBoxes();
 

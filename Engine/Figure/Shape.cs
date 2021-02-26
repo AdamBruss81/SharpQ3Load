@@ -397,6 +397,9 @@ namespace engine
 				sb.AppendLine("moveVec *= scale;");
 				sb.AppendLine("vertex += moveVec;");
 				sb.AppendLine("}");
+				sb.AppendLine("else if(wavefunc == 3) {");
+				// fill this in for sawtooth  and inversesawtooth todo
+				sb.AppendLine("}");
 				sb.AppendLine("}");
 			}
 
@@ -533,10 +536,14 @@ namespace engine
 					}
 					else if (dv.m_eType == DeformVertexes.EDeformVType.MOVE)
 					{
-						float fWF = dv.m_wf.func == "sin" ? 0f : -1f;
-						if (fWF != 0f)
+						float fWF = -1;
+						if (dv.m_wf.func == "sin" || dv.m_wf.func == "sine") fWF = 0;
+						else if (dv.m_wf.func == "sawtooth") fWF = 3;
+						else if (dv.m_wf.func == "inversesawtooth") fWF = 4;
+
+						if (fWF != 0f && fWF != 3 && fWF != 4f)
 						{
-							throw new Exception("Encountered non sin deformmove wave");
+							throw new Exception("Encountered non handled deformmove wave func " + dv.m_wf.func);
 						}
 						sb.AppendLine("MoveVertexes(" + dv.m_Move.m_x + ", " + dv.m_Move.m_y + ", " + dv.m_Move.m_z + ", " + fWF + ", " + dv.m_wf.fbase + ", " + dv.m_wf.amp + ", " + dv.m_wf.phase + ", " + dv.m_wf.freq + ", newPosition);");
 					}
@@ -665,7 +672,8 @@ namespace engine
 				//LOGGER.Info("Could not find texture at location " + sFullTexPath + ". This is probably a problem with loading a custom map.");
 				//SetDontRender(true);
 
-				string sPK3 = Path.ChangeExtension(GetMap().GetMapPathOnDisk, "pk3");
+				//string sPK3 = Path.ChangeExtension(GetMap().GetMapPathOnDisk, "pk3");
+				string sPK3 = GetMap().GetPK3();
 				if (File.Exists(sPK3))
 				{
 					sFullTexPath = m_q3Shader.GetPathToTextureNoShaderLookup(false, t.GetPath(), ref bShouldBeTGA, sPK3);
@@ -705,6 +713,10 @@ namespace engine
             {
                 foreach (Texture t in m_lTextures)
                 {				
+					if(t.GetPath().Contains("badwaage3"))
+                    {
+						int stop = 0;
+                    }
                     if (!t.Initialized())
                     {
                         if (GetMainTexture() == t)

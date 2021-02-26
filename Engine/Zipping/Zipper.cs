@@ -18,7 +18,7 @@ namespace engine
                 zipper.ExtractZip(sZip, sTargetDir, sInternalPath);
         }
 
-		public string ExtractMap(string sInternalPath)
+        public string ExtractMap(string sInternalPath)
 		{
             if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
 

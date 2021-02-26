@@ -119,9 +119,11 @@ namespace engine
                 IImageFormat format;
 
                 GameGlobals.m_BitmapInitMutex.WaitOne();
+
                 using (var image2 = Image.Load(m_sFullPath, out format))
                 {
                     GameGlobals.m_BitmapInitMutex.ReleaseMutex();
+
                     MemoryStream memStr = new MemoryStream();
                     image2.SaveAsPng(memStr);                    
                     m_bitMap = new System.Drawing.Bitmap(memStr);
@@ -140,7 +142,7 @@ namespace engine
                 m_bitMap = new System.Drawing.Bitmap(m_sFullPath);
                 GameGlobals.m_BitmapInitMutex.ReleaseMutex();
 
-                if (bShouldBeTGA && !Texture.SpecialTexture(m_sFullPath))
+                if ((bShouldBeTGA && !Texture.SpecialTexture(m_sFullPath)) || TextureHasBlack(m_sFullPath))
                 {
                     System.Diagnostics.Debug.Assert(Path.GetExtension(m_sFullPath) == ".jpg");
 
@@ -167,6 +169,28 @@ namespace engine
                     m_bitMap.SetPixel(i, j, System.Drawing.Color.FromArgb(m_bitMap.GetPixel(i, j).A, c.R, c.G, c.B));
                 }
             }
-        }        
+        }
+
+        private bool TextureHasBlack(string m_sFullPath)
+        {
+            return false; // this doesn't work well in some cases. such as when a texture has a lot of plants in it and a lot of black.
+
+            /*int nTotal = m_bitMap.Width * m_bitMap.Height;
+            int nNumBlack = 0;
+
+            for (int i = 0; i < m_bitMap.Width; i++)
+            {
+                for (int j = 0; j < m_bitMap.Height; j++)
+                {
+                    if(m_bitMap.GetPixel(i, j).R == 0 && m_bitMap.GetPixel(i, j).G == 0 && m_bitMap.GetPixel(i, j).B == 0)
+                    {
+                        nNumBlack++;
+                    }
+                }
+            }
+
+            if (nNumBlack == nTotal) return false; // special case all black
+            else return (float)nNumBlack / (float)nTotal >= 0.40; // if more than 5% black then add alpha*/
+        }
     }
 }

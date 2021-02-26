@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace engine
 {
@@ -227,7 +228,7 @@ namespace engine
                 {
                     gen.m_eType = GEN.ETYPE.LIGHTING_SPECULAR;
                 }
-                else if(tokens[0].ToLower() != "identity" && tokens[0].ToLower() != "identitylighting")
+                else if(tokens[0].ToLower() != "identity" && tokens[0].ToLower() != "identitylighting" && tokens[0].ToLower() != "exactvertex") // these are basically ones that don't need any special handling(i think)
                 {
                     throw new Exception("Encountered unknown gen type : " + tokens[0]);
                 }
@@ -272,14 +273,37 @@ namespace engine
                     if (!string.IsNullOrEmpty(sToken))
                     {
                         bool bShouldBeTGA = false;
+                        bool bFoundTexture = false;
                         string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, sToken, ref bShouldBeTGA);
-                        m_lAnimmapTextures.Add(new Texture(sToken, sNonShaderTexture));
+                        if (!File.Exists(sNonShaderTexture))
+                        {
+                            string sPK3 = Path.ChangeExtension(m_ParentShader.GetParent().GetMap().GetMapPathOnDisk, "pk3");
+                            if (File.Exists(sPK3))
+                            {
+                                sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, sToken, ref bShouldBeTGA, sPK3);
+                                if(File.Exists(sNonShaderTexture))
+                                {
+                                    bFoundTexture = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            bFoundTexture = true;
+                        }
 
-                        //string sNonShaderTexture = m_ParentShader.GetPathToTextureNoShaderLookup(false, m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].GetPath(), ref bShouldBeTGA);
+                        if (bFoundTexture)
+                        {
+                            m_lAnimmapTextures.Add(new Texture(sToken, sNonShaderTexture));
 
-                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(bShouldBeTGA);
-                        m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(m_ParentShader.GetShaderName());
-                        //if (bShouldBeTGA) m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(true);
+                            m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(bShouldBeTGA);
+                            m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(m_ParentShader.GetShaderName());
+                        }
+                        else
+                        {
+                            LOGGER.Info("Could not locate texture for animmap " + sNonShaderTexture);
+                            m_ParentShader.GetParent().SetDontRender(true);
+                        }
                     }
                 }
                 m_fSecondsPerAnimmapTexture = 1f / (float)Convert.ToSingle(tokens[0]);

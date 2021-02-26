@@ -272,13 +272,15 @@ namespace engine
             {
                 // special case for now. i think i should actually be doing this for all models which use rgbgen vertex
                 // then i probably wouldn't have to scale their colors up later
-                sb.AppendLine("outputColor = vec4(1.0);"); // black out outputColor to start
+                sb.AppendLine("outputColor = vec4(1.0);"); // white outputColor to start
             }
             else
             {
                 sb.AppendLine("outputColor = vec4(0.0);"); // black out outputColor to start
             }
         }
+
+        public Shape GetParent() { return m_pParent; }
 
         public void GLDefineTextures()
         {
@@ -363,15 +365,16 @@ namespace engine
                     bool bShouldBeTGA = false;
                     t.SetClamp(stage.GetClampmap());
 
+                    if(stage.GetTexturePath().Contains("bluete"))
+                    {
+                        int stop = 0;
+                    }
+
                     string sFullTexPath = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bShouldBeTGA);
                     bool bFoundTexture = false;
                     if (!File.Exists(sFullTexPath))
                     {
-                        // this has only happened so far when loading non built in maps such as museum which comes with q3radiant I think
-                        //LOGGER.Info("Could not find texture at location " + sFullTexPath + ". This is probably a problem with loading a custom map.");
-                        //m_pParent.SetDontRender(true);
-
-                        string sPK3 = Path.ChangeExtension(m_pParent.GetMap().GetMapPathOnDisk, "pk3");
+                        string sPK3 = Path.ChangeExtension(m_pParent.GetMap().GetPK3(), "pk3");
                         if (File.Exists(sPK3))
                         {
                             sFullTexPath = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bShouldBeTGA, sPK3);
@@ -403,6 +406,7 @@ namespace engine
 
                         sb.AppendLine("vec4 texel" + sIndex + " = texture(texture" + sIndex + ", " + sTexCoordName + ");");
                     }
+
                 }
                 else if (stage.IsAnimmap())
                 {
@@ -562,7 +566,15 @@ namespace engine
                 else if (sBlendFunc == "gl_one gl_src_color")
                 {
                     sb.AppendLine("outputColor = " + sSource + " + outputColor * " + sSource + ";");
-                }                               
+                }
+                else if (sBlendFunc == "gl_src_alpha gl_one")
+                {
+                    sb.AppendLine("outputColor = " + sSource + " * " + sSource + ".w + outputColor;");
+                }
+                else if (sBlendFunc == "gl_dst_color gl_src_color")
+                {
+                    sb.AppendLine("outputColor = " + sSource + " * outputColor + outputColor * " + sSource + ";");
+                }
                 else if(sBlendFunc.Contains("gl_"))
                 {
                     throw new Exception("Unknown blend function encountered. Provide an implementation for " + sBlendFunc);

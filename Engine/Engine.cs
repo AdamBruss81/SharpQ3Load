@@ -150,29 +150,50 @@ namespace engine
 			if (System.IO.Path.GetExtension(map.GetMapPathOnDisk) == ".pk3")
 			{
 				string pk3 = map.GetMapPathOnDisk; // need later
-				string wrl = System.IO.Path.ChangeExtension(map.GetMapPathOnDisk, "wrl");
+				string pk3Dir = System.IO.Path.GetDirectoryName(pk3);
+
+				string sTempDir = PathHelper.GetUniqueTempDir();
+
+                Zipper zipper = new Zipper();
+
+				string sBSPName = GetBspName(pk3, zipper, sTempDir);
+				string wrl = System.IO.Path.Combine(pk3Dir, sBSPName + ".wrl");
 				map.SetPK3(pk3);
-
-                string sTempFile = System.IO.Path.GetTempFileName();
-                System.IO.File.Delete(sTempFile);
-                string sTempDir = System.IO.Path.ChangeExtension(sTempFile, null);
-                System.IO.Directory.CreateDirectory(sTempDir);
-
-				Zipper zipper = new Zipper();
-
+               
 				if (System.IO.File.Exists(wrl))
                 {
 					map.ConvertToWRL(wrl);
+					string sWRLName = System.IO.Path.ChangeExtension(System.IO.Path.GetFileName(wrl), null);
+
+                    // copy pngs from pk3 dir to temp dir in case temp dir ones got deleted by OS
+                    string[] pngs = System.IO.Directory.GetFiles(pk3Dir, "*.png");
+                    foreach (string sPNG in pngs)
+                    {
+						if (sPNG.ToLower().Contains(sWRLName.ToLower()))
+						{
+							string sTargetPNG = PATHS.GetTempDir + "\\" + System.IO.Path.GetFileName(sPNG);
+							if (!System.IO.File.Exists(sTargetPNG))
+							{
+								System.IO.File.Copy(sPNG, sTargetPNG, true);
+							}
+						}
+                    }
                 }
 				else
                 {
+					string sMapsDir = System.IO.Path.Combine(sTempDir, "maps");
+					System.IO.Directory.CreateDirectory(sMapsDir);
+
 					// extract bsp from pk3					
-					zipper.ExtractArbitrary(map.GetMapPathOnDisk, "maps/" + System.IO.Path.GetFileNameWithoutExtension(map.GetMapPathOnDisk) + ".bsp", sTempDir);
+					zipper.ExtractArbitrary(map.GetMapPathOnDisk, "+\\.bsp$", sTempDir);
 
 					// run q3bsp on bsp
-					string sq3bsp = System.IO.Path.Combine(sTempDir + "\\maps", "q3bsp.exe");
+					string sq3bsp = System.IO.Path.Combine(sMapsDir, "q3bsp.exe");
 					System.IO.File.Copy("q3bsp.exe", sq3bsp, true);
-					System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(sq3bsp, "-2me " + System.IO.Path.GetFileNameWithoutExtension(map.GetMapPathOnDisk));
+
+					string[] sBSPFiles = System.IO.Directory.GetFiles(sMapsDir, "*.bsp");
+
+					System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(sq3bsp, "-2me " + System.IO.Path.GetFileNameWithoutExtension(sBSPFiles[0]));
 					startInfo.RedirectStandardOutput = false;
 					startInfo.UseShellExecute = false;
 					startInfo.WorkingDirectory = System.IO.Path.Combine(sTempDir, "maps");
@@ -183,8 +204,9 @@ namespace engine
 					foreach(string sPNG in pngs)
                     {
 						System.IO.File.Copy(sPNG, PATHS.GetTempDir + "\\" + System.IO.Path.GetFileName(sPNG), true);
-                    }
-					System.IO.File.Copy(startInfo.WorkingDirectory + "\\" + System.IO.Path.GetFileNameWithoutExtension(map.GetMapPathOnDisk) + ".wrl", wrl);					
+						System.IO.File.Copy(sPNG, pk3Dir + "\\" + System.IO.Path.GetFileName(sPNG), true);
+					}
+					System.IO.File.Copy(startInfo.WorkingDirectory + "\\" + sBSPName  + ".wrl", wrl);					
 
 					map.ConvertToWRL(wrl);
 				}
@@ -201,7 +223,16 @@ namespace engine
 			mapFigure.Read(map);
 		}
 
-		public void Initialize()
+        private string GetBspName(string pk3, Zipper zipper, string sTempDir)
+        {
+			zipper.ExtractArbitrary(pk3, "+\\.bsp$", sTempDir);
+            string[] sBSPFiles = System.IO.Directory.GetFiles(sTempDir + "\\maps", "*.bsp");
+			string sName = System.IO.Path.GetFileNameWithoutExtension(sBSPFiles[0]);
+			System.IO.File.Delete(sBSPFiles[0]);
+			return sName;
+        }
+
+        public void Initialize()
 		{
 			if (m_lStaticFigList.Count() > 0) m_lStaticFigList[0].Initialize();
 		}

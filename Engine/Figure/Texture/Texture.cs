@@ -115,7 +115,7 @@ namespace engine
         public bool GetShouldBeTGA() { return m_bShouldBeTGA; }
         public bool IsTGA()
         {
-            return m_pWrapper.GetIsTGA();
+            return m_pWrapper != null && m_pWrapper.GetIsTGA();
         }
         public bool GetWide() { return m_pWrapper.GetIsWide(); }
 

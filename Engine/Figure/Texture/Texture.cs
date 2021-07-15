@@ -75,32 +75,32 @@ namespace engine
 
         public bool Deleted() { return m_pWrapper == null; }
 
-        public static float CalculateAlphaNormalized(System.Drawing.Color pcol, string sShaderName)
+        public static float CalculateAlphaNormalized(System.Drawing.Color pcol, Q3Shader shader)
         {
             float aVal = Convert.ToSingle(Math.Sqrt(0.299f * Math.Pow((float)pcol.R / 255f, 2) + 0.587f * Math.Pow((float)pcol.G / 255f, 2) + 0.114f * Math.Pow((float)pcol.B / 255f, 2)));
 
             // revisit if something doesn't look good. maybe glass for example in dm0?
 
-            if (sShaderName.Contains("glass"))
+            if (shader.GetShaderName().Contains("glass"))
             {
                 aVal *= 0.5f; // make glass more transparent
             }
-            else if (sShaderName.Contains("slamp2"))
+            else if (shader.GetShaderName().Contains("slamp2"))
             {
                 // make things a lot less transparent from original value
                 // in dm4 the skull lights have lightbulbs rendered in the lamp glass
 
                 aVal *= 2.0f;
             }            
-            else if(sShaderName.Contains("pjgrate2"))
+            else if(shader.GetShaderName().Contains("pjgrate2"))
             {
                 aVal *= 100; // special case. only remove black sections which should have alpha 0
             }
-            else if(sShaderName.Contains("beam"))
+            else if(shader.GetShaderName().Contains("beam"))
             {
                 aVal *= 1.5f;
             }
-            else if(sShaderName.Contains("teleporter/transparency"))
+            else if(shader.GetShaderName().Contains("teleporter/transparency"))
             {
                 aVal *= 2.0f;
             }
@@ -187,9 +187,9 @@ namespace engine
             m_bOpenGLDefined = true;
         }
 
-        public void SetTexture(string sShaderName)
+        public void SetTexture(Q3Shader shader)
         {
-            m_pWrapper.ReadIntoBitmapForTexture(m_bShouldBeTGA, sShaderName);
+            m_pWrapper.ReadIntoBitmapForTexture(m_bShouldBeTGA, shader);
         }
 
         public void bindMeRaw()

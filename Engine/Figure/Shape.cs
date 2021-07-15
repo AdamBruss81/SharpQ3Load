@@ -699,7 +699,7 @@ namespace engine
 
 			if(bFoundTexture)
             {
-				t.SetTexture(m_q3Shader.GetShaderName());
+				t.SetTexture(m_q3Shader);
 			}
 		}
 
@@ -713,10 +713,6 @@ namespace engine
             {
                 foreach (Texture t in m_lTextures)
                 {				
-					if(t.GetPath().Contains("badwaage3"))
-                    {
-						int stop = 0;
-                    }
                     if (!t.Initialized())
                     {
                         if (GetMainTexture() == t)

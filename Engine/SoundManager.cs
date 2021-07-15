@@ -201,18 +201,18 @@ namespace engine
         public void PlayEffect(EEffects effect, float fVolume)
         {
             if (effect != EEffects.NONE)
-                PlaySound(m_zipper.ExtractSoundTextureOther(m_dictEffects[effect]), fVolume, (int)effect);
+                PlaySound(m_zipper.ExtractFromPakToDefaultTempDir(m_dictEffects[effect]), fVolume, (int)effect);
         }
 
         public void PlayEffect(EEffects effect)
         {
             if(effect != EEffects.NONE)
-                PlaySound(m_zipper.ExtractSoundTextureOther(m_dictEffects[effect]), 0.8f, (int)effect);
+                PlaySound(m_zipper.ExtractFromPakToDefaultTempDir(m_dictEffects[effect]), 0.8f, (int)effect);
         }
 
         private void PlaySong(ESongs song)
         {            
-            PlaySound(m_zipper.ExtractSoundTextureOther(m_dictSongs[song]), 0.25f, (int)song);
+            PlaySound(m_zipper.ExtractFromPakToDefaultTempDir(m_dictSongs[song]), 0.25f, (int)song);
         }
 
         public bool IsSongPlaying()

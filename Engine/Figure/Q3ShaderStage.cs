@@ -242,11 +242,20 @@ namespace engine
                     SetWaveForm(gen.wf, tokens, 1);
                 }
                 else if(tokens[0].ToLower() == "const")
-                {
+                {                   
                     gen.m_eType = GEN.ETYPE.CONSTANT;
-                    gen.m_fConst[0] = Convert.ToSingle(tokens[2]);
-                    gen.m_fConst[1] = Convert.ToSingle(tokens[3]);
-                    gen.m_fConst[2] = Convert.ToSingle(tokens[4]);
+                    if (tokens.Length == 2)
+                    {
+                        gen.m_fConst[0] = Convert.ToSingle(tokens[1]);
+                        gen.m_fConst[1] = Convert.ToSingle(tokens[1]);
+                        gen.m_fConst[2] = Convert.ToSingle(tokens[1]);
+                    }
+                    else
+                    {
+                        gen.m_fConst[0] = Convert.ToSingle(tokens[2]);
+                        gen.m_fConst[1] = Convert.ToSingle(tokens[3]);
+                        gen.m_fConst[2] = Convert.ToSingle(tokens[4]);
+                    }
                 }
                 else
                 {
@@ -297,7 +306,7 @@ namespace engine
                             m_lAnimmapTextures.Add(new Texture(sToken, sNonShaderTexture));
 
                             m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetShouldBeTGA(bShouldBeTGA);
-                            m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(m_ParentShader.GetShaderName());
+                            m_lAnimmapTextures[m_lAnimmapTextures.Count - 1].SetTexture(m_ParentShader);
                         }
                         else
                         {

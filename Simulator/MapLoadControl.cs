@@ -230,46 +230,7 @@ namespace simulator
 		{
 			LOGGER.Info("Entered Begin function in maploadprogress control");
 
-			string sPAKPath = "";
-			if(System.IO.Path.GetExtension(SimulatorForm.static_theMap.GetMapPathOnDisk) == ".pk3")
-            {
-				sPAKPath = SimulatorForm.static_theMap.GetMapPathOnDisk;
-            }
-
-			string sTempDir = PathHelper.GetUniqueTempDir();
-			string sFilter = "levelshots;";
-			m_zip.ExtractArbitrary(sPAKPath, sFilter, sTempDir);
-			if (Directory.Exists(sTempDir + "\\levelshots"))
-			{
-				string sFullPath = "";
-				string[] sLevelShots = System.IO.Directory.GetFiles(sTempDir + "/levelshots");
-
-				if (sLevelShots.Length > 0)
-				{
-					sFullPath = sLevelShots[0];
-				}
-
-				if (File.Exists(sFullPath) && System.IO.Path.GetExtension(sFullPath) == ".jpg")
-				{
-					m_picLevelShot.Image = System.Drawing.Image.FromFile(sFullPath);
-				}
-				else if (File.Exists(sFullPath) && System.IO.Path.GetExtension(sFullPath) == ".tga")
-				{
-					SixLabors.ImageSharp.Image image2 = SixLabors.ImageSharp.Image.Load(sFullPath);
-
-					MemoryStream memStr = new MemoryStream();
-					image2.SaveAsPng(memStr);
-					m_picLevelShot.Image = System.Drawing.Image.FromStream(memStr);
-					memStr.Dispose();
-
-					image2.Dispose();
-				}
-			}
-			else
-			{
-				LOGGER.Info("Could not find level shot for map " + SimulatorForm.static_theMap.GetLongMapName);
-				m_picLevelShot.Image = System.Drawing.Image.FromFile(m_zip.ExtractSoundTextureOther("menu/art/unknownmap.jpg"));
-			}
+			SetLevelShot();
 
 			m_bLoading = true;
 
@@ -281,16 +242,16 @@ namespace simulator
 
 			FigureList lFigList = SimulatorForm.static_theEngine.GetStaticFigList;
 			while (lFigList.Count() == 0) Thread.Sleep(10);
-			
+
 			m_pUpdater.Subscribe(lFigList[0].GetSubject);
 
 			LOGGER.Info("Entering while loop of mapload progress control");
 
 			while (!m_bDoneLoadingMap || !m_bDoneInitializingLists || !m_bDoneCreatingBoundingBoxes)
-			{				
+			{
 				Thread.Sleep(20);
-				Application.DoEvents();				
-			}			
+				Application.DoEvents();
+			}
 
 			Reset();
 
@@ -299,6 +260,66 @@ namespace simulator
 			m_bLoading = false;
 
 			LOGGER.Info("Exiting Begin function in maploadprogress control.");
+		}
+
+		private void SetLevelShot()
+		{
+			string sPAKPath = "";
+			if (System.IO.Path.GetExtension(SimulatorForm.static_theMap.GetMapPathOnDisk) == ".pk3")
+			{
+				sPAKPath = SimulatorForm.static_theMap.GetMapPathOnDisk;
+			}
+
+			if(sPAKPath == "")
+			{
+				// built in map
+				SetLevelShotImage(m_zip.ExtractFromPakToDefaultTempDir("levelshots/" + SimulatorForm.static_theMap.GetNick + ".jpg"));
+			}
+			else
+			{
+				// custom map
+				// find level shots  dir in custom map pak file and use first file in there
+				string sTempDir = "";
+				string sFilter = "levelshots;";
+
+				sTempDir = PathHelper.GetUniqueTempDir();
+				m_zip.ExtractToCustomTargetDir(sPAKPath, sFilter, sTempDir);				
+
+				string sLevelShotsDir = System.IO.Path.Combine(sTempDir, "levelshots");
+				if (Directory.Exists(sLevelShotsDir))
+				{
+					string[] sLevelShots = System.IO.Directory.GetFiles(sLevelShotsDir);
+
+					if (sLevelShots.Length > 0)
+					{
+						SetLevelShotImage(sLevelShots[0]);
+					}					
+				}
+			}
+		}
+
+		private void SetLevelShotImage(string sFullPath)
+		{
+			if (File.Exists(sFullPath) && System.IO.Path.GetExtension(sFullPath) == ".jpg")
+			{
+				m_picLevelShot.Image = System.Drawing.Image.FromFile(sFullPath);
+			}
+			else if (File.Exists(sFullPath) && System.IO.Path.GetExtension(sFullPath) == ".tga")
+			{
+				SixLabors.ImageSharp.Image image2 = SixLabors.ImageSharp.Image.Load(sFullPath);
+
+				MemoryStream memStr = new MemoryStream();
+				image2.SaveAsPng(memStr);
+				m_picLevelShot.Image = System.Drawing.Image.FromStream(memStr);
+				memStr.Dispose();
+
+				image2.Dispose();
+			}
+			else
+			{
+				LOGGER.Info("Could not find level shot for map " + SimulatorForm.static_theMap.GetLongMapName);
+				m_picLevelShot.Image = System.Drawing.Image.FromFile(m_zip.ExtractFromPakToDefaultTempDir("menu/art/unknownmap.jpg"));
+			}
 		}
 	}
 

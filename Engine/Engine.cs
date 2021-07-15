@@ -185,7 +185,7 @@ namespace engine
 					System.IO.Directory.CreateDirectory(sMapsDir);
 
 					// extract bsp from pk3					
-					zipper.ExtractArbitrary(map.GetMapPathOnDisk, "+\\.bsp$", sTempDir);
+					zipper.ExtractToCustomTargetDir(map.GetMapPathOnDisk, "+\\.bsp$", sTempDir);
 
 					// run q3bsp on bsp
 					string sq3bsp = System.IO.Path.Combine(sMapsDir, "q3bsp.exe");
@@ -225,7 +225,7 @@ namespace engine
 
         private string GetBspName(string pk3, Zipper zipper, string sTempDir)
         {
-			zipper.ExtractArbitrary(pk3, "+\\.bsp$", sTempDir);
+			zipper.ExtractToCustomTargetDir(pk3, "+\\.bsp$", sTempDir);
             string[] sBSPFiles = System.IO.Directory.GetFiles(sTempDir + "\\maps", "*.bsp");
 			string sName = System.IO.Path.GetFileNameWithoutExtension(sBSPFiles[0]);
 			System.IO.File.Delete(sBSPFiles[0]);

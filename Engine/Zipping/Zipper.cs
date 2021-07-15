@@ -12,7 +12,7 @@ namespace engine
 	{
 		protected FastZip zipper = new FastZip();
 
-        public void ExtractArbitrary(string sZip, string sInternalPath, string sTargetDir)
+        public void ExtractToCustomTargetDir(string sZip, string sInternalPath, string sTargetDir)
         {
             if (File.Exists(sZip))
                 zipper.ExtractZip(sZip, sTargetDir, sInternalPath);
@@ -46,7 +46,7 @@ namespace engine
             return sFullPathToExtractedFile;
         }
 
-        public string ExtractSoundTextureOther(string sInternalPath, string sPAKFile = "")
+        public string ExtractFromPakToDefaultTempDir(string sInternalPath, string sPAKFile = "")
         {
             if (string.IsNullOrEmpty(sInternalPath)) throw new Exception("Invalid path to extract");
 
@@ -55,7 +55,8 @@ namespace engine
             string sFullPathToExtractedFile = Path.Combine(PATHS.GetTempDir, sInternalPath);
             GameGlobals.m_ZipExtractPak0Mutex.WaitOne();
             if (!File.Exists(sFullPathToExtractedFile))
-            {                
+            {
+                sInternalPath = sInternalPath.Replace("\\", "/"); // the custom map city1 hit a regex exception on load. this fixed it and seems ok for other maps.
                 zipper.ExtractZip(sPAKFile, PATHS.GetTempDir, sInternalPath);                
             }
             GameGlobals.m_ZipExtractPak0Mutex.ReleaseMutex();

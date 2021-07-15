@@ -42,13 +42,13 @@ namespace engine
                 m_bitMap.Height, 0, PixelFormat.Bgra, PixelType.UnsignedByte, m_bitmapData.Scan0);
         }
 
-        public void ReadIntoBitmapForTexture(bool bShouldBeTGA, string sShaderName)
+        public void ReadIntoBitmapForTexture(bool bShouldBeTGA, Q3Shader shader)
         {       
             if (string.IsNullOrEmpty(m_sFullPath)) return; // for example fog
 
             if (Path.GetExtension(m_sFullPath) == ".tga") m_bTGA = true;
 
-            SetBitmapFromImageFile(bShouldBeTGA, sShaderName);
+            SetBitmapFromImageFile(bShouldBeTGA, shader);
 
             if (m_bitMap.Width > m_bitMap.Height) m_bWideTexture = true;
 
@@ -60,7 +60,7 @@ namespace engine
                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         }
 
-        private void AddAlphaToImage(string sShaderName)
+        private void AddAlphaToImage(Q3Shader shader)
         {
             System.Drawing.Bitmap imageWithA = new System.Drawing.Bitmap(m_bitMap.Width, m_bitMap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
@@ -73,7 +73,7 @@ namespace engine
                 {
                     System.Drawing.Color pcol = m_bitMap.GetPixel(i, j);
                     System.Diagnostics.Debug.Assert(pcol.A == 255);
-                    float fAlpha = Texture.CalculateAlphaNormalized(pcol, sShaderName);
+                    float fAlpha = Texture.CalculateAlphaNormalized(pcol, shader);
                     System.Drawing.Color tempCol = System.Drawing.Color.FromArgb((int)(fAlpha * 255f), pcol.R, pcol.G, pcol.B);
                     imageWithA.SetPixel(i, j, tempCol);
                 }
@@ -82,6 +82,19 @@ namespace engine
             m_bitMap.Dispose();
             m_bitMap = null;
             m_bitMap = imageWithA;
+        }
+
+        public bool GetHasAnyTransparency()
+        {
+            for (int i = 0; i < m_bitMap.Width; i++)
+            {
+                for (int j = 0; j < m_bitMap.Height; j++)
+                {
+                    System.Drawing.Color pcol = m_bitMap.GetPixel(i, j);
+                    if (pcol.A != 255) return true;
+                }
+            }
+            return false;
         }
 
         public float[] GetAverageColor255()
@@ -110,7 +123,7 @@ namespace engine
             return fCol;
         }
 
-        public void SetBitmapFromImageFile(bool bShouldBeTGA, string sShaderName)
+        public void SetBitmapFromImageFile(bool bShouldBeTGA, Q3Shader shader)
         {
             if (m_bitMap != null) throw new Exception("Bitmap already allocated");
 
@@ -130,7 +143,11 @@ namespace engine
 
                     if (m_sFullPath.Contains("pjgrate2")) // only real tga in the game that converts incorrectly from tga to png to bmp so add alpha manually
                     {
-                        AddAlphaToImage(sShaderName);
+                        AddAlphaToImage(shader);
+                    }
+                    else if(shader.GetTrans() && !GetHasAnyTransparency())
+                    {                      
+                        AddAlphaToImage(shader);                        
                     }
 
                     memStr.Dispose();
@@ -142,11 +159,11 @@ namespace engine
                 m_bitMap = new System.Drawing.Bitmap(m_sFullPath);
                 GameGlobals.m_BitmapInitMutex.ReleaseMutex();
 
-                if ((bShouldBeTGA && !Texture.SpecialTexture(m_sFullPath)) || TextureHasBlack(m_sFullPath))
+                if ((bShouldBeTGA && !Texture.SpecialTexture(m_sFullPath)))
                 {
                     System.Diagnostics.Debug.Assert(Path.GetExtension(m_sFullPath) == ".jpg");
 
-                    AddAlphaToImage(sShaderName);
+                    AddAlphaToImage(shader);
 
                     if (m_sFullPath.Contains("sfx/beam") || m_sFullPath.Contains("spotlamp/beam"))
                     {
@@ -169,28 +186,6 @@ namespace engine
                     m_bitMap.SetPixel(i, j, System.Drawing.Color.FromArgb(m_bitMap.GetPixel(i, j).A, c.R, c.G, c.B));
                 }
             }
-        }
-
-        private bool TextureHasBlack(string m_sFullPath)
-        {
-            return false; // this doesn't work well in some cases. such as when a texture has a lot of plants in it and a lot of black.
-
-            /*int nTotal = m_bitMap.Width * m_bitMap.Height;
-            int nNumBlack = 0;
-
-            for (int i = 0; i < m_bitMap.Width; i++)
-            {
-                for (int j = 0; j < m_bitMap.Height; j++)
-                {
-                    if(m_bitMap.GetPixel(i, j).R == 0 && m_bitMap.GetPixel(i, j).G == 0 && m_bitMap.GetPixel(i, j).B == 0)
-                    {
-                        nNumBlack++;
-                    }
-                }
-            }
-
-            if (nNumBlack == nTotal) return false; // special case all black
-            else return (float)nNumBlack / (float)nTotal >= 0.40; // if more than 5% black then add alpha*/
         }
     }
 }

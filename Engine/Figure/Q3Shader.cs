@@ -144,6 +144,7 @@ namespace engine
             else { return m_lStageTextures[iStage]; }
         }
 
+        public bool GetTrans() { return m_bTrans; }
         public string GetCull() { return m_sCull; }
 
         public List<Q3ShaderStage> GetStages() { return m_lStages; }
@@ -205,25 +206,25 @@ namespace engine
             }
             else
             {
-                sFullPath = m_zipper.ExtractSoundTextureOther(sURL, sPAKPath);
+                sFullPath = m_zipper.ExtractFromPakToDefaultTempDir(sURL, sPAKPath);
 
                 if (!File.Exists(sFullPath))
                 {
                     // try to find texture as tga or jpg
                     // when quake 3 was near shipping, id had to convert some tgas to jpg to reduce pak0 size					
                     if (Path.GetExtension(sFullPath) == ".jpg")
-                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "tga"), sPAKPath);
+                        sFullPath = m_zipper.ExtractFromPakToDefaultTempDir(Path.ChangeExtension(sURL, "tga"), sPAKPath);
                     else
                     {
                         bShouldBeTGA = true;
-                        sFullPath = m_zipper.ExtractSoundTextureOther(Path.ChangeExtension(sURL, "jpg"), sPAKPath);
+                        sFullPath = m_zipper.ExtractFromPakToDefaultTempDir(Path.ChangeExtension(sURL, "jpg"), sPAKPath);
                     }
 
                     if (!File.Exists(sFullPath))
                     {
                         // the only texture in the game of this nature
                         if (sFullPath.Contains("nightsky_xian_dm1"))
-                            sFullPath = m_zipper.ExtractSoundTextureOther("env/xnight2_up.jpg", sPAKPath);
+                            sFullPath = m_zipper.ExtractFromPakToDefaultTempDir("env/xnight2_up.jpg", sPAKPath);
                         else if (sFullPath.Contains("stars"))
                         {
                             // this is the lightimage for the dm10 sky. i think the sky is somehow broken up into multiple
@@ -233,7 +234,7 @@ namespace engine
                             // and then blend into it with the clouds. but usually with lightimages you 
                             // use them as the initial color for outputColor by taking average color.
                             // im not going to hardcode something for this case at this time.
-                            sFullPath = m_zipper.ExtractSoundTextureOther("env/space1_bk.jpg");
+                            sFullPath = m_zipper.ExtractFromPakToDefaultTempDir("env/space1_bk.jpg");
                         }
                     }
                 }
@@ -245,10 +246,10 @@ namespace engine
         private void DefineInitialOutputColor(System.Text.StringBuilder sb)
         {
             // define outputColor line
-            if (m_sLightImageFullPath != "" && m_lStages[0].GetBlendFunc() != "")
+            if (m_sLightImageFullPath != "" && m_lStages.Count > 0 && m_lStages[0].GetBlendFunc() != "")
             {
                 BitmapWrapper bmw = new BitmapWrapper(m_sLightImageFullPath);
-                bmw.SetBitmapFromImageFile(m_bLightImageShouldBeTGA, m_sShaderName);
+                bmw.SetBitmapFromImageFile(m_bLightImageShouldBeTGA, this);
                 float[] fCol = bmw.GetAverageColor255();
 
                 sb.AppendLine("outputColor = vec4(" + Math.Round(fCol[0], 5) + "/255.0, " + Math.Round(fCol[1], 5) + "/255.0, " + Math.Round(fCol[2], 5) + "/255.0, 0.0);");
@@ -365,11 +366,6 @@ namespace engine
                     bool bShouldBeTGA = false;
                     t.SetClamp(stage.GetClampmap());
 
-                    if(stage.GetTexturePath().Contains("bluete"))
-                    {
-                        int stop = 0;
-                    }
-
                     string sFullTexPath = GetPathToTextureNoShaderLookup(false, stage.GetTexturePath(), ref bShouldBeTGA);
                     bool bFoundTexture = false;
                     if (!File.Exists(sFullTexPath))
@@ -398,7 +394,7 @@ namespace engine
                     {
                         t.SetFullPath(sFullTexPath);
                         t.SetShouldBeTGA(bShouldBeTGA);
-                        t.SetTexture(m_sShaderName);
+                        t.SetTexture(this);
 
                         string sTexCoordName = "mainTexCoord";
                         if (stage.GetTCGEN_CS() == "environment") sTexCoordName = "tcgenEnvTexCoord";

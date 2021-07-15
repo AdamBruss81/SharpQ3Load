@@ -81,7 +81,7 @@ namespace simulator
 
 		private void LoadArenasFile()
 		{
-			string sFullPath = m_zipper.ExtractSoundTextureOther("scripts/arenas.txt");
+			string sFullPath = m_zipper.ExtractFromPakToDefaultTempDir("scripts/arenas.txt");
 			FileInfo arenas = new FileInfo(sFullPath);
 			StreamReader sr = arenas.OpenText();
 			m_LongMapNames = new Dictionary<string, string>();

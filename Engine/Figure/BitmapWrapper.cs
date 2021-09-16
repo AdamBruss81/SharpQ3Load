@@ -147,7 +147,7 @@ namespace engine
                     }
                     else if(shader.GetTrans() && !GetHasAnyTransparency())
                     {                      
-                        AddAlphaToImage(shader);                        
+                        AddAlphaToImage(shader); // some tgas have no transparency but should. i don't understand these types of images so add alpha myself.                 
                     }
 
                     memStr.Dispose();

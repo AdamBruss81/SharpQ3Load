@@ -385,20 +385,25 @@ namespace engine
 				// insert function to move a vertex     
 
 				// wavefunc: sin, triangle, square, sawtooth or inversesawtooth : 0,1,2,3,4
-
+				sb.AppendLine("float fAdjustmentScale = 0.0166;");
 				sb.AppendLine("void MoveVertexes(in float x, in float y, in float z, in float wavefunc, in float base, in float amp, in float phase, in float freq, inout vec3 vertex)");
 				sb.AppendLine("{");
-				sb.AppendLine("if(wavefunc == 0) {"); // just sin for now
+				sb.AppendLine("if(wavefunc == 0) {"); // sin
 				sb.AppendLine("float fCycleTimeMS = 1.0f / (freq * 2.0);");
 				sb.AppendLine("float fIntoSin = (timeS + phase * freq) / fCycleTimeMS * 3.1415926;");
 				sb.AppendLine("float fSinValue = sin(fIntoSin);");
-				sb.AppendLine("float scale = fSinValue * (amp*0.0166) + (base*0.0166);");
+				sb.AppendLine("float scaleSin = fSinValue * (amp*fAdjustmentScale) + (base*fAdjustmentScale);");
 				sb.AppendLine("vec3 moveVec = vec3(x, y, z);");
-				sb.AppendLine("moveVec *= scale;");
+				sb.AppendLine("moveVec *= scaleSin;");
 				sb.AppendLine("vertex += moveVec;");
 				sb.AppendLine("}");
 				sb.AppendLine("else if(wavefunc == 3) {");
-				// fill this in for sawtooth  and inversesawtooth todo
+				// todo - fill this in for sawtooth  and inversesawtooth todo
+				// taken from waveform
+				sb.AppendLine("float scaleST = (mod(timeS + phase * freq, 1.0f / freq) * freq * amp + base) * fAdjustmentScale;");
+				sb.AppendLine("vec3 moveVec = vec3(x, y, z);");
+				sb.AppendLine("moveVec *= scaleST;");
+				sb.AppendLine("vertex += moveVec;");
 				sb.AppendLine("}");
 				sb.AppendLine("}");
 			}
@@ -541,7 +546,7 @@ namespace engine
 						else if (dv.m_wf.func == "sawtooth") fWF = 3;
 						else if (dv.m_wf.func == "inversesawtooth") fWF = 4;
 
-						if (fWF != 0f && fWF != 3 && fWF != 4f)
+						if (fWF != 0f && fWF != 3 && fWF != 4f) // todo - implement sawtooth
 						{
 							throw new Exception("Encountered non handled deformmove wave func " + dv.m_wf.func);
 						}
@@ -752,6 +757,18 @@ namespace engine
                 m_arVertices[nBase] = m_lVertices[i].x;
                 m_arVertices[nBase + 1] = m_lVertices[i].y;
                 m_arVertices[nBase + 2] = m_lVertices[i].z;
+
+				if(m_q3Shader.GetPolygonOffset())
+				{
+					// offset faces along face normal a tiny amount for things like decals
+					// we can safely assume all shapes with polygon offset true are in one plane(decals on walls)
+					double dAmount = m_q3Shader.GetBacksplash() ? .02 : .01;
+					D3Vect tempNormal = m_lFaces[0].GetNewNormal;
+					tempNormal.Negate();
+					m_arVertices[nBase] = m_arVertices[nBase] + tempNormal.x * dAmount;
+					m_arVertices[nBase + 1] = m_arVertices[nBase + 1] + tempNormal.y * dAmount;
+					m_arVertices[nBase + 2] = m_arVertices[nBase + 2] + tempNormal.z * dAmount;
+				}
 
                 // main texture coordinates
                 m_arVertices[nBase + 3] = m_lTexCoordinates[GetMainTextureIndex()][i].Vect[0];
@@ -1075,12 +1092,13 @@ namespace engine
 
 			if (m_q3Shader.GetAddAlpha()) // alpha enabled shaders
 			{
-				if (m_q3Shader.GetSort() == "5")
-					nVal = 5;
-				else if (m_q3Shader.GetSort() == "6")
+				nVal = 5;
+
+				// backsplash check is for when two decals lie on top of eachother. need to handle sorting. this worked in one custom map so hopefully it works
+				// in other places. see polygonoffset for the main solution for decals.
+
+				if (m_q3Shader.GetSort() == "6" || (m_q3Shader.GetBacksplash() && m_q3Shader.GetPolygonOffset()))
 					nVal = 6;
-				else
-					nVal = 5;
 			}
 
 			if (sShaderName.Contains("slamp2") || sShaderName.Contains("kmlamp_white")) nVal = 7;
@@ -1334,6 +1352,11 @@ namespace engine
 					{
 						nLoc = GL.GetUniformLocation(ShaderProgram, "alphagen" + i);
 						GL.Uniform1(nLoc, m_q3Shader.GetStages()[i].GetAlphaGenValue());
+					}
+					else if(m_q3Shader.GetStages()[i].GetAlphaGenFunc() == GEN.ETYPE.CONSTANT)
+					{
+						nLoc = GL.GetUniformLocation(ShaderProgram, "alphagen" + i);
+						GL.Uniform1(nLoc, m_q3Shader.GetStages()[i].GetAlphaGenValue() * 20f);
 					}
 				}
 

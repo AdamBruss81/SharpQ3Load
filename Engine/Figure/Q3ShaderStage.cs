@@ -500,7 +500,7 @@ namespace engine
         private float CalculateWaveForm(WaveForm wf)
         {            
             float fVal = 1f;
-            float x = GameGlobals.GetElapsedS();
+            float fElapsedS = GameGlobals.GetElapsedS();
 
             if (wf.func == "sin")
             {
@@ -515,7 +515,7 @@ namespace engine
                     // the first range is from 0 to the full cycle time
                     // the second range is from 0 to PI
                     // we want to convert the first range to the second so we can plug into sin
-                    double dIntoSin = (x * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
+                    double dIntoSin = (fElapsedS * 1000f + wf.phase * wf.freq) / dCycleTimeMS * Math.PI;
 
                     // after plugging into sin you just have to scale by the amplitude and then add the initial value
                     float fSinValue = Convert.ToSingle(Math.Sin(dIntoSin));
@@ -535,7 +535,7 @@ namespace engine
             }
             else if (wf.func == "sawtooth")
             {
-                fVal = (x + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp + wf.fbase;
+                fVal = (fElapsedS + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp + wf.fbase;
 
                 if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
                 {
@@ -548,7 +548,7 @@ namespace engine
             }
             else if (wf.func == "inversesawtooth")
             {
-                fVal = wf.amp - (x + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp + wf.fbase;
+                fVal = wf.amp - (fElapsedS + wf.phase * wf.freq) % (1f / wf.freq) * wf.freq * wf.amp + wf.fbase;
 
                 if (m_bSyncRGBGENandAnimmap && (Math.Abs(m_fPrevRGBGENWaveformVal - fVal) > (m_rgbgen.wf.amp / 2.0f)))
                 {
@@ -568,7 +568,7 @@ namespace engine
                 }
                 else
                 {
-                    int n = Math.Sign(Math.Sin(Math.PI * 2 * (x + wf.phase * wf.freq) * wf.freq));
+                    int n = Math.Sign(Math.Sin(Math.PI * 2 * (fElapsedS + wf.phase * wf.freq) * wf.freq));
                     if (n >= 0) fVal = wf.fbase + wf.amp;
                     else fVal = 0; // this seems to be right. see blinking red tower lights in dm0
                 }
@@ -576,7 +576,7 @@ namespace engine
             else if(wf.func == "triangle")
             {
                 float fHalfPeriod = 1 / wf.freq / 2;
-                fVal = wf.amp / fHalfPeriod * (fHalfPeriod - Math.Abs((x + wf.phase * fHalfPeriod) % (2 * fHalfPeriod) - fHalfPeriod)) + wf.fbase;
+                fVal = wf.amp / fHalfPeriod * (fHalfPeriod - Math.Abs((fElapsedS + wf.phase * fHalfPeriod) % (2 * fHalfPeriod) - fHalfPeriod)) + wf.fbase;
             }   
 
             return fVal;
@@ -588,6 +588,10 @@ namespace engine
             {
                 float f = CalculateWaveForm(m_alphagen.wf);
                 return f;
+            }
+            else if(m_alphagen.m_eType == GEN.ETYPE.CONSTANT)
+            {
+                return m_alphagen.m_fConst[0];
             }
             throw new Exception("invalid alpha gen type: " + m_alphagen.m_eType);
         }

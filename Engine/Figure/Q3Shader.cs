@@ -49,6 +49,7 @@ namespace engine
         // this list will change after init for effects like animmap
         Shape m_pParent = null;
         bool m_bTrans = false;
+        bool m_bPolygonOffset = false;
         bool m_bAlphaShadow = false;
         bool m_bLava = false;
         bool m_bSlime = false;
@@ -56,6 +57,7 @@ namespace engine
         bool m_bNonSolid = false;
         bool m_bWater = false;
         bool m_bWaterGLZERO = true;
+        bool m_bBackSplash = false;
         bool m_bFog = false;
         bool m_bLightImageShouldBeTGA = false;
         string m_sSort = "";
@@ -125,6 +127,8 @@ namespace engine
             return bAA;
         }
 
+        public bool GetBacksplash() { return m_bBackSplash; }
+
         public string GetShaderName() { return m_sShaderName; }
 
         public Texture GetStageTexture(Q3ShaderStage stage)
@@ -145,6 +149,7 @@ namespace engine
         }
 
         public bool GetTrans() { return m_bTrans; }
+        public bool GetPolygonOffset() { return m_bPolygonOffset; }
         public string GetCull() { return m_sCull; }
 
         public List<Q3ShaderStage> GetStages() { return m_lStages; }
@@ -327,7 +332,7 @@ namespace engine
                 {
                     sb.AppendLine("uniform vec4 rgbgen" + sIndex + ";");
                 }
-                if(stage.GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM)
+                if(stage.GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM || stage.GetAlphaGenFunc() == GEN.ETYPE.CONSTANT)
                 {
                     sb.AppendLine("uniform float alphagen" + sIndex + ";");
                 }                                 
@@ -467,7 +472,7 @@ namespace engine
                     sb.AppendLine(sTexel + ".w *= alphaGenSpecular;"); // this doesn't work exactly right but it has 
                     // a dramatic positive effect on some maps like the bouncy map(floor)
                 }
-                else if(stage.GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM)
+                else if(stage.GetAlphaGenFunc() == GEN.ETYPE.WAVEFORM || stage.GetAlphaGenFunc() == GEN.ETYPE.CONSTANT)
                 {
                     sb.AppendLine(sTexel + ".w *= alphagen" + sIndex + ";");
                 }
@@ -826,7 +831,7 @@ namespace engine
                         else if (sInsideTargetShaderLine.Contains("trans"))
                         {
                             m_bTrans = true;
-                        }
+                        }                        
                         else if (sInsideTargetShaderLine.Contains("alphashadow"))
                         {
                             m_bAlphaShadow = true;
@@ -855,6 +860,15 @@ namespace engine
                         {
                             m_bFog = true;
                         }                        
+                    }
+                    else if(sInsideTargetShaderLine.Contains("polygonoffset"))
+                    {
+                        m_bPolygonOffset = true;
+                    }
+                    else if (sInsideTargetShaderLine.Contains("q3map_backsplash"))
+                    {
+                        // I don't know what this means but I'm using it to help with render order
+                        m_bBackSplash = true;
                     }
                     else if (sInsideTargetShaderLine.Contains("sort"))
                     {

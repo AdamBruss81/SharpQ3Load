@@ -172,6 +172,7 @@ namespace engine
             {
                 if(m_dictSongs.ContainsKey((ESongs)(effect)))
                 {
+                    if (m_dictPlayingSongs.Count > 0) throw new Exception("Can't play more than one song at a time");
                     m_dictPlayingSongs[effect] = sp;
                 }
             }
@@ -231,7 +232,8 @@ namespace engine
 
         public void Stop()
         {
-            mixer.RemoveAllMixerInputs();          
+            mixer.RemoveAllMixerInputs();
+            Clear();
         }
 
         public void Dispose()

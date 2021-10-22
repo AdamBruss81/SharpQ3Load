@@ -398,6 +398,8 @@ namespace engine
                     if(bFoundTexture)
                     {
                         t.SetFullPath(sFullTexPath);
+                        if (Path.GetExtension(sFullTexPath) == ".jpg" && !bShouldBeTGA && stage.GetBlendFunc() != "")
+                            bShouldBeTGA = true;
                         t.SetShouldBeTGA(bShouldBeTGA);
                         t.SetTexture(this);
 

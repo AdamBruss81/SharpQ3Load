@@ -1239,7 +1239,8 @@ namespace engine
 				GL.CullFace(CullFaceMode.Back);
 			}
 
-			if (m_q3Shader.GetAddAlpha())
+			bool bGetAddAlpha = m_q3Shader.GetAddAlpha();
+			if (bGetAddAlpha)
 			{
 				GL.Enable(EnableCap.Blend);
 				GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -1428,7 +1429,7 @@ namespace engine
 			{
 				GL.PopAttrib();
 			}
-			if (m_q3Shader.GetAddAlpha())
+			if (bGetAddAlpha)
 			{
 				GL.Disable(EnableCap.Blend);
 			}

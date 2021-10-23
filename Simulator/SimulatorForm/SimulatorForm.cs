@@ -120,8 +120,6 @@ namespace simulator
 
         private void Simulator_Load(object sender, EventArgs e)
 		{
-            //Glut.glutInit();
-
 			m_fonter = new gl_font.BasicFont();
 
 			GL.ShadeModel(ShadingModel.Smooth);
@@ -292,28 +290,6 @@ namespace simulator
 			SetCursor(true, true);
 		}
 
-		private void OpenMapFromFile()
-		{
-			m_bOpeningMap = true;
-
-			// disable timer to stop opengl refreshing and mouse cursor resetting
-			SetRunning(false);
-			StopAllTimers();
-
-			SetCursor(true, false);
-
-			OpenFileDialog dlg = new OpenFileDialog();
-			dlg.Filter = "VRML Files (*.wrl)|*.wrl";
-			DialogResult result = dlg.ShowDialog(this);
-			MapInfo map = null;
-			if(result == DialogResult.OK) {
-				string sFile = dlg.FileName;
-				map = new MapInfo(sFile);
-			}
-
-			ProcessMap(map);
-		}
-
 		/// <summary>
 		/// Pop map chooser and open a new map
 		/// </summary>
@@ -337,29 +313,29 @@ namespace simulator
 				map.GetMapPathOnDisk = m_zipper.ExtractMap(map.GetPath);
 
 			ProcessMap(map);
+
+			if (m_menu.GetExittedProgram()) ExitProgram();
 		}
 
-		private void CloseMap()
-		{
-			if (m_bRunning)
-			{
-				m_bClosed = true;
+        private void ExitProgram()
+        {
+            static_theEngine = null;
+            static_theMap = null;
 
-				SetRunning(false);
+            if (m_Engine != null) m_Engine.Delete();
+            if (m_fonter != null) m_fonter.Delete();
 
-				StopAllTimers();
+            m_SoundManager.Dispose();
 
-				m_Engine.Delete();
+            while (!m_SoundManager.GetPlaybackStopped())
+            {
+                System.Threading.Thread.Sleep(100);
+            }
 
-				m_Engine = null;
-				static_theEngine = null;
-				static_theMap = null;
+            Close();
+        }
 
-				WriteOpenMapMessage();
-			}
-		}
-
-		public void Notify(obsvr.Change pChange) // this is more like an update call. it's a way to get around c# single inheritance
+        public void Notify(obsvr.Change pChange) // this is more like an update call. it's a way to get around c# single inheritance
         {
 			// handle frame of view change
 			if(pChange.GetCode == (int)Engine.ESignals.ZOOMED_IN)
@@ -412,7 +388,10 @@ namespace simulator
 				m_controlMapProgress.Begin_MainThread();
 				LOGGER.Info("Finished with map progress begin");
 
-				//SetCursor(false, false);
+				if(map.CollisionDetection == false)
+				{
+					SwitchToGhost(); // start as ghost so you don't fall through the ground immediately
+				}
 			}
 			// revert to old map
 			else if (map == null && m_Engine != null && m_Engine.NumStaticFigs > 0)

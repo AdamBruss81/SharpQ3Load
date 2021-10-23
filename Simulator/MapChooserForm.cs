@@ -34,6 +34,7 @@ namespace simulator
 		private Zipper m_zipper = new Zipper();
 		Dictionary<string, string> m_LongMapNames = null;
 		bool m_bChoseMap = false;
+		bool m_bExittedProgram = false;
 
 		/// <summary>
 		/// Initialize a MapChooser
@@ -288,12 +289,22 @@ namespace simulator
         {
 			GetMapFromFile(false);
         }
-    }
 
-    /// <summary>
-    /// Sorts mapinfos based on the map number
-    /// </summary>
-    public class MapSorter : IComparer<MapInfo>
+		private void m_tsbtnExit_Click(object sender, EventArgs e)
+		{
+			m_chosenMap = null;
+			Close();
+
+			m_bExittedProgram = true;
+		}
+
+		public bool GetExittedProgram() { return m_bExittedProgram; }
+	}
+
+	/// <summary>
+	/// Sorts mapinfos based on the map number
+	/// </summary>
+	public class MapSorter : IComparer<MapInfo>
 	{
 		/// <summary>
 		/// Sort by mapnumber

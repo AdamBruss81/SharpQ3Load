@@ -279,10 +279,6 @@ namespace engine
 					STATE.Gravity = !STATE.Gravity;
 					break;
 			}
-
-			if((Control.ModifierKeys & Keys.Control) == Keys.Control) {
-				Fire();
-			}
 		}
 
 		private void Fire()
@@ -356,7 +352,7 @@ namespace engine
 
 			if (bAllowKeyBasedScaling) // this block is currently for normal movement(non fall/non decel)
 			{
-				if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+				if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
 				{
 					// walking
 					dAccelDecelScale = 0.4;

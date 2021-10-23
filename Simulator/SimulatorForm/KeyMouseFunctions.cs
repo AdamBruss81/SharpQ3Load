@@ -1,6 +1,4 @@
 ﻿using engine;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using utilities;
@@ -9,8 +7,6 @@ namespace simulator
 {
     public partial class SimulatorForm
     {
-        MoveStates m_PreviousTickMoveStates = new MoveStates();
-
         /// <summary>
         /// Get last key combination hit for display purposes
         /// </summary>
@@ -43,7 +39,6 @@ namespace simulator
         private void openGLControl_KeyUp(object sender, KeyEventArgs e)
         {            
             m_dictKeyStates[e.KeyCode] = false;
-            //LOGGER.Debug("key up: " + e.KeyCode);
         }
 
         private void ProcessMouseButtons()
@@ -146,6 +141,13 @@ namespace simulator
             }
         }
 
+        private void SwitchToGhost()
+        {
+            DisableDebuggingMode();
+            m_Engine.PreSwitchModes();
+            m_Engine = new Ghost(m_Engine);
+        }
+
         private void m_openGLControl_ProcessKey(object sender, KeyEventArgs e)
         {
             m_RecentKey = e.KeyData;
@@ -164,7 +166,6 @@ namespace simulator
                 if (m_bRunning)
                 {
                     m_dictKeyStates[e.KeyCode] = true;
-                    //LOGGER.Debug("key down: " + e.KeyCode);
 
                     if (e.KeyData == Keys.F1 && m_Engine.GetClass() != Engine.EEngineType.PLAYER)
                     {                                          
@@ -177,9 +178,7 @@ namespace simulator
                     }
                     else if (e.KeyData == Keys.F2 && m_Engine.GetClass() != Engine.EEngineType.GHOST)
                     {
-                        DisableDebuggingMode();
-                        m_Engine.PreSwitchModes();
-                        m_Engine = new Ghost(m_Engine);
+                        SwitchToGhost();
                     }
                     else if (e.KeyData == Keys.F3 && m_Engine.GetClass() != Engine.EEngineType.SPECTATOR)
                     {
@@ -203,31 +202,10 @@ namespace simulator
                 if (e.KeyData == Keys.O)
                 {
                     OpenMap();
-                }
-                else if (e.KeyData == Keys.L)
-                {
-                    OpenMapFromFile(); // not activel supported. almost surely doesn't work
-                }
-                else if (e.KeyData == Keys.C)
-                {
-                    CloseMap();
-                }
+                }             
                 else if (e.KeyData == Keys.Q)
                 {
-                    static_theEngine = null;
-                    static_theMap = null;
-
-                    if (m_Engine != null) m_Engine.Delete();
-                    if (m_fonter != null) m_fonter.Delete();
-
-                    m_SoundManager.Dispose();
-
-                    while(!m_SoundManager.GetPlaybackStopped())
-                    {
-                        System.Threading.Thread.Sleep(100);
-                    }
-
-                    Close();
+                    ExitProgram();
                 }
                 else if (e.KeyData == Keys.H)
                 {

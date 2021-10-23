@@ -52,6 +52,7 @@ namespace simulator
             this.m_tsbtnOpenMap = new System.Windows.Forms.ToolStripSplitButton();
             this.loadCustomMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadCustomMapNOCDToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.m_tsbtnExit = new System.Windows.Forms.ToolStripButton();
             this.m_tsbtnClose = new System.Windows.Forms.ToolStripButton();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -148,6 +149,7 @@ namespace simulator
             // 
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.m_tsbtnOpenMap,
+            this.m_tsbtnExit,
             this.m_tsbtnClose});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
@@ -186,15 +188,28 @@ namespace simulator
     "ome maps. ";
             this.loadCustomMapNOCDToolStripMenuItem.Click += new System.EventHandler(this.loadCustomMapNOCDToolStripMenuItem_Click);
             // 
+            // m_tsbtnExit
+            // 
+            this.m_tsbtnExit.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.m_tsbtnExit.BackColor = System.Drawing.Color.OrangeRed;
+            this.m_tsbtnExit.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.m_tsbtnExit.Image = ((System.Drawing.Image)(resources.GetObject("m_tsbtnExit.Image")));
+            this.m_tsbtnExit.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.m_tsbtnExit.Name = "m_tsbtnExit";
+            this.m_tsbtnExit.Size = new System.Drawing.Size(79, 22);
+            this.m_tsbtnExit.Text = "Exit Program";
+            this.m_tsbtnExit.Click += new System.EventHandler(this.m_tsbtnExit_Click);
+            // 
             // m_tsbtnClose
             // 
             this.m_tsbtnClose.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.m_tsbtnClose.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this.m_tsbtnClose.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.m_tsbtnClose.Image = ((System.Drawing.Image)(resources.GetObject("m_tsbtnClose.Image")));
             this.m_tsbtnClose.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.m_tsbtnClose.Name = "m_tsbtnClose";
-            this.m_tsbtnClose.Size = new System.Drawing.Size(40, 22);
-            this.m_tsbtnClose.Text = "Close";
+            this.m_tsbtnClose.Size = new System.Drawing.Size(77, 22);
+            this.m_tsbtnClose.Text = "Close Dialog";
             this.m_tsbtnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
             // MapChooserForm
@@ -241,5 +256,6 @@ namespace simulator
         private System.Windows.Forms.ToolStripMenuItem loadCustomMapToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadCustomMapNOCDToolStripMenuItem;
         private System.Windows.Forms.ToolStripButton m_tsbtnClose;
+        private System.Windows.Forms.ToolStripButton m_tsbtnExit;
     }
 }

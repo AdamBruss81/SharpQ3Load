@@ -12,8 +12,8 @@ Build the program in Visual Studio, copy a full baseq3 folder into the output di
 folder colocated with simulator.exe to run the program. This is true with all Quake 3 map loaders as the baseq3 artwork is not open sourced. 
 The easiest way to get this is by buying Quake 3 from steam and looking in the Quake 3 install folder. You can copy the folder from there.
 
-Choose a map from the map loader form and it will load and you will see that map come up in first person view. Press the 'H' key to view help on the controls.
-You can always load a new map by pressing the 'O' key. Press 'Q' to quit the program.
+Choose a map from the map loader form by clicking it. A progress bar comes up while the map is loading. After completion you will be in the level in first person view.
+The WASD keys move you as in other first person programs. Spacebar jumps. Press the 'H' key to view help on the controls. You can always load a new map by pressing the 'O' key. Press 'Q' to quit the program.
 
 Background:
 

@@ -148,6 +148,14 @@ namespace simulator
             m_Engine = new Ghost(m_Engine);
         }
 
+        private void ShowHelp()
+        {
+            SetCursor(true, false);
+            InfoForm nfo = new InfoForm();
+            nfo.ShowDialog(this);
+            SetCursor(false, false);
+        }
+
         private void m_openGLControl_ProcessKey(object sender, KeyEventArgs e)
         {
             if (m_bOpeningMap) return;
@@ -211,10 +219,7 @@ namespace simulator
                 }
                 else if (e.KeyData == Keys.H)
                 {
-                    SetCursor(true, false);
-                    InfoForm nfo = new InfoForm();
-                    nfo.ShowDialog(this);
-                    SetCursor(false, false);
+                    ShowHelp();
                 }
                 else if (e.KeyData == Keys.P)
                 {

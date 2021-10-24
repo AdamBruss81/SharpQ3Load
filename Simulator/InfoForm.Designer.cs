@@ -34,12 +34,14 @@
             // 
             // btnMoreInfo
             // 
-            this.btnMoreInfo.Location = new System.Drawing.Point(794, 302);
+            this.btnMoreInfo.BackColor = System.Drawing.Color.Yellow;
+            this.btnMoreInfo.Font = new System.Drawing.Font("Engravers MT", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnMoreInfo.Location = new System.Drawing.Point(791, 289);
             this.btnMoreInfo.Name = "btnMoreInfo";
-            this.btnMoreInfo.Size = new System.Drawing.Size(95, 33);
+            this.btnMoreInfo.Size = new System.Drawing.Size(98, 46);
             this.btnMoreInfo.TabIndex = 0;
             this.btnMoreInfo.Text = "More Info";
-            this.btnMoreInfo.UseVisualStyleBackColor = true;
+            this.btnMoreInfo.UseVisualStyleBackColor = false;
             this.btnMoreInfo.Click += new System.EventHandler(this.btnMoreInfo_Click);
             // 
             // InfoForm

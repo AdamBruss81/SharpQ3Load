@@ -210,12 +210,6 @@ namespace simulator
 			get { return m_chosenMap; }
 		}
 
-		private void btnClose_Click(object sender, EventArgs e)
-		{
-			m_chosenMap = null;
-			Close();
-		}
-
 		private void m_lstdm_MouseClick(object sender, MouseEventArgs e)
 		{
 			ChooseMap(m_lstdm);
@@ -299,6 +293,12 @@ namespace simulator
 		}
 
 		public bool GetExittedProgram() { return m_bExittedProgram; }
+
+		private void showHelp_Click(object sender, EventArgs e)
+		{
+            InfoForm nfo = new InfoForm();
+            nfo.ShowDialog(this);
+        }
 	}
 
 	/// <summary>

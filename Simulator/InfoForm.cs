@@ -33,7 +33,7 @@ namespace simulator
 		private void btnMoreInfo_Click(object sender, EventArgs e)
 		{
             MoreInfoForm mif = new MoreInfoForm();
-            mif.AddText("\n\nThe E key has been changed to do a forward warp to get through doors. E used to clear projectiles. K now does this.");
+            mif.AddText("\n\nThe E key does a forward warp to get through doors and sometimes get up to unreachable places.");
             mif.ShowDialog(this);
 		}
 	}

@@ -418,7 +418,9 @@ namespace simulator
 		private void WriteOpenMapMessage()
 		{
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-			m_fonter.PrintGLUTCenter("Press 'O' to open a map", m_openGLControl.Width, m_openGLControl.Height, 0);
+			//m_fonter.PrintGLUTCenter("Press 'O' to open a map", m_openGLControl.Width, m_openGLControl.Height, 0);
+			m_fonter.PrintCenter("Press 'O' to open a map", m_openGLControl.Width, m_openGLControl.Height, 0);
+			//m_fonter.PrintTopCenter("Press 'O' to open a map", m_openGLControl.Width, m_openGLControl.Height, 0);
 			GL.Flush();
 			Refresh();
 		}

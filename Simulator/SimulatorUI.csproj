@@ -254,7 +254,6 @@
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(SolutionDir)Resources\lightmaps.zip" "$(TargetDir)" /Y
 xcopy "$(SolutionDir)Resources\maps.zip" "$(TargetDir)" /Y
-xcopy "$(SolutionDir)References\tao\freeglut.dll" "$(TargetDir)" /Y
 xcopy "$(SolutionDir)References\q3bsp.exe" "$(TargetDir)" /Y</PostBuildEvent>
     <PreBuildEvent>
     </PreBuildEvent>

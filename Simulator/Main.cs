@@ -51,8 +51,6 @@ namespace simulator
 				LOGGER.Close();
 				exForm.ShowDialog();
 			}
-
-			//Directory.Delete(PATHS.GetTempDir, true);
         }
     }
 }

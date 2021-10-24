@@ -273,6 +273,15 @@ namespace engine
 			GameGlobals.m_fFrameStartElapsedMS = GameGlobals.m_InstanceStopWatch.ElapsedMilliseconds;
 
 			m_lStaticFigList.ShowAllFigures(m_GraphicsMode, m_cam);
+
+			for(int i = 0; i < m_dynamicFigList.Count(); i++)
+			{
+				if(DateTime.Now - m_dynamicFigList[i].GetCreationDate() > TimeSpan.FromSeconds(10))
+				{
+					m_dynamicFigList.RemoveAt(i);
+					i--;
+				}
+			}
 			m_dynamicFigList.ShowAllFigures(m_GraphicsMode, m_cam); 
 
 			Draw();			

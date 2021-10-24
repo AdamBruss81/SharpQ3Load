@@ -10,7 +10,6 @@
 //*===================================================================================
 
 using System;
-using System.Drawing;
 using System.Windows.Forms;
 using obsvr;
 using System.IO;

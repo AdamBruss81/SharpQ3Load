@@ -66,6 +66,7 @@ namespace engine
 		Mutex m_mutProgress = new Mutex();		
 
 		private Edge m_RayCollider = new Edge();
+		private DateTime m_Creation = DateTime.Now;
 
 		private MapInfo m_map = new MapInfo();
 		private Zipper m_zipper = new Zipper();
@@ -1733,6 +1734,8 @@ namespace engine
 
             }
         }
+
+        public DateTime GetCreationDate() { return m_Creation; }
 
         private void DefineTransporter(Transporter p, int i)
 		{

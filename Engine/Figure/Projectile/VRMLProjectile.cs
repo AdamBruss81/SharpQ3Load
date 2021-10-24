@@ -29,5 +29,5 @@ namespace engine
 		}
 
 		abstract public void Setup(MovableCamera cam);
-	}
+	}	
 }

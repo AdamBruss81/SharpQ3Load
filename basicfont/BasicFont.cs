@@ -270,6 +270,8 @@ namespace gl_font
 				for (int j = 0; j < lines[i].Length; j++)
 				{
 					//Glut.glutBitmapCharacter(Glut.GLUT_BITMAP_HELVETICA_18, (int)lines[i][j]);
+
+					//PrintString(lines[i]);
 				}
 
 				nCounter--;

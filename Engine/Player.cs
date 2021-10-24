@@ -250,7 +250,6 @@ namespace engine
 			switch (e.KeyData)
 			{
 				case Keys.K:
-					m_dynamicFigList.Clear(false);
 					m_lRayIntersectionInfos.Clear();
 					m_ray.Clear();
 					break;

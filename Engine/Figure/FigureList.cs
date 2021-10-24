@@ -36,6 +36,11 @@ namespace engine
             return m_lFigures.Count; 
         }
 
+        public void RemoveAt(int nIndex)
+        {
+            m_lFigures.RemoveAt(nIndex);
+        }
+
         public Figure this[int index]
         {
             get 

@@ -150,6 +150,8 @@ namespace simulator
 
         private void m_openGLControl_ProcessKey(object sender, KeyEventArgs e)
         {
+            if (m_bOpeningMap) return;
+
             m_RecentKey = e.KeyData;
 
             if (Control.ModifierKeys == Keys.Shift)

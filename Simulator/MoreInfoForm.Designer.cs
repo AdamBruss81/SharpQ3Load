@@ -50,7 +50,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MoreInfoForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "MoreInfoForm";
+            this.Text = "More Controls";
             this.ResumeLayout(false);
 
         }

@@ -839,9 +839,12 @@ namespace engine
 			{
 				GameGlobals.m_DebugShaderWriteMutex.WaitOne();
 
+				string sBasePath = Path.Combine(PATHS.GetTempDir, "glsl_dumps");
+				Directory.CreateDirectory(sBasePath);
+
 				// this will not output the default glsl shaders for when no q3 shader exists. but I can turn that on somehow if i need it.				
-				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".frag.txt", m_autoGenereatedFragShader);
-				File.WriteAllText("c:\\temp\\" + Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt", m_autoGenereatedVertexShader);
+				File.WriteAllText(Path.Combine(sBasePath, Path.GetFileName(m_q3Shader.GetShaderName()) + ".frag.txt"), m_autoGenereatedFragShader);
+				File.WriteAllText(Path.Combine(sBasePath, Path.GetFileName(m_q3Shader.GetShaderName()) + ".vert.txt"), m_autoGenereatedVertexShader);
 
 				GameGlobals.m_DebugShaderWriteMutex.ReleaseMutex();
 			}

@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace simulator
@@ -35,6 +29,12 @@ namespace simulator
             MoreInfoForm mif = new MoreInfoForm();
             mif.AddText("\n\nThe E key does a forward warp to get through doors and sometimes get up to unreachable places.");
             mif.ShowDialog(this);
+		}
+
+		private void m_btnAbout_Click(object sender, EventArgs e)
+		{
+			AboutBox abt = new AboutBox();
+			abt.ShowDialog(this);
 		}
 	}
 }

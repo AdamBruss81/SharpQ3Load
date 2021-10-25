@@ -108,7 +108,7 @@ namespace simulator
             this.Location = new System.Drawing.Point(100, 100);
             this.Name = "SimulatorForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Simulator";
+            this.Text = "SharpQ3Load";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.Simulator_Load);
             this.ResumeLayout(false);

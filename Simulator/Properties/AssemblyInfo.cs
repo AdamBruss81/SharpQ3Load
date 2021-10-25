@@ -15,12 +15,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Simulator")]
-[assembly: AssemblyDescription("Quake 3 Simulator")]
+[assembly: AssemblyTitle("SharpQ3Load")]
+[assembly: AssemblyDescription("Quake 3 Map Loader")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Bruss Enterprises")]
-[assembly: AssemblyProduct("Simulator")]
-[assembly: AssemblyCopyright("Copyright 2010 Adam Bruss")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("SharpQ3Load")]
+[assembly: AssemblyCopyright("Copyright 2021 Adam Bruss")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

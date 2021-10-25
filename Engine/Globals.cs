@@ -119,12 +119,12 @@ namespace engine
 
 		public static string GetTempFolderName
 		{
-			get { return "Simulator"; }
+			get { return "SharpQ3Load"; }
 		}
 
 		public static string GetLogFileName
 		{
-			get { return "Simulator-Log.txt"; }
+			get { return "SharpQ3Load-Log.txt"; }
 		}
 	}
 

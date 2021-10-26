@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace simulator
+namespace sharpq3load_ui
 {
 	/// <summary>
 	/// Tell user how to do everything with the simulator

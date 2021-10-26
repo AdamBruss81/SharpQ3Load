@@ -9,7 +9,7 @@
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
 
-namespace simulator
+namespace sharpq3load_ui
 {
 	partial class MapChooserForm
 	{
@@ -164,7 +164,7 @@ namespace simulator
             this.m_tsbtnOpenMap.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.loadCustomMapToolStripMenuItem,
             this.loadCustomMapNOCDToolStripMenuItem});
-            this.m_tsbtnOpenMap.Image = global::simulator.Properties.Resources.open_map;
+            this.m_tsbtnOpenMap.Image = global::sharpq3load_ui.Properties.Resources.open_map;
             this.m_tsbtnOpenMap.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.m_tsbtnOpenMap.Name = "m_tsbtnOpenMap";
             this.m_tsbtnOpenMap.Size = new System.Drawing.Size(32, 22);

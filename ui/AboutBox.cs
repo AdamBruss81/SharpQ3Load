@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace simulator
+namespace sharpq3load_ui
 {
     public partial class AboutBox : Form
     {

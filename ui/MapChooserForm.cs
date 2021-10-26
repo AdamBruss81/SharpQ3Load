@@ -23,7 +23,7 @@ using Microsoft.Win32;
 
 #pragma warning disable CS1591
 
-namespace simulator
+namespace sharpq3load_ui
 {
 	/// <summary>
 	/// Select a map from this form to load

@@ -1,9 +1,9 @@
 ﻿using System;
 using utilities;
 
-namespace simulator
+namespace sharpq3load_ui
 {
-    public partial class SimulatorForm
+    public partial class GameWindow
     {
         long m_nLastFrameTimeMilli = 15 ;
         System.Diagnostics.Stopwatch m_swFrameTimer = new System.Diagnostics.Stopwatch();

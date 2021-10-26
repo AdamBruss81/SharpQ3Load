@@ -20,7 +20,7 @@ using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
 
-namespace simulator
+namespace sharpq3load_ui
 {		
 	/// <summary>
 	/// Progress Control for map loading
@@ -72,7 +72,7 @@ namespace simulator
 		public void DoneLoadingMap()
 		{
 			m_bDoneLoadingMap = true;
-			LOGGER.Info("Done loading " + SimulatorForm.static_theMap.ToString());
+			LOGGER.Info("Done loading " + GameWindow.static_theMap.ToString());
 		}
 
 		/// <summary>
@@ -81,7 +81,7 @@ namespace simulator
 		public void DoneInitializingLists()
 		{
 			m_bDoneInitializingLists = true;
-			LOGGER.Info("Done initializing lists for " + SimulatorForm.static_theMap.ToString());
+			LOGGER.Info("Done initializing lists for " + GameWindow.static_theMap.ToString());
 		}
 
 		/// <summary>
@@ -90,7 +90,7 @@ namespace simulator
 		public void DoneCreatingBoundingBoxes()
 		{
 			m_bDoneCreatingBoundingBoxes = true;
-			LOGGER.Info("Done creating boundingboxes for " + SimulatorForm.static_theMap.ToString());
+			LOGGER.Info("Done creating boundingboxes for " + GameWindow.static_theMap.ToString());
 		}
 
 		//delegate void stringArg(string arg);
@@ -188,7 +188,7 @@ namespace simulator
 
 				//Thread.Sleep(100);
 
-				FigureList lFigList = SimulatorForm.static_theEngine.GetStaticFigList;
+				FigureList lFigList = GameWindow.static_theEngine.GetStaticFigList;
 
 				if (lFigList.Count() > 0)
 				{
@@ -233,13 +233,13 @@ namespace simulator
 
 			m_bLoading = true;
 
-			Status = "-+ " + SimulatorForm.static_theMap.ToString() + " +-";
+			Status = "-+ " + GameWindow.static_theMap.ToString() + " +-";
 			m_progress.Maximum = 100;
 			m_nProgressCutoffLoad = 25;
 			m_nProgressCutoffBoxes = 70;
-			m_nMaxLineCount = (int)utilities.stringhelper.CountLinesInFile(SimulatorForm.static_theMap.GetMapPathOnDisk);
+			m_nMaxLineCount = (int)utilities.stringhelper.CountLinesInFile(GameWindow.static_theMap.GetMapPathOnDisk);
 
-			FigureList lFigList = SimulatorForm.static_theEngine.GetStaticFigList;
+			FigureList lFigList = GameWindow.static_theEngine.GetStaticFigList;
 			while (lFigList.Count() == 0) Thread.Sleep(10);
 
 			m_pUpdater.Subscribe(lFigList[0].GetSubject);
@@ -264,15 +264,15 @@ namespace simulator
 		private void SetLevelShot()
 		{
 			string sPAKPath = "";
-			if (System.IO.Path.GetExtension(SimulatorForm.static_theMap.GetMapPathOnDisk) == ".pk3")
+			if (System.IO.Path.GetExtension(GameWindow.static_theMap.GetMapPathOnDisk) == ".pk3")
 			{
-				sPAKPath = SimulatorForm.static_theMap.GetMapPathOnDisk;
+				sPAKPath = GameWindow.static_theMap.GetMapPathOnDisk;
 			}
 
 			if(sPAKPath == "")
 			{
 				// built in map
-				SetLevelShotImage(m_zip.ExtractFromPakToDefaultTempDir("levelshots/" + SimulatorForm.static_theMap.GetNick + ".jpg"));
+				SetLevelShotImage(m_zip.ExtractFromPakToDefaultTempDir("levelshots/" + GameWindow.static_theMap.GetNick + ".jpg"));
 			}
 			else
 			{
@@ -316,7 +316,7 @@ namespace simulator
 			}
 			else
 			{
-				LOGGER.Info("Could not find level shot for map " + SimulatorForm.static_theMap.GetLongMapName);
+				LOGGER.Info("Could not find level shot for map " + GameWindow.static_theMap.GetLongMapName);
 				m_picLevelShot.Image = System.Drawing.Image.FromFile(m_zip.ExtractFromPakToDefaultTempDir("menu/art/unknownmap.jpg"));
 			}
 		}

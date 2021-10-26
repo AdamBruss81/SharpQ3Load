@@ -9,9 +9,9 @@
 //* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
 //*===================================================================================
 
-namespace simulator
+namespace sharpq3load_ui
 {
-	partial class SimulatorForm
+	partial class GameWindow
 	{
 		/// <summary>
 		/// Required designer variable.
@@ -41,7 +41,7 @@ namespace simulator
             this.components = new System.ComponentModel.Container();
             this.timerRedrawer = new System.Windows.Forms.Timer(this.components);
             this.m_tlContainer = new System.Windows.Forms.TableLayoutPanel();
-            this.m_controlMapProgress = new simulator.MapLoadControl();
+            this.m_controlMapProgress = new sharpq3load_ui.MapLoadControl();
             this.m_openGLControl = new OpenGLControlModded.simpleOpenGlControlEx();
             this.timerShowFPS = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();

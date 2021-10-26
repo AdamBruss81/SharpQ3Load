@@ -21,12 +21,12 @@ using utilities;
 
 #pragma warning disable CS1591
 
-namespace simulator
+namespace sharpq3load_ui
 {
 	/// <summary>
 	/// Console for driving entire application
 	/// </summary>
-	public partial class SimulatorForm : Form, obsvr.IObserverHelper
+	public partial class GameWindow : Form, obsvr.IObserverHelper
 	{
 		private Engine m_Engine = null;
 
@@ -84,7 +84,7 @@ namespace simulator
 		/// <summary>
 		/// Initialize a Simulator
 		/// </summary>
-		public SimulatorForm()
+		public GameWindow()
 		{
 			InitializeComponent();
 

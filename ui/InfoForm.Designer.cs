@@ -1,4 +1,4 @@
-﻿namespace simulator
+﻿namespace sharpq3load_ui
 {
 	partial class InfoForm
 	{
@@ -61,7 +61,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackgroundImage = global::simulator.Properties.Resources.movement1;
+            this.BackgroundImage = global::sharpq3load_ui.Properties.Resources.movement1;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.ClientSize = new System.Drawing.Size(901, 687);
             this.Controls.Add(this.m_btnAbout);

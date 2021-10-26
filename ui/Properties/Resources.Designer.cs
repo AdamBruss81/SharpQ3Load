@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace simulator.Properties {
+namespace sharpq3load_ui.Properties {
     using System;
     
     

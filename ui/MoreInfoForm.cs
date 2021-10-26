@@ -2,7 +2,7 @@
 
 #pragma warning disable CS1591
 
-namespace simulator
+namespace sharpq3load_ui
 {
     public partial class MoreInfoForm : Form
     {

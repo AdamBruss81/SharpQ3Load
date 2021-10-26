@@ -1,4 +1,4 @@
-﻿namespace simulator
+﻿namespace sharpq3load_ui
 {
     partial class AboutBox
     {

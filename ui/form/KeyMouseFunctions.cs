@@ -3,9 +3,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using utilities;
 
-namespace simulator
+namespace sharpq3load_ui
 {
-    public partial class SimulatorForm
+    public partial class GameWindow
     {
         /// <summary>
         /// Get last key combination hit for display purposes

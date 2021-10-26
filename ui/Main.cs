@@ -14,11 +14,11 @@ using System.Windows.Forms;
 using engine;
 using System.IO;
 
-namespace simulator
+namespace sharpq3load_ui
 {
     class Simulator
     {
-		public static SimulatorForm mainfrm = null;
+		public static GameWindow mainfrm = null;
 
         [STAThread]
         static void Main(string[] args)
@@ -37,7 +37,7 @@ namespace simulator
 				}
 
 				LOGGER.Info("Running simulator on " + DateTime.Now.ToString());
-				mainfrm = new SimulatorForm();
+				mainfrm = new GameWindow();
 				Application.Run(mainfrm);
 
 				LOGGER.Close();

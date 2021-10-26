@@ -93,16 +93,6 @@ namespace utilities
 		}
 
 		/// <summary>
-		/// Determine if a file exists on disk
-		/// </summary>
-		/// <param name="s">path to file</param>
-		/// <returns>Whether the file exists</returns>
-		public static bool ExistsFile(string s)
-		{
-			return System.IO.File.Exists(s);
-		}
-
-		/// <summary>
 		/// Breaks apart a string on the delimiter
 		/// </summary>
 		/// <param name="sValue">string to break up</param>

@@ -106,15 +106,5 @@ namespace utilities
                 sgl.POPATT();
 			}
 		}
-
-        public static bool operator ==(Edge d1, Edge d2)
-        {
-            return d1.Vertice1 == d2.Vertice1 && d1.Vertice2 == d2.Vertice2;
-        }
-
-        public static bool operator !=(Edge d1, Edge d2)
-        {
-            return !(d1.Vertice1 == d2.Vertice1 && d1.Vertice2 == d2.Vertice2);
-        }
 	}
 }

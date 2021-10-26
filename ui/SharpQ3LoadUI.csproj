@@ -176,8 +176,8 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="form\SimulatorForm.resx">
-      <DependentUpon>SimulatorForm.cs</DependentUpon>
+    <EmbeddedResource Include="form\GameWindow.resx">
+      <DependentUpon>GameWindow.cs</DependentUpon>
     </EmbeddedResource>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -185,11 +185,11 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <None Include="app.config" />
-    <Compile Include="form\SimulatorForm.cs">
+    <Compile Include="form\GameWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="form\SimulatorForm.Designer.cs">
-      <DependentUpon>SimulatorForm.cs</DependentUpon>
+    <Compile Include="form\GameWindow.Designer.cs">
+      <DependentUpon>GameWindow.cs</DependentUpon>
     </Compile>
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />

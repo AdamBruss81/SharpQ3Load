@@ -1,15 +1,4 @@
-﻿//*===================================================================================
-//* ----||||Simulator||||----
-//*
-//* By Adam Bruss and Scott Nykl
-//*
-//* Scott participated in Fall of 2005. Adam has participated from fall 2005 
-//* until the present.
-//*
-//* Loads in quake 3 maps. Three modes of interaction are Player, Ghost and Spectator.
-//*===================================================================================
-using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 

@@ -1,15 +1,4 @@
-﻿//*===================================================================================
-//* ----||||Simulator||||----
-//*
-//* By Adam Bruss and Scott Nykl
-//*
-//* Scott participated in Fall of 2005. Adam has participated from fall 2005 
-//* until the present.
-//*
-//* Loads in quake 3 maps. Three modes of interaction are Player, Ghost and Spectator.
-//*===================================================================================
-
-This is a record of the cases that have been completed or require completion in the future
+﻿This is a record of the cases that have been completed or require completion in the future
 
 1. Transfer simulator to tao framework - DONE
 

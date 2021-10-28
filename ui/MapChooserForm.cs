@@ -1,24 +1,10 @@
-﻿//*===================================================================================
-//* ----||||Simulator||||----
-//*
-//* By Adam Bruss and Scott Nykl
-//*
-//* Scott participated in Fall of 2005. Adam has participated from fall 2005 
-//* until the present.
-//*
-//* Loads in quake 3 m_maps. Three modes of interaction are Player, Ghost and Spectator.
-//*===================================================================================
-
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
-using System.Reflection;
 using utilities;
 using engine;
 using ICSharpCode.SharpZipLib.Zip;
-using ICSharpCode.SharpZipLib.Core;
 using Microsoft.Win32;
 
 #pragma warning disable CS1591

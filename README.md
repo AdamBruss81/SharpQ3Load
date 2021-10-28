@@ -13,13 +13,13 @@ a.	Get this from a Quake3 install directory such as from Steam. It has all the b
 
 Choosing a map and basic controls:
 
-After step 5 above you’ll enter into fullscreen mode and be presented with a map load dialog. Choose one of the built in Quake3 maps from the first three columns. It will load in a progress window. When loading is complete you will be placed in that map at one of the spawnpoints at random. 
+ After step 5 above you’ll enter into fullscreen mode and be presented with a map load dialog. Choose one of the built in Quake3 maps from the first three columns. It will load in a progress window. When loading is complete you will be placed in that map at one of the spawnpoints at random. 
 
 Use the WASD keys and mouse to move around and space to jump. Press E to warp forward to get through doors or walls. Press O to open a new map. Press Q to quit the program. Press H for a help screen showing you some more commands.
 
 How to load a custom map from pk3:
 
-In the map map dialog is an open file button on the top left with two options. Open a pk3 and open a pk3 with no collision detection. Usually, you’ll want the first option. Select this and choose the pk3 on disk for the custom map. Note – I tested many maps from https://lvlworld.com/ which has a great selection. Some significant processing occurs when first loading a custom map from pk3. If this takes say more than five minutes, consider using the second option(no collision detection). This will make the map load fast but you won’t experience any collision detection when moving around the map. You’ll be a ghost. Also, once the map loading completes for the first option(with collision detection), it will subsequently load fast as a cached vrml file will be on disk next to the pk3.
+ In the map map dialog is an open file button on the top left with two options. Open a pk3 and open a pk3 with no collision detection. Usually, you’ll want the first option. Select this and choose the pk3 on disk for the custom map. Note – I tested many maps from https://lvlworld.com/ which has a great selection. Some significant processing occurs when first loading a custom map from pk3. If this takes say more than five minutes, consider using the second option(no collision detection). This will make the map load fast but you won’t experience any collision detection when moving around the map. You’ll be a ghost. Also, once the map loading completes for the first option(with collision detection), it will subsequently load fast as a cached vrml file will be on disk next to the pk3.
 
 Features:
 
@@ -37,7 +37,7 @@ Features:
 
 More Details:
 
-Most shader effects work the same as in Quake 3 or close.
+ Most shader effects work the same as in Quake 3 or close.
 
 Some shader effects don’t work at all or don’t work fully. 
 
@@ -61,12 +61,20 @@ The map load process is multi-threaded in various ways. It will use all your cor
 
 *This program is not intended to reproduce Quake 3 in C# with all its gameplay and features. There are no battle modes or powerups. There is pretty much no HUD. The focus was mostly on the rendering and making that as close to Quake 3 as possible. 
 
- Future Areas of Work:
+Future Areas of Work:
 
-Make the projectiles smaller and have collision detection. I would just make them be a point in space for starters. When they hit something play some sound and maybe display an effect. This would be lots of fun to implement.
+ Make the projectiles smaller and have collision detection. I would just make them be a point in space for starters. When they hit something play some sound and maybe display an effect. This would be lots of fun to implement.
 
 Enable fog.
 
 Fix the skies.
 
 Support recording demos for fun. This would basically just be recording all the camera turns and position changes to a file and playing it back. I always thought this was cool in other games like halflife and it seems straightforward to implement.
+
+Third Party Libraries Used:
+
+q3bsp - http://home.snafu.de/hg/vrml/q3bsp/q3bsp.html convert bsp to vrml
+SharpZipLib - https://github.com/icsharpcode/SharpZipLib zip tools to extract from pk3 files
+NAudio - https://github.com/naudio/NAudio for playing sounds
+OpenTK - https://github.com/opentk/opentk C# OpenGL bindings
+SixLabors ImageSharp - https://github.com/SixLabors/ImageSharp For working with TGAs

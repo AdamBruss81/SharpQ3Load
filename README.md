@@ -71,3 +71,7 @@ Enable fog.
 Fix the skies.
 
 Support recording demos for fun. This would basically just be recording all the camera turns and position changes to a file and playing it back. I always thought this was cool in other games like halflife and it seems straightforward to implement.
+
+History:
+
+This program started as a final class project for a Graphics class circa 2005. The founders are Scott Nykl and Adam Bruss. The original idea and inspiration to load Quake3 maps from vrml and allow moving around in them came from Scott. Adam would make subs at Quiznos occasionally for Scott and the two started talking. After the class ended Adam continued working on it to bring it to where it is today. The vast majority of functionality and code present today came after the class ended.

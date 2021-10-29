@@ -45,11 +45,13 @@ More Details:
 
 -	The moving type skies scroll and show the correct layers but they don’t render as a dome like in Quake 3 and so don’t have that very realistic effect. I tried to get this to work by looking at the Quake 3 source but couldn’t figure it out. There are a few built in maps which use a skybox and that is not supported.
 
--	The moving arrows on launch pads don’t sync with the color flashing. 
+-	The moving arrows on launch pads don’t sync right with the color flashing. This was a shader oddity I couldn't easily solve.
 
 -	Custom maps will tend to have more render issues than built-in maps. 
 
--	This program ultimately loads all maps from vrml files(custom pk3s are converted to vrml by the program) and I organize the faces into groups called shapes. Each shape renders itself based on a shader for that shape(if no shader exists then it’s just texturing). I sort some shapes relative to each other but it’s not always enough to make everything look perfect from every angle. I don’t know fully how Quake3 renders the non-opaque overlapping faces and always has it look right. I think it may basically have one big list of faces which this program doesn’t. At any rate it’s not enough of a problem to try and redesign the whole program. This started as a class project which loaded vrml files so it stayed that way. I had to do some hardcoding based on texture/shader name in the program to make the built- in maps look correct. 
+-	This program ultimately loads all maps from vrml files(custom pk3s are converted to vrml by the program) and I organize the faces into groups called shapes. Each shape renders itself based on a Q3 shader. If no Q3 shader exists for a shape then lightmapping or vertex coloring is used. In all cases glsl is used to render everything in the map. The glsl shader can have any number of stages which can be looked at as layering textures on top of eachother to create mesmerizing effects. Some stages rotate the texture. Some scale it. Some shaders appear to animate by changing the texture for a stage on a time interval. See the Q3 shader manual for more info. 
+
+-	As always in graphics programming you have to render overlapping non-opaque faces back to front to have it look right. For example if two see through Q3 lamps line up with each other, you need to render the back one first and the front one on top of it. I take care to do this for all the built in maps. The Quake 3 shaders provide some information to help know when you have to sort things manually but it's not perfect. Custom maps tend to exhibit more sorting problems than the built in maps. I took great pains to make the built-in maps look right in all possible cases with respect to this but there are still a few issues for example with some flourescent lights in Q3. You wouldn't notice unless you looked hard.
 
 -	This program contains code to convert Quake 3 shaders to glsl shader code. These glsl shaders are then used to render the map. If you run in debug you can see these glsl shaders as they are dumped to text files in the temporary directory(for debugging). Look at the end of Shape.InitializeNonGL.
 
@@ -59,7 +61,7 @@ More Details:
 
 -	The map load process is multi-threaded in various ways. It will use all your cores. The playing part is single threaded.
 
-*This program is not intended to reproduce Quake 3 in C# with all its gameplay and features. There are no battle modes or powerups. There is pretty much no HUD. The focus was mostly on the rendering and making that as close to Quake 3 as possible. 
+*This program is not intended to reproduce Quake 3 in C# with all its gameplay and features. There are no battle modes or powerups. There is pretty much no HUD. The focus was mostly on the rendering and making that as close to Quake 3 as possible. All of the code except a few shader details taken from the Quake3 source is original.
 
 Future Areas of Work:
 

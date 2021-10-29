@@ -7,8 +7,7 @@ How to build and run:
 1.	Clone the repository
 2.	Open sharpq3load.sln in Visual Studio 2019 or a similar version
 3.	Build the solution in Debug or Release – both will work
-4.	Place the full Quake3 baseq3 directory into the Debug/Release directory
-a.	Get this from a Quake3 install directory such as from Steam. It has all the built-in artwork and sounds from Quake3. This is not open source and so can’t be included in the repo.
+4.	Place the full Quake3 baseq3 directory into the Debug/Release directory. Get this from a Quake3 install directory such as from Steam or a Quake3 cd. On Steam Quake3 is a few bucks. The baseq3 dir has all the built-in artwork and sounds from Quake3. It is not open source and so can’t be included in the repo.
 5.	Start the SharpQ3LoadUI project or run the sharpq3load.exe from the Release/Debug directory
 
 Choosing a map and basic controls:

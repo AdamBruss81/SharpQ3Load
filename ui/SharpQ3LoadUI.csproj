@@ -227,8 +227,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="CASES.txt" />
-    <Content Include="DevNotes.txt" />
     <Content Include="icon.ico" />
     <Content Include="Resources\movement1.bmp" />
     <Content Include="Resources\open_map.png" />

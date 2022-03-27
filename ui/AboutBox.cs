@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace sharpq3load_ui
 {
+    /// <summary>
+    /// Simple about box
+    /// </summary>
     public partial class AboutBox : Form
     {
+        /// <summary>
+        /// Allocate about box
+        /// </summary>
         public AboutBox()
         {
             InitializeComponent();

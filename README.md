@@ -74,4 +74,4 @@ Support recording demos for fun. This would basically just be recording all the 
 
 History:
 
-This program started as a final class project for a Graphics class circa 2005. It was extended after the class ended until about 2010. Then more features were added in 2018,2019 including the shading engine.
+This program started as a final class project for a Graphics class circa 2005. It was extended after the class ended until about 2010. Then more features were added starting in 2018 and it was put in Github.
